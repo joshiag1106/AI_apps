@@ -178,9 +178,15 @@ function bootstrap() {
   });
 }
 
+// The headless self-test must not take part in single-instance arbitration.
+// Otherwise `npm test` fails whenever the user happens to have the app open:
+// the test instance loses the lock, quits with status 0 and prints nothing, so
+// the failure looks nothing like its actual cause.
+const isSmokeTest = process.env.JOSH_SMOKE === '1';
+
 // A second launch should focus the existing window rather than start a rival
 // instance that would fight over the same settings file.
-if (!app.requestSingleInstanceLock()) {
+if (!isSmokeTest && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
