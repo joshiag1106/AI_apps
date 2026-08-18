@@ -1,0 +1,26 @@
+# Dependency updates.
+#
+# A terminal emulator ships a whole browser engine, so Electron security
+# releases matter here more than in an ordinary application: a Chromium
+# vulnerability becomes this app's vulnerability. Monthly rather than weekly
+# keeps the noise low while still surfacing those releases.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /Josh
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      # The xterm packages are versioned and released together; updating them
+      # in one pull request avoids a broken intermediate combination.
+      xterm:
+        patterns:
+          - "@xterm/*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

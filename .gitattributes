@@ -1,0 +1,19 @@
+# Line endings are normalised to LF in the repository.
+#
+# Without this, a contributor on Windows commits CRLF, and the next person on
+# macOS or Linux sees every line of a file as changed. It matters more than
+# usual here: this project is built on all three operating systems in CI, and
+# a stray CRLF in a shell script breaks the Linux job in a way that looks
+# nothing like its actual cause.
+* text=auto eol=lf
+
+# Files git must never convert or attempt to diff as text.
+*.png binary
+*.icns binary
+*.ico binary
+*.node binary
+*.dmg binary
+*.exe binary
+*.zip binary
+*.AppImage binary
+*.deb binary
