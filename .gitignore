@@ -1,0 +1,5 @@
+# Per-app build output and dependencies are ignored by each app's own
+# .gitignore; these are the repository-wide ones.
+.DS_Store
+Thumbs.db
+*.log

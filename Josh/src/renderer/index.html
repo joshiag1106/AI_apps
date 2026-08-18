@@ -1,0 +1,58 @@
+<meta charset="utf-8" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+/>
+<title>Josh</title>
+
+<link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css" />
+<link rel="stylesheet" href="css/app.css" />
+
+<div id="titlebar">
+  <div id="tabstrip" role="tablist" aria-label="Terminal tabs"></div>
+  <button id="btn-newtab" class="icon-btn" title="New tab" aria-label="New tab">+</button>
+  <div id="titlebar-fill"></div>
+</div>
+
+<main id="workspace"></main>
+
+<footer id="statusbar">
+  <span id="status-shell" class="status-item"></span>
+  <span id="status-cwd" class="status-item grow" title=""></span>
+  <span id="status-size" class="status-item"></span>
+  <span id="status-theme" class="status-item"></span>
+</footer>
+
+<div id="findbar" hidden>
+  <input id="find-input" type="text" placeholder="Find" spellcheck="false" />
+  <button id="find-prev" class="icon-btn" title="Previous match">&#8593;</button>
+  <button id="find-next" class="icon-btn" title="Next match">&#8595;</button>
+  <button id="find-close" class="icon-btn" title="Close">&#215;</button>
+</div>
+
+<div id="palette-backdrop" hidden>
+  <div id="palette" role="dialog" aria-label="Command palette">
+    <input
+      id="palette-input"
+      type="text"
+      placeholder="Type a command..."
+      spellcheck="false"
+      autocomplete="off"
+    />
+    <ul id="palette-list" role="listbox"></ul>
+  </div>
+</div>
+
+<script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+<script src="../../node_modules/@xterm/addon-webgl/lib/addon-webgl.js"></script>
+<script src="../../node_modules/@xterm/addon-search/lib/addon-search.js"></script>
+<script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+<script src="../../node_modules/@xterm/addon-unicode11/lib/addon-unicode11.js"></script>
+
+<script src="js/split-tree.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/terminal-pane.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/command-palette.js"></script>
+<script src="js/app.js"></script>

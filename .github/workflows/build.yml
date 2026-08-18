@@ -1,0 +1,132 @@
+# Builds real installers on real operating systems.
+#
+# Cross-building desktop installers from one OS is unreliable (Windows needs
+# Wine, Linux needs a matching glibc). Using a runner per platform means every
+# artifact is produced natively, which is the only way to be confident the
+# result actually launches.
+#
+# The app lives in the Josh/ subdirectory of this repository, so `run` steps
+# default to that directory. Steps that use an action rather than a shell
+# (setup-node's cache, upload-artifact) ignore that default and need the
+# Josh/ prefix spelled out.
+
+name: build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: Josh
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Josh/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # npm 11 blocks dependency lifecycle scripts, which stops Electron's
+      # binary from downloading. The preflight in `pretest` repairs that, but
+      # approving it here keeps the log honest about what ran.
+      - name: Approve Electron install script
+        run: npm approve-scripts electron || true
+
+      # The smoke test boots Electron, which needs a display server on Linux.
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm test
+
+      - name: Run tests (macOS and Windows)
+        if: runner.os != 'Linux'
+        run: npm test
+
+  dist:
+    name: package (${{ matrix.os }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            command: dist:mac
+            artifact: macos
+          - os: windows-latest
+            command: dist:win
+            artifact: windows
+          - os: ubuntu-latest
+            command: dist:linux
+            artifact: linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Josh/package-lock.json
+
+      - run: npm ci
+
+      - name: Approve Electron install script
+        run: npm approve-scripts electron || true
+
+      - name: Generate application icon
+        run: npm run icon
+
+      - name: Build installers
+        run: npm run ${{ matrix.command }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Unsigned builds are expected for forks and pull requests. Configure
+          # signing secrets in repository settings to produce signed output.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: josh-${{ matrix.artifact }}
+          retention-days: 14
+          path: |
+            Josh/dist/*.dmg
+            Josh/dist/*.zip
+            Josh/dist/*.exe
+            Josh/dist/*.AppImage
+            Josh/dist/*.deb
+
+  release:
+    name: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: dist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true

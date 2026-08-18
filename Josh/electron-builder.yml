@@ -1,0 +1,79 @@
+# Packaging configuration for electron-builder.
+#
+# The one setting that must never be removed is `asarUnpack` for the native
+# PTY binary: a .node file cannot be loaded from inside an asar archive, so
+# packaging it there produces an app that runs fine in development and fails
+# on every user's machine.
+
+appId: com.josh.terminal
+productName: Josh
+copyright: Copyright (c) Josh Contributors
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - src/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/{test,__tests__,tests,example,examples,doc,docs}/**"
+
+asar: true
+asarUnpack:
+  - "**/node_modules/@lydell/node-pty*/**"
+
+# Reproducibility: never silently rebuild native modules at package time.
+npmRebuild: false
+buildDependenciesFromSource: false
+
+mac:
+  category: public.app-category.developer-tools
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Josh
+  artifactName: ${productName}-Setup-${version}-${arch}.${ext}
+
+linux:
+  category: System
+  synopsis: A fast, secure, cross-platform terminal emulator
+  maintainer: Josh Contributors <noreply@example.com>
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64, arm64]
+  desktop:
+    entry:
+      Name: Josh
+      Comment: A fast, secure terminal with tabs and split panes
+      Categories: System;TerminalEmulator;
+      Keywords: shell;prompt;command;commandline;
+
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
