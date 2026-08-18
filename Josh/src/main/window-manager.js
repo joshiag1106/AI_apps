@@ -81,6 +81,11 @@ function createWindow({ isPackaged = true, settings = {} } = {}) {
 
   win.once('ready-to-show', () => win.show());
   win.on('closed', () => windows.delete(win));
+
+  // Stop the taskbar flashing from a bell once the user actually looks.
+  win.on('focus', () => {
+    if (typeof win.flashFrame === 'function') win.flashFrame(false);
+  });
   windows.add(win);
 
   win.loadFile(RENDERER_HTML);

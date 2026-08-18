@@ -97,6 +97,7 @@ contextBridge.exposeInMainWorld('josh', {
     minimize: () => invoke('window:minimize'),
     toggleMaximize: () => invoke('window:toggleMaximize'),
     close: () => invoke('window:close'),
+    attention: () => invoke('window:attention'),
   },
   on,
 });

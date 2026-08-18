@@ -127,6 +127,25 @@ test('saving leaves no temporary files behind', () => {
   fs.rmSync(directory, { recursive: true, force: true });
 });
 
+test('every setting is honoured somewhere in the app', () => {
+  // A setting that exists only in the schema is a promise the app does not
+  // keep. `confirmOnClose` and `bell` were both listed in the README and read
+  // by no code at all; this test is what catches that class of bug.
+  const root = path.join(__dirname, '..', 'src');
+  const files = [];
+  (function walk(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js') && entry.name !== 'settings.js') files.push(full);
+    }
+  })(root);
+
+  const corpus = files.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+  const inert = Object.keys(DEFAULTS).filter((key) => !corpus.includes(key));
+  assert.deepStrictEqual(inert, [], 'settings defined but never read: ' + inert.join(', '));
+});
+
 test('a partial save preserves previously stored values', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'josh-settings-'));
   const file = path.join(directory, 'settings.json');

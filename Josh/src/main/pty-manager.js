@@ -202,6 +202,12 @@ class PtyManager {
     return record ? record.cwd : null;
   }
 
+  /** How many live sessions a window owns. Used by the close confirmation. */
+  sessionCount(windowId) {
+    const owned = this.byWindow.get(windowId);
+    return owned ? owned.size : 0;
+  }
+
   kill(windowId, sessionId) {
     const record = this.resolveOwned(windowId, sessionId);
     if (!record) return false;

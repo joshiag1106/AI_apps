@@ -1,5 +1,7 @@
 # Josh
 
+[![build](https://github.com/joshiag1106/AI_apps/actions/workflows/build.yml/badge.svg)](https://github.com/joshiag1106/AI_apps/actions/workflows/build.yml)
+
 A fast, secure, cross-platform terminal emulator. Real PTYs, GPU-accelerated
 rendering, tabs and split panes. Runs on macOS, Windows and Linux from the same
 source tree.
@@ -132,11 +134,11 @@ Settings live in a JSON file you can edit directly. Open it from the menu
 | `shell` | `null` | Path to a shell. Must contain no spaces. `null` auto-detects |
 | `shellArgs` | `null` | Arguments array. `null` uses login-shell defaults |
 | `copyOnSelect` | `false` | Copy to clipboard as soon as text is selected |
-| `confirmOnClose` | `true` | |
+| `confirmOnClose` | `true` | Ask before closing a window running more than one shell |
 | `restoreSession` | `true` | Reopen last session's tabs and directories |
 | `renderer` | `"webgl"` | `webgl` or `canvas` |
 | `vibrancy` | `true` | macOS translucent background |
-| `bell` | `false` | |
+| `bell` | `false` | On a terminal bell, flash the pane and bounce the Dock / flash the taskbar. Visual, not audible |
 
 An invalid or corrupt settings file is never fatal: unknown keys are ignored,
 out-of-range numbers are clamped, and wrong types fall back to the default.

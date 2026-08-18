@@ -1,5 +1,7 @@
 # AI_apps
 
+[![build](https://github.com/joshiag1106/AI_apps/actions/workflows/build.yml/badge.svg)](https://github.com/joshiag1106/AI_apps/actions/workflows/build.yml)
+
 Applications built in this workspace. Each lives in its own directory with its
 own dependencies, tests and build pipeline.
 

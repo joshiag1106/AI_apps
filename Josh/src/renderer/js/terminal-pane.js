@@ -95,6 +95,8 @@
         }
       });
 
+      this.term.onBell(() => this._bell());
+
       // One observer per pane handles every source of size change — window
       // resize, split drag, tab switch — so there is a single resize path.
       this._observer = new ResizeObserver(() => this.fit());
@@ -124,6 +126,21 @@
       } catch {
         /* no GPU path available; xterm falls back on its own */
       }
+    }
+
+    /**
+     * The terminal bell. Visual rather than audible: shipping an audio file
+     * would mean loosening the content-security policy for media, and a
+     * flash plus a Dock bounce carries the same information without that.
+     */
+    _bell() {
+      if (!this.settings.bell) return;
+      this.element.classList.remove('bell');
+      // Force a reflow so rapid consecutive bells each restart the animation.
+      void this.element.offsetWidth;
+      this.element.classList.add('bell');
+      setTimeout(() => this.element.classList.remove('bell'), 420);
+      api.win.attention().catch(function () {});
     }
 
     _dimensions() {

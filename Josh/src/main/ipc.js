@@ -179,6 +179,24 @@ function registerIpc({ ptyManager, settings, windowManager }) {
       return true;
     })
   );
+
+  /**
+   * The terminal bell, expressed the way each OS expects: a bouncing Dock icon
+   * on macOS, a flashing taskbar button elsewhere. Suppressed when the window
+   * already has focus, since the user is looking straight at it.
+   */
+  ipcMain.handle(
+    'window:attention',
+    g((win) => {
+      if (win.isFocused()) return false;
+      if (process.platform === 'darwin') {
+        if (app.dock && typeof app.dock.bounce === 'function') app.dock.bounce('informational');
+      } else if (typeof win.flashFrame === 'function') {
+        win.flashFrame(true);
+      }
+      return true;
+    })
+  );
 }
 
 module.exports = { registerIpc, guarded };

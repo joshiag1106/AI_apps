@@ -122,6 +122,42 @@ function openSettingsFile() {
   }
 }
 
+/**
+ * Ask before closing a window that holds more than one shell.
+ *
+ * A single-shell window closes without a prompt on purpose: nagging on every
+ * close trains people to dismiss the dialog unread, which defeats the point.
+ * The prompt earns its place only when something would actually be lost.
+ */
+function attachCloseGuard(win) {
+  win.on('close', (event) => {
+    if (!settings.get().confirmOnClose) return;
+    if (!ptyManager) return;
+    const count = ptyManager.sessionCount(win.id);
+    if (count <= 1) return;
+
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['Close', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      title: 'Close window',
+      message: 'Close this window?',
+      detail: count + ' shells are running here. Closing the window ends them.',
+    });
+    if (choice !== 0) event.preventDefault();
+  });
+}
+
+function newWindow() {
+  const win = windowManager.createWindow({
+    isPackaged: app.isPackaged,
+    settings: settings.get(),
+  });
+  attachCloseGuard(win);
+  return win;
+}
+
 function bootstrap() {
   settings.load();
   ptyManager = createPtyManager();
@@ -130,11 +166,11 @@ function bootstrap() {
   registerIpc({ ptyManager, settings, windowManager });
   installMenu({
     onNewWindow: () =>
-      windowManager.createWindow({ isPackaged: app.isPackaged, settings: settings.get() }),
+      newWindow(),
     openSettingsFile,
   });
 
-  windowManager.createWindow({ isPackaged: app.isPackaged, settings: settings.get() });
+  newWindow();
 
   nativeTheme.on('updated', () => {
     windowManager.refreshChrome();
@@ -153,7 +189,7 @@ if (!app.requestSingleInstanceLock()) {
       if (win.isMinimized()) win.restore();
       win.focus();
     } else {
-      windowManager.createWindow({ isPackaged: app.isPackaged, settings: settings.get() });
+      newWindow();
     }
   });
 
@@ -173,7 +209,7 @@ if (!app.requestSingleInstanceLock()) {
 
     app.on('activate', () => {
       if (windowManager.allWindows().length === 0) {
-        windowManager.createWindow({ isPackaged: app.isPackaged, settings: settings.get() });
+        newWindow();
       }
     });
   });
