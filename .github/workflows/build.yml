@@ -113,10 +113,14 @@ jobs:
       - name: Generate application icon
         run: npm run icon
 
+      # --publish never keeps electron-builder from trying to configure a
+      # GitHub publisher. Uploading is this workflow's job: artifacts below,
+      # and the release job on tags. Passing GH_TOKEN here instead made
+      # electron-builder attempt auto-publishing, which fails because .git is
+      # one level above this working directory.
       - name: Build installers
-        run: npm run ${{ matrix.command }}
+        run: npm run ${{ matrix.command }} -- --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Unsigned builds are expected for forks and pull requests. Configure
           # signing secrets in repository settings to produce signed output.
           CSC_IDENTITY_AUTO_DISCOVERY: false

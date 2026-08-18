@@ -6,6 +6,14 @@
   "license": "MIT",
   "author": "Josh Contributors",
   "homepage": "https://github.com/joshiag1106/AI_apps",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joshiag1106/AI_apps.git",
+    "directory": "Josh"
+  },
+  "bugs": {
+    "url": "https://github.com/joshiag1106/AI_apps/issues"
+  },
   "main": "src/main/main.js",
   "engines": {
     "node": ">=20.0.0"
