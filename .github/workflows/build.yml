@@ -146,8 +146,37 @@ jobs:
         with:
           path: artifacts
 
+      # The body is written by hand because these builds are unsigned: without
+      # instructions, every downloader hits a Gatekeeper or SmartScreen block
+      # and reasonably concludes the app is broken or malicious.
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
           generate_release_notes: true
+          body: |
+            **Josh** is a fast, secure, cross-platform terminal emulator: real
+            PTYs, GPU-accelerated rendering, tabs and split panes.
+
+            ### Which file do I want?
+
+            | Platform | File |
+            | --- | --- |
+            | macOS, Apple silicon | `Josh-<version>-arm64.dmg` |
+            | macOS, Intel | `Josh-<version>-x64.dmg` |
+            | Windows | `Josh-Setup-<version>-x64.exe`, or the portable build |
+            | Linux | `Josh-<version>-x86_64.AppImage` or `josh_<version>_amd64.deb` |
+
+            ### These builds are not code-signed
+
+            macOS Gatekeeper and Windows SmartScreen will warn you. That is
+            expected — no signing certificates are configured for this
+            repository — and not a sign the download is damaged.
+
+            - **macOS** — right-click the app, choose **Open**, then confirm.
+            - **Windows** — choose **More info**, then **Run anyway**.
+            - **Linux** — `chmod +x Josh-*.AppImage` before running it.
+
+            If you would rather not trust a binary, build it yourself. Every
+            artifact here was produced from this tag by GitHub Actions on a
+            clean runner, and the build log is public.
