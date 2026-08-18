@@ -61,7 +61,12 @@ function runSmokeTest() {
     if (finished) return;
     finished = true;
     process.stdout.write(message + '\n');
-    manager.disposeAll();
+    // Deliberately no disposeAll() here. Tearing down the native pty handle
+    // and calling app.exit() in the same tick races the binding's own exit
+    // callback, which aborts the process with an uncaught Napi::Error - a C++
+    // abort that no JavaScript try/catch can intercept. The run then reports
+    // failure even after the test itself printed SMOKE PASS. Exiting closes
+    // the pty file descriptors, so the shell gets SIGHUP and the OS reaps it.
     app.exit(code);
   };
 

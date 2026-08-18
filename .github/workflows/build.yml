@@ -53,6 +53,12 @@ jobs:
       - name: Approve Electron install script
         run: npm approve-scripts electron || true
 
+      # Downloads the Electron binary when npm's script blocking left it
+      # missing. This must run before the sandbox step below, which touches a
+      # file that does not exist until Electron is actually installed.
+      - name: Preflight
+        run: npm run verify
+
       # The app calls app.enableSandbox(), so Electron refuses to start unless
       # its SUID helper is root-owned with mode 4755. npm cannot set that, so a
       # plain checkout aborts on launch. Fixing the permissions keeps the smoke
