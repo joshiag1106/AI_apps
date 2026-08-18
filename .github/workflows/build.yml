@@ -53,6 +53,17 @@ jobs:
       - name: Approve Electron install script
         run: npm approve-scripts electron || true
 
+      # The app calls app.enableSandbox(), so Electron refuses to start unless
+      # its SUID helper is root-owned with mode 4755. npm cannot set that, so a
+      # plain checkout aborts on launch. Fixing the permissions keeps the smoke
+      # test exercising the real sandboxed configuration rather than passing
+      # --no-sandbox, which would test something we do not ship.
+      - name: Configure Electron sandbox (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+
       # The smoke test boots Electron, which needs a display server on Linux.
       - name: Run tests (Linux)
         if: runner.os == 'Linux'

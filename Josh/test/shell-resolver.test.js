@@ -72,6 +72,30 @@ test('Windows prefers PowerShell 7 when it is installed', () => {
   assert.deepStrictEqual(result.args, []); // no -l on Windows
 });
 
+test('COMSPEC does not preempt PowerShell', () => {
+  // Regression: COMSPEC is always set to cmd.exe on Windows. Consulting it
+  // before the fallback list made the PowerShell preference dead code, and
+  // every Windows user silently got cmd.exe. CI caught it; this pins it.
+  const result = resolveShell({
+    platform: 'win32',
+    env: { COMSPEC: 'C:\\Windows\\System32\\cmd.exe' },
+    exists: existsOnly(
+      'C:\\Program Files\\PowerShell\\7\\pwsh.exe',
+      'C:\\Windows\\System32\\cmd.exe'
+    ),
+  });
+  assert.strictEqual(result.file, 'C:\\Program Files\\PowerShell\\7\\pwsh.exe');
+});
+
+test('COMSPEC still rescues a system with no shell at any known path', () => {
+  const result = resolveShell({
+    platform: 'win32',
+    env: { COMSPEC: 'D:\\odd\\location\\cmd.exe' },
+    exists: existsOnly('D:\\odd\\location\\cmd.exe'),
+  });
+  assert.strictEqual(result.file, 'D:\\odd\\location\\cmd.exe');
+});
+
 test('Windows falls back through PowerShell to cmd', () => {
   const result = resolveShell({
     platform: 'win32',

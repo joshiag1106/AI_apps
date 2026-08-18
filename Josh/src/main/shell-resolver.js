@@ -91,10 +91,15 @@ function resolveShell({ platform, env = {}, explicit = null, exists } = {}) {
   if (platform !== 'win32' && typeof env.SHELL === 'string' && env.SHELL.trim()) {
     candidates.push(env.SHELL.trim());
   }
+  candidates.push(...(FALLBACKS[platform] || FALLBACKS.linux));
+
+  // COMSPEC is checked *after* the fallback list, not before it. Windows always
+  // sets COMSPEC to cmd.exe, so consulting it first would silently defeat the
+  // PowerShell preference above and hand every Windows user cmd.exe. It stays
+  // only as a last resort for a system with no shell at any known path.
   if (platform === 'win32' && typeof env.COMSPEC === 'string' && env.COMSPEC.trim()) {
     candidates.push(env.COMSPEC.trim());
   }
-  candidates.push(...(FALLBACKS[platform] || FALLBACKS.linux));
 
   for (const candidate of candidates) {
     if (fileExists(candidate)) {

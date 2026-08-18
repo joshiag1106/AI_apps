@@ -122,7 +122,7 @@ PTYs are told their new size.
 
 ## Testing
 
-75 tests, no test-framework dependency (`node:test`).
+77 tests, no test-framework dependency (`node:test`).
 
 - `validate.test.js` — the trust boundary; each case names the hostile input it rejects
 - `split-tree.test.js` — layout algebra, including a 12-deep split/collapse cycle

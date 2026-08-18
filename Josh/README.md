@@ -205,7 +205,7 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-75 tests covering the IPC validators, the split-pane tree, settings coercion,
+77 tests covering the IPC validators, the split-pane tree, settings coercion,
 shell resolution and palette filtering, plus an end-to-end test that boots
 Electron, spawns a real shell and asserts the output round-trips.
 

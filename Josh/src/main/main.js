@@ -50,8 +50,10 @@ function createPtyManager() {
  * shell round-trips a command. Runs without creating a window.
  */
 function runSmokeTest() {
-  const MARKER = 'JOSH_SMOKE';
-  const EXPECTED = MARKER + '_OK';
+  // 11111 * 11111 = 123454321. The result never appears in the command text,
+  // so a match proves we read the shell's *output* rather than its echo of
+  // what we typed. Each shell needs its own arithmetic syntax.
+  const EXPECTED = '123454321';
   let output = '';
   let finished = false;
 
@@ -85,11 +87,25 @@ function runSmokeTest() {
     'smoke: shell=' + sessionInfo.shell + ' pid=' + sessionInfo.pid + '\n'
   );
 
-  // Build the expected string from two halves so the match fires on the
-  // command's *output*, not on the echoed command line itself.
-  const command = 'echo ' + MARKER + '"_"OK\r';
+  const command = smokeCommandFor(sessionInfo.shell);
   setTimeout(() => manager.write(1, sessionInfo.sessionId, command), 800);
   setTimeout(() => finish(1, 'SMOKE FAIL: timed out waiting for marker'), 20000);
+}
+
+/**
+ * The arithmetic command for a given shell. cmd.exe needs `set /a`, PowerShell
+ * evaluates a bare expression, and POSIX shells need `$(( ))`. An earlier
+ * version used a quoting trick that only worked in POSIX shells, so the
+ * Windows smoke test could never pass.
+ */
+function smokeCommandFor(shellPath) {
+  const shell = String(shellPath || '')
+    .split(/[\\/]/)
+    .pop()
+    .toLowerCase();
+  if (shell === 'cmd.exe' || shell === 'cmd') return 'set /a 11111*11111\r';
+  if (shell === 'pwsh.exe' || shell === 'powershell.exe') return '11111*11111\r';
+  return 'echo $((11111*11111))\r';
 }
 
 function openSettingsFile() {
