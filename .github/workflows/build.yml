@@ -1,14 +1,18 @@
-# Builds real installers on real operating systems.
+# Builds every installer on a runner of the architecture it targets.
 #
-# Cross-building desktop installers from one OS is unreliable (Windows needs
-# Wine, Linux needs a matching glibc). Using a runner per platform means every
-# artifact is produced natively, which is the only way to be confident the
-# result actually launches.
+# This is a correctness requirement, not a preference. The PTY binding ships
+# prebuilt binaries as platform-specific optional dependencies, and npm
+# installs only the one matching the machine doing the install. Building both
+# architectures from a single runner therefore produces one working installer
+# and one that carries the wrong binary and cannot open a shell at all.
 #
-# The app lives in the Josh/ subdirectory of this repository, so `run` steps
-# default to that directory. Steps that use an action rather than a shell
-# (setup-node's cache, upload-artifact) ignore that default and need the
-# Josh/ prefix spelled out.
+# That is exactly what shipped in v1.0.0 and v1.0.1: the Intel macOS build
+# carried an arm64 pty.node because macos-latest is Apple silicon. The
+# "verify the shipped native binary" step below is the guard that makes it
+# impossible to ship that again.
+#
+# The app lives in the Josh/ subdirectory, so `run` steps default there. Steps
+# using an action rather than a shell need the Josh/ prefix spelled out.
 
 name: build
 
@@ -34,7 +38,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        # macos-13 is Intel, macos-latest is Apple silicon. Both are tested
+        # because the native binding differs between them.
+        os: [macos-latest, macos-13, windows-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -48,22 +54,21 @@ jobs:
         run: npm ci
 
       # npm 11 blocks dependency lifecycle scripts, which stops Electron's
-      # binary from downloading. The preflight in `pretest` repairs that, but
-      # approving it here keeps the log honest about what ran.
+      # binary from downloading. The preflight repairs that; approving it here
+      # keeps the log honest about what ran.
       - name: Approve Electron install script
         run: npm approve-scripts electron || true
 
-      # Downloads the Electron binary when npm's script blocking left it
-      # missing. This must run before the sandbox step below, which touches a
-      # file that does not exist until Electron is actually installed.
+      # Downloads the Electron binary if npm's script blocking left it missing.
+      # Must run before the sandbox step, which touches a file that does not
+      # exist until Electron is installed.
       - name: Preflight
         run: npm run verify
 
       # The app calls app.enableSandbox(), so Electron refuses to start unless
-      # its SUID helper is root-owned with mode 4755. npm cannot set that, so a
-      # plain checkout aborts on launch. Fixing the permissions keeps the smoke
-      # test exercising the real sandboxed configuration rather than passing
-      # --no-sandbox, which would test something we do not ship.
+      # its SUID helper is root-owned with mode 4755. npm cannot set that.
+      # Fixing the permissions keeps the smoke test exercising the real
+      # sandboxed configuration rather than passing --no-sandbox.
       - name: Configure Electron sandbox (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -80,22 +85,37 @@ jobs:
         run: npm test
 
   dist:
-    name: package (${{ matrix.os }})
+    name: package (${{ matrix.artifact }})
     needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-13 # Intel
             command: dist:mac
-            artifact: macos
-          - os: windows-latest
-            command: dist:win
-            artifact: windows
+            arch: x64
+            artifact: macos-x64
+          - os: macos-latest # Apple silicon
+            command: dist:mac
+            arch: arm64
+            artifact: macos-arm64
           - os: ubuntu-latest
             command: dist:linux
-            artifact: linux
+            arch: x64
+            artifact: linux-x64
+          - os: ubuntu-24.04-arm
+            command: dist:linux
+            arch: arm64
+            artifact: linux-arm64
+          - os: windows-latest
+            command: dist:win
+            arch: x64
+            artifact: windows-x64
+          - os: windows-11-arm
+            command: dist:win
+            arch: arm64
+            artifact: windows-arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -110,20 +130,49 @@ jobs:
       - name: Approve Electron install script
         run: npm approve-scripts electron || true
 
+      - name: Preflight
+        run: npm run verify
+
       - name: Generate application icon
         run: npm run icon
 
-      # --publish never keeps electron-builder from trying to configure a
-      # GitHub publisher. Uploading is this workflow's job: artifacts below,
-      # and the release job on tags. Passing GH_TOKEN here instead made
-      # electron-builder attempt auto-publishing, which fails because .git is
-      # one level above this working directory.
-      - name: Build installers
-        run: npm run ${{ matrix.command }} -- --publish never
+      # --publish never keeps electron-builder from configuring a GitHub
+      # publisher; uploading is this workflow's job. The architecture flag is
+      # what restricts the build to this runner's own architecture, and it
+      # only works because electron-builder.yml no longer hard-codes an arch
+      # list per target.
+      - name: Build installer
+        run: npm run ${{ matrix.command }} -- --${{ matrix.arch }} --publish never
         env:
           # Unsigned builds are expected for forks and pull requests. Configure
           # signing secrets in repository settings to produce signed output.
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      # The guard for the bug described at the top of this file. A mismatch
+      # means the installer would launch and then fail to open a shell, which
+      # no unit test can detect: the tests run against the runner's own
+      # node_modules, never the packaged bundle.
+      - name: Verify the shipped native binary matches the target architecture
+        if: runner.os != 'Windows'
+        run: |
+          set -e
+          binary=$(find dist -name 'pty.node' | head -1)
+          if [ -z "$binary" ]; then
+            echo "No pty.node found in dist/ - the native module was not packaged."
+            exit 1
+          fi
+          info=$(file -b "$binary")
+          echo "packaged: $binary"
+          echo "reports:  $info"
+          case "${{ matrix.arch }}" in
+            x64)
+              echo "$info" | grep -Eq 'x86[_-]64' \
+                || { echo "MISMATCH: expected x86_64 for an x64 build"; exit 1; } ;;
+            arm64)
+              echo "$info" | grep -Eq 'arm64|aarch64' \
+                || { echo "MISMATCH: expected arm64 for an arm64 build"; exit 1; } ;;
+          esac
+          echo "Architecture matches the build target."
 
       - uses: actions/upload-artifact@v4
         with:
@@ -167,13 +216,23 @@ jobs:
             | Windows | `Josh-Setup-<version>-x64.exe`, or the portable build |
             | Linux | `Josh-<version>-x86_64.AppImage` or `josh_<version>_amd64.deb` |
 
+            Every installer is built on a machine of the architecture it
+            targets, and the build fails if the packaged native binary does not
+            match. Earlier releases cross-built their architectures from a
+            single runner and shipped a native binary that could not load.
+
             ### These builds are not code-signed
 
             macOS Gatekeeper and Windows SmartScreen will warn you. That is
             expected — no signing certificates are configured for this
             repository — and not a sign the download is damaged.
 
-            - **macOS** — right-click the app, choose **Open**, then confirm.
+            - **macOS 15 and later** — open the app, let it be blocked, then go
+              to **System Settings → Privacy & Security**, scroll down and
+              choose **Open Anyway**. The old right-click → Open shortcut was
+              removed in macOS 15.
+            - **macOS 14 and earlier** — right-click the app, choose **Open**,
+              then confirm.
             - **Windows** — choose **More info**, then **Run anyway**.
             - **Linux** — `chmod +x Josh-*.AppImage` before running it.
 

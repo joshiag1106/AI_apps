@@ -34,21 +34,22 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # No arch list here on purpose. An explicit list overrides the --x64 /
+  # --arm64 flag CI passes, so every build produced both architectures from a
+  # single runner's node_modules - which is how an arm64 pty.node ended up
+  # inside the Intel installer in v1.0.0 and v1.0.1. Leaving it out lets the
+  # command line decide, and CI builds each architecture on its own machine.
   target:
-    - target: dmg
-      arch: [x64, arm64]
-    - target: zip
-      arch: [x64, arm64]
+    - dmg
+    - zip
 
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
 win:
   target:
-    - target: nsis
-      arch: [x64, arm64]
-    - target: portable
-      arch: [x64]
+    - nsis
+    - portable
 
 nsis:
   oneClick: false
@@ -64,10 +65,8 @@ linux:
   synopsis: A fast, secure, cross-platform terminal emulator
   maintainer: Josh Contributors <noreply@example.com>
   target:
-    - target: AppImage
-      arch: [x64, arm64]
-    - target: deb
-      arch: [x64, arm64]
+    - AppImage
+    - deb
   desktop:
     entry:
       Name: Josh

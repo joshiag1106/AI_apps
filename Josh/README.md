@@ -46,8 +46,12 @@ chmod +x "Josh-"*.AppImage
 ```
 
 Unsigned builds will be flagged by macOS Gatekeeper and Windows SmartScreen.
-On macOS, right-click the app and choose **Open** the first time; on Windows,
-choose **More info → Run anyway**.
+
+- **macOS 15 and later** — open the app, let it be blocked, then go to
+  **System Settings → Privacy & Security**, scroll down and choose
+  **Open Anyway**. The right-click → Open shortcut was removed in macOS 15.
+- **macOS 14 and earlier** — right-click the app, choose **Open**, confirm.
+- **Windows** — choose **More info**, then **Run anyway**.
 
 ### Run from source
 

@@ -1,7 +1,7 @@
 {
   "name": "josh",
   "productName": "Josh",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A fast, secure, cross-platform terminal emulator with tabs, split panes and GPU rendering.",
   "license": "MIT",
   "author": "Josh Contributors",
