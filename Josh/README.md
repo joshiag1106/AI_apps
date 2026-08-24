@@ -211,9 +211,10 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-77 tests covering the IPC validators, the split-pane tree, settings coercion,
-shell resolution and palette filtering, plus an end-to-end test that boots
-Electron, spawns a real shell and asserts the output round-trips.
+81 tests covering the IPC validators and channel contract, the split-pane tree,
+settings coercion, shell resolution and palette filtering, plus an end-to-end
+test that boots Electron, spawns a real shell and asserts the output
+round-trips.
 
 Architecture notes are in [docs/design.md](docs/design.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the layout and conventions.
