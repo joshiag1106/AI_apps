@@ -176,6 +176,29 @@ jobs:
           esac
           echo "Architecture matches the build target."
 
+      # The Windows counterpart of the guard above. Packaging config is easy to
+      # get subtly wrong in a way that still produces a working installer — one
+      # missing extraResources entry and sed/awk are simply absent, which no
+      # unit test can see. Running them proves they were packaged *and* work.
+      - name: Verify the bundled sed/awk fallback was packaged (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $sed = Get-ChildItem -Recurse -Path dist -Filter 'sed.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          $awk = Get-ChildItem -Recurse -Path dist -Filter 'awk.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $sed) { Write-Error 'sed.exe was not packaged into dist/'; exit 1 }
+          if (-not $awk) { Write-Error 'awk.exe was not packaged into dist/'; exit 1 }
+          Write-Host "found: $($sed.FullName)"
+          Write-Host "found: $($awk.FullName)"
+
+          $sedOut = 'hello' | & $sed.FullName -e 's/hello/world/'
+          if ($sedOut -ne 'world') { Write-Error "sed.exe did not transform input (got: '$sedOut')"; exit 1 }
+
+          $awkOut = '1 2 3' | & $awk.FullName '{print $2}'
+          if ($awkOut -ne '2') { Write-Error "awk.exe did not extract the expected field (got: '$awkOut')"; exit 1 }
+
+          Write-Host 'sed/awk fallback packaged and runnable.'
+
       - uses: actions/upload-artifact@v4
         with:
           name: josh-${{ matrix.artifact }}
