@@ -50,6 +50,20 @@ win:
   target:
     - nsis
     - portable
+  # sed.exe/awk.exe are real executables, not app source, so they cannot live
+  # inside the asar archive any more than the native pty.node can (see the
+  # note at the top of this file). extraResources puts them beside it, at
+  # resources/bin-win — the exact path resolveWinBinDir expects when packaged.
+  #
+  # Only the two applets ship. busybox.exe itself is deliberately excluded:
+  # it is the same bytes, and shipping a general-purpose Unix toolbox is a
+  # much larger promise than "sed and awk exist".
+  extraResources:
+    - from: vendor/win
+      to: bin-win
+      filter:
+        - "sed.exe"
+        - "awk.exe"
 
 nsis:
   oneClick: false
