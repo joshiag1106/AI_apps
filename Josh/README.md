@@ -22,6 +22,7 @@ as they do in Terminal.app or Windows Terminal.
 - **7 themes** — Tokyo Night, Dracula, Nord, One Dark, Solarized Dark/Light, GitHub Light
 - **Follows your OS** — switches between your chosen light and dark theme automatically
 - **Shell auto-detection** — zsh, bash, fish, PowerShell 7, Windows PowerShell, cmd
+- **`sed` and `awk` on Windows** — bundled as a fallback, since Windows ships neither; your own copies always take priority. On Windows on ARM they run under x64 emulation, as upstream publishes no ARM64 build. See [Third-Party Licenses](THIRD_PARTY_LICENSES.md)
 - **Directory awareness** — new tabs and splits open in the current directory
 - **Session restore** — reopens your tabs where you left them
 - **Native chrome** — macOS vibrancy and inset traffic lights, Windows title-bar overlay
@@ -198,6 +199,12 @@ remote-desktop sessions have no usable GPU.
 Shells are started as login shells, so `~/.zprofile` and `/etc/paths` are read.
 If you set a custom `shellArgs`, add `-l` yourself.
 
+**My own `sed`/`awk` isn't being used on Windows.**
+The bundled copies are appended to the *end* of `PATH`, after everything
+already there, so anything you installed yourself should win. If the bundled
+one runs instead, check that your `sed`/`awk` are actually on `PATH` in the
+shell Josh launches — that is a login shell, so see the note above.
+
 **Tests fail on a headless Linux machine.**
 The end-to-end test boots Electron, which needs a display:
 
@@ -220,7 +227,8 @@ Architecture notes are in [docs/design.md](docs/design.md), and
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Windows builds additionally bundle a GPL-2.0
+tool — see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 Built on [xterm.js](https://xtermjs.org), [Electron](https://electronjs.org)
 and [@lydell/node-pty](https://github.com/lydell/node-pty).
