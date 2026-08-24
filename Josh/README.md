@@ -47,6 +47,8 @@ chmod +x "Josh-"*.AppImage
 ```
 
 Unsigned builds will be flagged by macOS Gatekeeper and Windows SmartScreen.
+Signing is wired up but off until certificates are configured — see
+[docs/code-signing.md](docs/code-signing.md).
 
 - **macOS 15 and later** — open the app, let it be blocked, then go to
   **System Settings → Privacy & Security**, scroll down and choose
