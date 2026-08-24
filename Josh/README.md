@@ -154,7 +154,7 @@ that file chooses what your terminal receives. The design assumes this.
 
 - **The renderer has no Node access.** `contextIsolation`, `sandbox`, and
   `nodeIntegration: false`. It talks to the system only through a fixed list of
-  15 IPC channels defined in `src/preload/preload.js`.
+  16 IPC channels defined in `src/preload/preload.js`.
 - **No network access, at all.** The Content-Security-Policy is
   `default-src 'none'; connect-src 'none'`, and non-local requests are cancelled
   in the main process. There is no telemetry, no update check, no analytics.
