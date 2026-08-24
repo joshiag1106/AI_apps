@@ -29,6 +29,7 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
+    "predist:win": "node scripts/fetch-win-tools.js",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux"
   },
