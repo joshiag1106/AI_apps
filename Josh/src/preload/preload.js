@@ -31,6 +31,7 @@ const INVOKE_CHANNELS = new Set([
   'window:minimize',
   'window:toggleMaximize',
   'window:close',
+  'window:attention',
 ]);
 
 const EVENT_CHANNELS = new Set([
