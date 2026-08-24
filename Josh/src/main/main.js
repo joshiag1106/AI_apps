@@ -8,9 +8,11 @@
  * enough to audit at a glance.
  */
 
+const path = require('node:path');
 const { app, nativeTheme, shell, dialog, session } = require('electron');
 
 const { PtyManager } = require('./pty-manager');
+const { resolveWinBinDir } = require('./shell-resolver');
 const { Settings } = require('./settings');
 const { applySessionPolicy, hardenWebContents } = require('./security');
 const windowManager = require('./window-manager');
@@ -22,6 +24,16 @@ app.enableSandbox();
 
 const settings = new Settings();
 let ptyManager = null;
+
+// Bundled fallback tools (Windows sed/awk). Resolved once here, where
+// app.isPackaged is available, and handed to PtyManager — which stays free of
+// Electron imports so it can be reasoned about on its own. On macOS and Linux
+// the directory never exists and sanitizeEnv ignores it.
+const BUNDLED_BIN_DIR = resolveWinBinDir({
+  isPackaged: app.isPackaged,
+  resourcesPath: process.resourcesPath,
+  appRoot: path.join(__dirname, '..', '..'),
+});
 
 /**
  * Route PTY traffic to the window that owns the session. `resolveOwned` has
@@ -39,6 +51,7 @@ function createPtyManager() {
     onExit: (windowId, sessionId, info) =>
       sendToWindow(windowId, 'pty:exit', { sessionId, ...info }),
     onCwd: (windowId, sessionId, cwd) => sendToWindow(windowId, 'pty:cwd', { sessionId, cwd }),
+    binDir: BUNDLED_BIN_DIR,
   });
 }
 
@@ -78,6 +91,7 @@ function runSmokeTest() {
       }
     },
     onExit: () => {},
+    binDir: BUNDLED_BIN_DIR,
   });
 
   let sessionInfo;
