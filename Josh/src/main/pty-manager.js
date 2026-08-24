@@ -37,13 +37,17 @@ class PtyManager {
    * @param {(windowId:number, sessionId:string, data:string) => void} handlers.onData
    * @param {(windowId:number, sessionId:string, info:object) => void} handlers.onExit
    * @param {(windowId:number, sessionId:string, cwd:string) => void} [handlers.onCwd]
+   * @param {string|null} [handlers.binDir] directory holding the bundled
+   *   fallback tools (Windows sed/awk). Injected rather than resolved here so
+   *   this module stays free of Electron imports.
    */
-  constructor({ onData, onExit, onCwd } = {}) {
+  constructor({ onData, onExit, onCwd, binDir = null } = {}) {
     this.sessions = new Map(); // sessionId -> record
     this.byWindow = new Map(); // windowId  -> Set<sessionId>
     this.onData = onData || (() => {});
     this.onExit = onExit || (() => {});
     this.onCwd = onCwd || (() => {});
+    this.binDir = binDir;
   }
 
   _ownedSet(windowId) {
@@ -80,7 +84,7 @@ class PtyManager {
       explicit: settings.shell || null,
     });
     const shellArgs = Array.isArray(settings.shellArgs) ? settings.shellArgs : resolved.args;
-    const env = sanitizeEnv(process.env);
+    const env = sanitizeEnv(process.env, { platform: process.platform, binDir: this.binDir });
     const startCwd = cwd || env.HOME || env.USERPROFILE || process.cwd();
 
     const pty = nodePty.spawn(resolved.file, shellArgs, {
