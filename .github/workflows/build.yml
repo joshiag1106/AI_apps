@@ -38,9 +38,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macos-13 is Intel, macos-latest is Apple silicon. Both are tested
-        # because the native binding differs between them.
-        os: [macos-latest, macos-13, windows-latest, ubuntu-latest]
+        # macos-15-intel is Intel, macos-latest is Apple silicon. Both are
+        # tested because the native binding differs between them. (macos-13
+        # was retired by GitHub on 2025-12-04; macos-15-intel is its
+        # replacement for Intel coverage, supported until Fall 2027.)
+        os: [macos-latest, macos-15-intel, windows-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +94,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13 # Intel
+          - os: macos-15-intel # Intel
             command: dist:mac
             arch: x64
             artifact: macos-x64
