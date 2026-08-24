@@ -8,12 +8,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const path = require('node:path');
 
 const {
   resolveShell,
   sanitizeEnv,
   loginArgsFor,
   FALLBACKS,
+  resolveWinBinDir,
 } = require('../src/main/shell-resolver');
 
 const existsOnly =
@@ -178,4 +180,75 @@ test('sanitizeEnv does not mutate the environment it was given', () => {
   const source = { ELECTRON_RUN_AS_NODE: '1' };
   sanitizeEnv(source);
   assert.strictEqual(source.ELECTRON_RUN_AS_NODE, '1');
+});
+
+// ---- Bundled Windows fallback tools (sed, awk) -------------------------------
+
+test('resolveWinBinDir points at the packaged resources folder when packaged', () => {
+  const result = resolveWinBinDir({
+    isPackaged: true,
+    resourcesPath: 'C:\\Program Files\\Josh\\resources',
+    appRoot: 'C:\\Program Files\\Josh\\resources\\app',
+  });
+  assert.strictEqual(result, path.join('C:\\Program Files\\Josh\\resources', 'bin-win'));
+});
+
+test('resolveWinBinDir points at the vendored dev copy when not packaged', () => {
+  const result = resolveWinBinDir({
+    isPackaged: false,
+    resourcesPath: undefined,
+    appRoot: '/Users/dev/AI_apps/Josh',
+  });
+  assert.strictEqual(result, path.join('/Users/dev/AI_apps/Josh', 'vendor', 'win'));
+});
+
+test('on Windows, PATH gets the bundled bin dir appended after everything else', () => {
+  // Appended, never prepended: a user's own sed/awk (Git Bash, WSL,
+  // Chocolatey) must always win over the copy we ship as a fallback.
+  const env = sanitizeEnv(
+    { PATH: 'C:\\Windows\\System32' },
+    { platform: 'win32', binDir: 'C:\\Josh\\bin-win', exists: () => true }
+  );
+  assert.strictEqual(env.PATH, 'C:\\Windows\\System32;C:\\Josh\\bin-win');
+});
+
+test('the bundled bin dir is appended to "Path" when that is the key Windows gave us', () => {
+  // Windows environments commonly spell it "Path". Setting env.PATH there
+  // would create a second, ignored key and silently do nothing.
+  const env = sanitizeEnv(
+    { Path: 'C:\\Windows\\System32' },
+    { platform: 'win32', binDir: 'C:\\Josh\\bin-win', exists: () => true }
+  );
+  assert.strictEqual(env.Path, 'C:\\Windows\\System32;C:\\Josh\\bin-win');
+  assert.strictEqual(env.PATH, undefined);
+});
+
+test('a missing bundled bin dir leaves PATH untouched', () => {
+  // Someone can build Windows without ever running the fetch script. A shell
+  // must still start; an absent optional tool is not a fatal condition.
+  const env = sanitizeEnv(
+    { PATH: 'C:\\Windows\\System32' },
+    { platform: 'win32', binDir: 'C:\\does-not-exist', exists: () => false }
+  );
+  assert.strictEqual(env.PATH, 'C:\\Windows\\System32');
+});
+
+test('an environment with no PATH at all still receives the bundled bin dir', () => {
+  const env = sanitizeEnv({}, { platform: 'win32', binDir: 'C:\\Josh\\bin-win', exists: () => true });
+  assert.strictEqual(env.PATH, 'C:\\Josh\\bin-win');
+});
+
+test('macOS and Linux never get the Windows bin dir appended', () => {
+  for (const platform of ['darwin', 'linux']) {
+    const env = sanitizeEnv(
+      { PATH: '/usr/bin' },
+      { platform, binDir: '/some/vendor/win', exists: () => true }
+    );
+    assert.strictEqual(env.PATH, '/usr/bin');
+  }
+});
+
+test('sanitizeEnv with no options behaves exactly as before', () => {
+  const env = sanitizeEnv({ PATH: '/usr/bin' });
+  assert.strictEqual(env.PATH, '/usr/bin');
 });

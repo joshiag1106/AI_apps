@@ -10,6 +10,7 @@
  */
 
 const fsDefault = require('node:fs');
+const path = require('node:path');
 
 /** Ordered fallbacks per platform. First one that exists on disk wins. */
 const FALLBACKS = Object.freeze({
@@ -42,7 +43,7 @@ function loginArgsFor(shellPath, platform) {
  * bare Node interpreter. Leaving these in the shell environment is both a
  * correctness bug and a privilege-escalation foothold, so they are stripped.
  */
-function sanitizeEnv(sourceEnv) {
+function sanitizeEnv(sourceEnv, { platform, binDir, exists } = {}) {
   const env = { ...sourceEnv };
   const strip = [
     'ELECTRON_RUN_AS_NODE',
@@ -60,7 +61,39 @@ function sanitizeEnv(sourceEnv) {
   env.TERM = env.TERM && env.TERM !== 'dumb' ? env.TERM : 'xterm-256color';
   env.COLORTERM = 'truecolor';
   env.TERM_PROGRAM = 'Josh';
+
+  // Windows ships neither sed nor awk. If a bundled fallback was packaged and
+  // actually landed on disk, make it reachable — but only *after* whatever the
+  // user already has on PATH, so their own tools (Git Bash, WSL, Chocolatey)
+  // always win over the copy we ship.
+  if (platform === 'win32' && binDir) {
+    const dirExists = exists || fsDefault.existsSync;
+    if (dirExists(binDir)) appendToPathEnv(env, binDir, ';');
+  }
+
   return env;
+}
+
+/**
+ * Appends to whichever PATH-like key already exists, matched case-insensitively.
+ * Windows environments commonly spell it `Path`; blindly setting `env.PATH`
+ * there would create a second, ignored key and silently do nothing.
+ */
+function appendToPathEnv(env, dir, separator) {
+  const key = Object.keys(env).find((name) => name.toUpperCase() === 'PATH') || 'PATH';
+  env[key] = env[key] ? env[key] + separator + dir : dir;
+}
+
+/**
+ * Where the bundled Windows fallback tools (sed, awk) live, if anywhere.
+ *
+ * A dev run reads the copy `npm run predist:win` vendored into the repo; a
+ * packaged app reads the copy electron-builder placed under `resources/`.
+ * Returning a path says nothing about whether it exists — sanitizeEnv checks
+ * that before putting it on PATH.
+ */
+function resolveWinBinDir({ isPackaged, resourcesPath, appRoot }) {
+  return isPackaged ? path.join(resourcesPath, 'bin-win') : path.join(appRoot, 'vendor', 'win');
 }
 
 /**
@@ -113,4 +146,4 @@ function resolveShell({ platform, env = {}, explicit = null, exists } = {}) {
   return { file: last, args: [] };
 }
 
-module.exports = { resolveShell, sanitizeEnv, loginArgsFor, FALLBACKS };
+module.exports = { resolveShell, sanitizeEnv, loginArgsFor, FALLBACKS, resolveWinBinDir };
