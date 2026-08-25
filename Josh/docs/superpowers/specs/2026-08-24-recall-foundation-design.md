@@ -29,6 +29,16 @@ definitions. Three problems for Josh:
 So the features live in the **terminal**, not the shell. That is the whole
 architectural bet of this document.
 
+> **Amended 2026-08-25.** That bet holds for *this* document's features —
+> semantic prompt marking and inline suggestion stay terminal-side. It does
+> not generalise to prompt themes, alias packs and completion, which
+> [`2026-08-25-shell-kit-design.md`](2026-08-25-shell-kit-design.md) delivers
+> shell-side without touching any dotfile, by generating a per-session rc in a
+> `0700` temp directory. The three objections above are addressed there. Note
+> especially that `shell-integration.js` is **one module shared by both
+> specs**: the Shell Kit builds it, and Recall adds OSC 133 hooks and a nonce
+> to the files it already generates.
+
 ## Prior art, honestly
 
 - **fish** and `zsh-autosuggestions` pioneered inline ghost-text suggestion from
