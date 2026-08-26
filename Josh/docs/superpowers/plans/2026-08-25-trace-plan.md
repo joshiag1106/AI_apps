@@ -8116,3 +8116,87 @@ so it rounds up to `-2` — which is what C prints.
 
 Add tests for `2.5`, `3.5` and `1.5` at zero places, since one example alone
 does not distinguish half-to-even from half-up.
+
+---
+
+## Amendment to Task 15: the task dissolves into Task 18
+
+**Found while executing Task 15. Both halves of it are wrong, for different
+reasons. Do not attempt Task 15 as a standalone task; fold what survives into
+Task 18.**
+
+### 1. The pane half invents an API that does not exist
+
+Task 15 tells the implementer to give `split-tree.js` panes a `kind`, and its
+tests call `tree.rootPane()`, `tree.split(id, 'right', {kind})`, `tree.panes()`
+and `tree.close(id)`, and inspect `pane.sessionId`.
+
+`split-tree.js` has none of that. It is an immutable binary tree of **bare leaf
+ids** -- `{type: 'leaf', id}` -- exporting `leaf`, `splitLeaf`, `removeLeaf`,
+`leaves`, `firstLeaf`, `contains`, `resize` and `neighbourOf`. It holds no pane
+objects, knows nothing about sessions, and has no idea terminals exist.
+
+Pane objects live in `app.js`, in `tab.panes`, a `Map` from pane id to
+`TerminalPane`. So the real change is **in `app.js` alone**:
+
+- `addPane(tab, cwd)` gains a kind and branches: `'terminal'` builds a
+  `TerminalPane` and requests a PTY as today, `'trace'` builds a Trace pane and
+  requests no session.
+- Session restore skips Trace panes, which have no working directory.
+- **`split-tree.js` is not modified at all**, and its tests stay untouched.
+
+That is a better outcome than the plan's: keeping pane kinds out of the
+geometry tree preserves a module that currently knows nothing about what a pane
+contains, which is why it is so easy to test.
+
+### 2. The settings half cannot land on its own
+
+`test/settings.test.js` contains a guard the plan overlooked:
+
+> **every setting is honoured somewhere in the app** -- "A setting that exists
+> only in the schema is a promise the app does not keep. `confirmOnClose` and
+> `bell` were both listed in the README and read by no code at all; this test
+> is what catches that class of bug."
+
+It walks `src/`, concatenates every `.js` except `settings.js`, and fails on any
+`DEFAULTS` key that appears nowhere. Adding `traceProgram` and `traceStdin`
+before the Trace pane reads them is precisely the bug it exists to catch, and
+satisfying it with a token reference would game the guard rather than respect
+it.
+
+So the keys must land **with their consumer**, in Task 18, where the pane loads
+`traceProgram` on open and persists it on a debounce.
+
+The settings code itself is correct and unchanged. Add to `DEFAULTS`:
+
+```js
+  // Trace pane contents. Kept here because settings.json is the only
+  // persistence Josh has, and using it costs no new IPC channel.
+  traceProgram: '',
+  traceStdin: '',
+```
+
+and this branch to `coerce`, **before** the generic `typeof fallback ===
+'string'` branch, which caps at 512 characters and would truncate a program:
+
+```js
+    if (key === 'traceProgram' || key === 'traceStdin') {
+      const cap = key === 'traceProgram' ? 65536 : 8192;
+      if (typeof value === 'string') out[key] = value.slice(0, cap);
+      continue;
+    }
+```
+
+`test/trace-settings.test.js` (seven tests: the defaults, a program surviving
+the 512 cap, the 64 KiB and 8 KiB caps, non-strings falling back, an empty
+program preserved, the existing keys still coercing, and a whole mixed file)
+belongs with them in Task 18.
+
+### 3. The script tags move too
+
+Task 15 adds eight `<script>` tags to `index.html`, three of which point at
+files Tasks 16 to 18 have not created yet. Add each tag in the task that
+creates its file.
+
+**Renumbering:** the plan now runs 1 to 14, then 16 (editor), 17 (diagram), 18
+(pane wiring, settings, controls, examples) and 19 (docs). Task 15 is empty.
