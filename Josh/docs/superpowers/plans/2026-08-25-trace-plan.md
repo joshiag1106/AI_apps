@@ -1127,7 +1127,7 @@ usually goes wrong.
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `node --test test/trace-parse-expr.test.js`
-Expected: PASS, 22 tests
+Expected: PASS, 23 tests
 
 - [ ] **Step 5: Commit**
 
