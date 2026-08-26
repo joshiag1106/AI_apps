@@ -293,13 +293,264 @@
     return { k: 'int' };
   }
 
+  // --- statements ----------------------------------------------------------
+
+  function parseStatement(tokens, start) {
+    const state = { tokens: tokens, index: start, errors: [] };
+    const node = statement(state);
+    return { node: node, next: state.index, errors: state.errors };
+  }
+
+  function statement(state) {
+    const token = peek(state);
+
+    if (atPunct(state, '{')) return block(state);
+    if (atPunct(state, ';')) {
+      take(state);
+      return locate({ kind: 'empty' }, token);
+    }
+    if (token.type === 'keyword') {
+      switch (token.value) {
+        case 'if': return ifStatement(state);
+        case 'while': return whileStatement(state);
+        case 'do': return doStatement(state);
+        case 'for': return forStatement(state);
+        case 'switch': return switchStatement(state);
+        case 'break': case 'continue': {
+          take(state);
+          expectPunct(state, ';');
+          return locate({ kind: token.value }, token);
+        }
+        case 'return': {
+          take(state);
+          const value = atPunct(state, ';') ? null : parseAssign(state);
+          expectPunct(state, ';');
+          return locate({ kind: 'return', value: value }, token);
+        }
+        default: break;
+      }
+      if (startsType(state, 0)) return declaration(state);
+    }
+
+    const expr = parseAssign(state);
+    expectPunct(state, ';');
+    return locate({ kind: 'exprStmt', expr: expr }, token);
+  }
+
+  function block(state) {
+    const token = peek(state);
+    expectPunct(state, '{');
+    const body = [];
+    // The eof guard is essential: an unclosed brace must end the loop rather
+    // than spin forever.
+    while (!atPunct(state, '}') && !at(state, 'eof')) body.push(statement(state));
+    expectPunct(state, '}');
+    return locate({ kind: 'block', body: body }, token);
+  }
+
+  function parenTest(state) {
+    expectPunct(state, '(');
+    const test = parseAssign(state);
+    expectPunct(state, ')');
+    return test;
+  }
+
+  function ifStatement(state) {
+    const token = take(state);
+    const test = parenTest(state);
+    const then = statement(state);
+    let otherwise = null;
+    // A dangling else binds to the nearest if. Because `then` was parsed by a
+    // recursive call that would itself have consumed an else, reaching here
+    // with an else token means it belongs to *this* if.
+    if (at(state, 'keyword', 'else')) {
+      take(state);
+      otherwise = statement(state);
+    }
+    return locate({ kind: 'if', test: test, then: then, otherwise: otherwise }, token);
+  }
+
+  function whileStatement(state) {
+    const token = take(state);
+    const test = parenTest(state);
+    return locate({ kind: 'while', test: test, body: statement(state) }, token);
+  }
+
+  function doStatement(state) {
+    const token = take(state);
+    const body = statement(state);
+    if (at(state, 'keyword', 'while')) take(state);
+    else {
+      error(state, 'expected-token', "expected 'while'",
+        'A do loop ends with while and its condition.');
+    }
+    const test = parenTest(state);
+    expectPunct(state, ';');
+    return locate({ kind: 'do', body: body, test: test }, token);
+  }
+
+  function forStatement(state) {
+    const token = take(state);
+    expectPunct(state, '(');
+
+    let init = null;
+    if (!atPunct(state, ';')) {
+      init = startsType(state, 0) ? declaration(state) : expressionStatement(state);
+    } else {
+      take(state);
+    }
+
+    const test = atPunct(state, ';') ? null : parseAssign(state);
+    expectPunct(state, ';');
+    const update = atPunct(state, ')') ? null : parseAssign(state);
+    expectPunct(state, ')');
+
+    return locate({
+      kind: 'for', init: init, test: test, update: update, body: statement(state),
+    }, token);
+  }
+
+  function expressionStatement(state) {
+    const token = peek(state);
+    const expr = parseAssign(state);
+    expectPunct(state, ';');
+    return locate({ kind: 'exprStmt', expr: expr }, token);
+  }
+
+  function switchStatement(state) {
+    const token = take(state);
+    const disc = parenTest(state);
+    expectPunct(state, '{');
+    const cases = [];
+    while (!atPunct(state, '}') && !at(state, 'eof')) {
+      if (at(state, 'keyword', 'case') || at(state, 'keyword', 'default')) {
+        const isDefault = peek(state).value === 'default';
+        take(state);
+        const test = isDefault ? null : parseAssign(state);
+        expectPunct(state, ':');
+        cases.push({ test: test, body: [] });
+        continue;
+      }
+      if (cases.length === 0) {
+        error(state, 'statement-before-case',
+          'statement before the first case label',
+          'Everything inside a switch belongs to a case. Start with a case label.');
+        statement(state);
+        continue;
+      }
+      cases[cases.length - 1].body.push(statement(state));
+    }
+    expectPunct(state, '}');
+    return locate({ kind: 'switch', disc: disc, cases: cases }, token);
+  }
+
+  // --- declarations --------------------------------------------------------
+
+  function declaration(state) {
+    const token = peek(state);
+    const base = parseBaseType(state);
+    const decls = [];
+    for (;;) {
+      const declared = parseDeclarator(state, base);
+      let init = null;
+      if (atPunct(state, '=')) {
+        take(state);
+        init = atPunct(state, '{') ? initialiserList(state) : parseAssign(state);
+      }
+      decls.push({
+        name: declared.name,
+        ctype: resolveArrayLength(declared.ctype, init),
+        init: init,
+      });
+      if (!atPunct(state, ',')) break;
+      take(state);
+    }
+    expectPunct(state, ';');
+    return locate({ kind: 'declStmt', decls: decls }, token);
+  }
+
+  /**
+   * Stars are written before the name and brackets after it, but brackets bind
+   * tighter. So `int *a[5]` is an array of five pointers, and the wrapping
+   * order below is: base, then stars, then brackets from the inside out.
+   */
+  function parseDeclarator(state, base) {
+    let stars = 0;
+    while (atPunct(state, '*')) {
+      take(state);
+      stars += 1;
+    }
+    const name = at(state, 'ident') ? take(state).value : null;
+    if (name === null) {
+      error(state, 'expected-name',
+        'expected a variable name',
+        'Give this variable a name.');
+    }
+    const dims = [];
+    while (atPunct(state, '[')) {
+      take(state);
+      if (atPunct(state, ']')) {
+        dims.push(null); // sized by the initialiser
+      } else {
+        const size = peek(state);
+        if (size.type === 'int') {
+          dims.push(take(state).value);
+        } else {
+          dims.push(null);
+          error(state, 'non-constant-array-size',
+            'array size must be a constant',
+            'Trace needs to know an array size when the program is read, so it '
+              + 'must be a plain number.');
+        }
+      }
+      expectPunct(state, ']');
+    }
+
+    let ctype = base;
+    for (let n = 0; n < stars; n += 1) ctype = { k: 'ptr', to: ctype };
+    for (let n = dims.length - 1; n >= 0; n -= 1) {
+      ctype = { k: 'array', of: ctype, length: dims[n] };
+    }
+    return { name: name, ctype: ctype };
+  }
+
+  function initialiserList(state) {
+    const token = peek(state);
+    expectPunct(state, '{');
+    const items = [];
+    if (!atPunct(state, '}')) {
+      for (;;) {
+        items.push(atPunct(state, '{') ? initialiserList(state) : parseAssign(state));
+        if (!atPunct(state, ',')) break;
+        take(state);
+        if (atPunct(state, '}')) break; // a trailing comma is allowed
+      }
+    }
+    expectPunct(state, '}');
+    return locate({ kind: 'initList', items: items }, token);
+  }
+
+  /** `int a[] = {1,2,3}` and `char s[] = "hi"` learn their length here. */
+  function resolveArrayLength(ctype, init) {
+    if (!init || ctype.k !== 'array' || ctype.length !== null) return ctype;
+    if (init.kind === 'initList') {
+      return { k: 'array', of: ctype.of, length: init.items.length };
+    }
+    if (init.kind === 'str') {
+      return { k: 'array', of: ctype.of, length: init.value.length + 1 };
+    }
+    return ctype;
+  }
+
   return {
-    parseExpression, PRECEDENCE, ASSIGN_OPS, UNARY_OPS, TYPE_KEYWORDS,
+    parseExpression, parseStatement, parseDeclarator, declaration,
+    PRECEDENCE, ASSIGN_OPS, UNARY_OPS, TYPE_KEYWORDS,
     // Exported for Tasks 3 and 4, which add statement and top-level parsing to
     // this same file and need the same helpers and the same state object.
     internals: {
       peek, at, atPunct, take, expectPunct, error, locate,
       parseAssign, parseTypeName, parseBaseType, startsType,
+      statement, block, declaration, initialiserList, resolveArrayLength,
     },
   };
 });
