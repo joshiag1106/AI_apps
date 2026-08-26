@@ -69,6 +69,14 @@
 
   // --- names ---------------------------------------------------------------
 
+  /** Is this name bound to storage, as opposed to being an enum constant? */
+  function hasBinding(name, ctx) {
+    for (let i = ctx.scopes.length - 1; i >= 0; i -= 1) {
+      if (ctx.scopes[i].has(name)) return true;
+    }
+    return ctx.globals.has(name);
+  }
+
   function lookup(name, ctx, node) {
     for (let i = ctx.scopes.length - 1; i >= 0; i -= 1) {
       const found = ctx.scopes[i].get(name);
@@ -229,7 +237,18 @@
       // re-reading its target.
       case 'literalValue':
         return { value: node.value, ctype: node.ctype };
-      case 'ident': case 'index': case 'member': {
+      case 'ident': {
+        // An enum constant is a value, not a place, so it is resolved here
+        // rather than through evaluateLValue. A local or global of the same
+        // name shadows it, which is what C does.
+        if (!hasBinding(node.name, ctx)) {
+          const enumValue = ctx.enums.get(node.name);
+          if (enumValue !== undefined) return { value: enumValue, ctype: { k: 'int' } };
+        }
+        const named = yield* evaluateLValue(node, ctx);
+        return loadFrom(named.address, named.ctype, ctx, node);
+      }
+      case 'index': case 'member': {
         const place = yield* evaluateLValue(node, ctx);
         return loadFrom(place.address, place.ctype, ctx, node);
       }
@@ -696,9 +715,372 @@
     storeTo(address, ctype, value, ctx, node);
   }
 
+  // --- functions and the runner --------------------------------------------
+
+  const MAX_STEPS = 5000000;
+
+  /**
+   * Walks the top level once, before anything runs: lay out structs, record
+   * enum constants, index functions by name, and create globals. Doing it in
+   * one pass is what lets a function call another defined later in the file.
+   */
+  function prepareProgram(ctx) {
+    const errors = [];
+
+    for (const node of ctx.ast.body) {
+      if (node.kind === 'structDef') {
+        ctx.structs[node.tag] = Machine.structLayout(node.members, ctx.structs);
+      }
+    }
+    ctx.machine.setStructs(ctx.structs);
+
+    for (const node of ctx.ast.body) {
+      if (node.kind === 'enumDef') {
+        for (const entry of node.values) ctx.enums.set(entry.name, entry.value);
+      }
+    }
+
+    for (const node of ctx.ast.body) {
+      if (node.kind !== 'func') continue;
+      if (ctx.functions[node.name]) {
+        errors.push({
+          code: 'duplicate-function',
+          terse: "'" + node.name + "' is defined more than once",
+          plain: 'Each function needs its own name. Rename one of them.',
+          locations: [{ line: node.line, col: node.col, length: 1 }],
+          highlight: [],
+        });
+      }
+      ctx.functions[node.name] = node;
+    }
+
+    // Globals are zero-initialised, which is a real and teachable difference
+    // from locals: a global you forget to set is 0, a local is whatever was
+    // lying in memory.
+    ctx.machine.beginStep();
+    try {
+      for (const node of ctx.ast.body) {
+        if (node.kind !== 'globalDecl') continue;
+        for (const decl of node.decls) {
+          const obj = ctx.machine.declareGlobal({ name: decl.name, ctype: decl.ctype });
+          ctx.globals.set(decl.name, { address: obj.address, ctype: decl.ctype });
+          ctx.machine.writeBytes(obj.address, new Uint8Array(obj.size));
+          ctx.machine.markInitialised(obj.address, obj.size);
+          if (decl.init) drain(initialise(obj.address, decl.ctype, decl.init, ctx, node));
+        }
+      }
+    } finally {
+      ctx.machine.endStep();
+    }
+
+    return errors;
+  }
+
+  /** Run a generator that cannot yield here to completion. */
+  function drain(iterator) {
+    let result = iterator.next();
+    while (!result.done) result = iterator.next();
+    return result.value;
+  }
+
+  /** Installed on the context so `evaluate` can reach it without a cycle. */
+  function* callExpression(node, ctx) {
+    if (node.callee.kind !== 'ident') {
+      semantic('not-callable', 'this is not a function',
+        'Only a function name can be called.', node);
+    }
+    const name = node.callee.name;
+
+    const builtin = ctx.builtins && ctx.builtins[name];
+    if (builtin) {
+      const builtinArgs = [];
+      for (const argument of node.args) {
+        builtinArgs.push(decay(yield* evaluate(argument, ctx)));
+      }
+      return builtin(builtinArgs, ctx, node);
+    }
+
+    const fn = ctx.functions[name];
+    if (!fn) {
+      semantic('undeclared-function',
+        "'" + name + "' was not declared",
+        'Trace has not seen a function called ' + name + '. Check the spelling, '
+          + 'and that it is defined somewhere in this file.',
+        node);
+    }
+    if (node.args.length !== fn.params.length) {
+      semantic('argument-count',
+        name + ' takes ' + fn.params.length + ' argument(s), got ' + node.args.length,
+        name + ' is defined to take ' + fn.params.length + ' argument(s), but '
+          + 'this call passes ' + node.args.length + '.',
+        node);
+    }
+
+    // Arguments are evaluated in the caller's frame, before the callee's frame
+    // exists. Getting this order wrong is how f(x) ends up reading the
+    // callee's uninitialised x instead of the caller's value.
+    const args = [];
+    for (const argument of node.args) args.push(decay(yield* evaluate(argument, ctx)));
+
+    return yield* callFunction(fn, args, ctx, node);
+  }
+
+  function* callFunction(fn, args, ctx, node) {
+    const frameId = ctx.machine.pushFrame(fn.name);
+    if (frameId === null) {
+      halt({
+        code: 'stack-overflow',
+        terse: 'too many nested function calls',
+        plain: 'Each call adds a frame to the stack and this program has '
+          + 'reached the limit of ' + ctx.machine.MAX_FRAMES + '. A function '
+          + 'that calls itself without a stopping condition is the usual cause.',
+        locations: [], highlight: [],
+      }, node);
+    }
+
+    const savedScopes = ctx.scopes;
+    ctx.scopes = [new Map()]; // a function cannot see its caller's locals
+
+    try {
+      ctx.machine.beginStep();
+      try {
+        for (let i = 0; i < fn.params.length; i += 1) {
+          const param = fn.params[i];
+          const obj = ctx.machine.declareLocal({ name: param.name, ctype: param.ctype });
+          ctx.scopes[0].set(param.name, { address: obj.address, ctype: param.ctype });
+          storeTo(obj.address, param.ctype, args[i].value, ctx, node);
+        }
+      } finally {
+        ctx.machine.endStep();
+      }
+
+      const completion = yield* execute(fn.body, ctx);
+
+      if (completion.flow !== 'return' && fn.returnType.k !== 'void') {
+        halt({
+          code: 'missing-return',
+          terse: "control reaches the end of non-void function '" + fn.name + "'",
+          plain: fn.name + ' says it returns a value, but this path through it '
+            + 'ends without a return. The caller would receive whatever '
+            + 'happened to be lying around.',
+          locations: [{ line: fn.line, col: fn.col, length: 1 }],
+          highlight: [],
+        }, node);
+      }
+
+      const value = completion.flow === 'return' ? completion.value : 0;
+      return { value: value === undefined ? 0 : value, ctype: fn.returnType };
+    } finally {
+      ctx.scopes = savedScopes;
+      ctx.machine.beginStep();
+      try {
+        ctx.machine.popFrame();
+      } finally {
+        ctx.machine.endStep();
+      }
+    }
+  }
+
+  /**
+   * The library lives in trace-stdlib.js, which Tasks 12 and 13 provide. Until
+   * then a program simply has no builtins, and calling printf reports an
+   * undeclared function like any other unknown name. Resolving it tolerantly
+   * is what lets each task be verified on its own.
+   */
+  function loadStdlib() {
+    try {
+      if (typeof module === 'object' && module.exports) return require('./trace-stdlib.js');
+      return (typeof self !== 'undefined' ? self : this).TraceStdlib || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function loadParser() {
+    if (typeof module === 'object' && module.exports) return require('./trace-parse.js');
+    return (typeof self !== 'undefined' ? self : this).TraceParse;
+  }
+
+  // --- the runner ----------------------------------------------------------
+
+  function createRunner(options) {
+    const Parse = loadParser();
+    const Stdlib = loadStdlib();
+
+    const source = String(options.source || '');
+    const stdinText = String(options.stdin || '');
+    const maxSteps = options.maxSteps || MAX_STEPS;
+
+    let ctx = null;
+    let iterator = null;
+    let errors = [];
+    let halted = false;
+    let currentLine = null;
+    let exitCode = null;
+    let stepIndex = 0;
+    let rewound = false;
+    const lineHistory = [];
+    const outputHistory = [];
+
+    function start() {
+      const parsed = Parse.parseProgram(source);
+      const machine = Machine.createMachine();
+      ctx = createContext({ ast: parsed.ast, machine: machine });
+      ctx.stdin = { text: stdinText, position: 0 };
+      ctx.callExpression = callExpression;
+      ctx.builtins = Stdlib ? Stdlib.createBuiltins() : Object.create(null);
+
+      errors = parsed.errors.length ? parsed.errors : prepareProgram(ctx);
+      halted = errors.length > 0;
+      currentLine = null;
+      exitCode = null;
+      stepIndex = 0;
+      rewound = false;
+      lineHistory.length = 0;
+      outputHistory.length = 0;
+      iterator = errors.length ? null : driver();
+    }
+
+    /** The outermost generator: call main, then check for leaks. */
+    function* driver() {
+      const main = ctx.functions.main;
+      try {
+        const result = yield* callFunction(main, [], ctx, main);
+        const leak = ctx.machine.checkLeaks();
+        if (leak) halt(leak, main);
+        return result;
+      } catch (error) {
+        // exit() unwinds here; a program that called it has not leaked in any
+        // sense worth reporting. Task 13 supplies the signal.
+        if (error && error.name === 'ExitSignal') {
+          return { value: error.code, ctype: { k: 'int' } };
+        }
+        throw error;
+      }
+    }
+
+    /**
+     * Rebuild and run forward to `target`, silently.
+     *
+     * A generator cannot be rewound, but execution is deterministic, so any
+     * earlier position can be reached exactly by starting over. The journal
+     * keeps stepping backwards instant; this is paid once, on the first
+     * forward step after a rewind.
+     */
+    function replayTo(target) {
+      start();
+      for (let i = 0; i < target; i += 1) {
+        const result = iterator.next();
+        if (result.done) break;
+        stepIndex = i + 1;
+        if (result.value && result.value.line) currentLine = result.value.line;
+      }
+      rewound = false;
+    }
+
+    function stepLimitDiagnostic() {
+      return {
+        code: 'step-limit',
+        terse: 'program did not finish',
+        plain: 'This program has run ' + maxSteps + ' steps without finishing, '
+          + 'so it may never finish. Look at the loop on this line and check '
+          + 'that something changes the value its condition tests.',
+        locations: currentLine ? [{ line: currentLine, col: 1, length: 1 }] : [],
+        highlight: [],
+      };
+    }
+
+    function step() {
+      if (rewound) replayTo(stepIndex);
+      if (halted || !iterator) return { done: true, line: currentLine, diagnostic: null };
+
+      if (stepIndex >= maxSteps) {
+        halted = true;
+        return { done: true, line: currentLine, diagnostic: stepLimitDiagnostic() };
+      }
+
+      lineHistory[stepIndex] = currentLine;
+      outputHistory[stepIndex] = ctx.output.length;
+
+      try {
+        const result = iterator.next();
+        stepIndex += 1;
+        if (result.done) {
+          halted = true;
+          exitCode = result.value && typeof result.value.value === 'number'
+            ? result.value.value : 0;
+          return { done: true, line: currentLine, diagnostic: null };
+        }
+        if (result.value && result.value.line) currentLine = result.value.line;
+        return { done: false, line: currentLine, diagnostic: null };
+      } catch (error) {
+        halted = true;
+        if (error instanceof TraceHalt) {
+          const diagnostic = error.diagnostic;
+          if (diagnostic.locations.length === 0 && currentLine) {
+            diagnostic.locations = [{ line: currentLine, col: 1, length: 1 }];
+          }
+          return { done: true, line: currentLine, diagnostic: diagnostic };
+        }
+        // An unexpected internal fault must still surface as a diagnostic
+        // rather than a blank pane.
+        return {
+          done: true,
+          line: currentLine,
+          diagnostic: {
+            code: 'internal-error',
+            terse: 'Trace hit an internal problem',
+            plain: 'Something went wrong inside Trace itself, not in your '
+              + 'program. Details: ' + String(error && error.message),
+            locations: [], highlight: [],
+          },
+        };
+      }
+    }
+
+    function undo() {
+      if (!ctx || stepIndex === 0) return false;
+      if (!ctx.machine.undoStep()) return false;
+      stepIndex -= 1;
+      rewound = true;
+      halted = false;
+      exitCode = null;
+      currentLine = lineHistory[stepIndex] || null;
+      ctx.output.length = outputHistory[stepIndex] || 0;
+      return true;
+    }
+
+    function state() {
+      if (!ctx) {
+        return { frames: [], objects: [], output: [], line: null,
+          stepsAvailable: 0, halted: true, exitCode: null };
+      }
+      return {
+        frames: ctx.machine.frames(),
+        objects: ctx.machine.liveObjects(),
+        output: ctx.output,
+        line: currentLine,
+        stepsAvailable: ctx.machine.stepsAvailable(),
+        halted: halted,
+        exitCode: exitCode,
+      };
+    }
+
+    start();
+    return {
+      get errors() { return errors; },
+      get machine() { return ctx ? ctx.machine : null; },
+      step: step,
+      undo: undo,
+      state: state,
+      reset: start,
+    };
+  }
+
   return {
     TraceHalt, createContext, evaluate, evaluateLValue,
     execute, pushScope, popScope, initialise,
+    prepareProgram, callExpression, callFunction, createRunner, MAX_STEPS,
     loadFrom, storeTo, decay, halt, semantic, sizeOf,
     isPointerish, pointee, internString, checkedInt,
   };

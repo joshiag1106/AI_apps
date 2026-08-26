@@ -8002,3 +8002,76 @@ Nested blocks still push and pop their own scopes, so the two scope tests --
 meaning.
 
 Task 10's expected result is **24 tests**.
+
+---
+
+## Amendment to Task 11: five corrections
+
+**Found while executing Task 11. Apply all five as part of that task.**
+Its expected result is **21 tests**.
+
+### 1. It cannot go green on its own
+
+Task 11's tests observe programs through `printf`, and one reports a leak from
+`malloc` — both of which arrive in Tasks 12 and 13. The plan admits this and
+tells the implementer to re-run the file later, which means the task has no
+moment where it is verifiably done.
+
+Observe through **main's exit value** instead. Move the `printf` output test to
+Task 12 and the leak test to Task 13, where the functions they need exist.
+
+### 2. `state()` should report the exit code
+
+Task 11's first test is named "returns its exit value" and then asserts only
+`halted`. A program's exit status is part of its observable state and the
+corpus in Task 14 wants it, so add `exitCode` to `state()`, set from the
+driver's result when the program finishes and cleared by `undo`.
+
+### 3. The step-cap test would run five million steps
+
+`for (let i = 0; i < I.MAX_STEPS + 10; i += 1) runner.step();` is not a unit
+test. Accept `maxSteps` in `createRunner` options, defaulting to `MAX_STEPS`,
+and have the test use 500. The UI benefits from the same knob.
+
+### 4. `createRunner` requires a module that does not exist yet
+
+It does `require('./trace-stdlib.js')`, which Task 12 creates. Resolve it
+tolerantly so Task 11 stands alone:
+
+```js
+  function loadStdlib() {
+    try {
+      if (typeof module === 'object' && module.exports) return require('./trace-stdlib.js');
+      return (typeof self !== 'undefined' ? self : this).TraceStdlib || null;
+    } catch (error) {
+      return null;
+    }
+  }
+```
+
+Until Task 12 lands, a program simply has no builtins and `printf` reports an
+undeclared function like any other unknown name.
+
+### 5. Enum constants are recorded but never readable
+
+`prepareProgram` fills `ctx.enums`, and the only reader is `constantOf`, which
+serves `case` labels. Nothing consults it during expression evaluation, so
+`return GREEN;` reports `undeclared-identifier` and Task 11's own enum test
+fails.
+
+Split the `ident` case in `evaluate` so a constant resolves as a **value**
+rather than a place, with storage shadowing it as C requires:
+
+```js
+      case 'ident': {
+        if (!hasBinding(node.name, ctx)) {
+          const enumValue = ctx.enums.get(node.name);
+          if (enumValue !== undefined) return { value: enumValue, ctype: { k: 'int' } };
+        }
+        const named = yield* evaluateLValue(node, ctx);
+        return loadFrom(named.address, named.ctype, ctx, node);
+      }
+```
+
+with `hasBinding(name, ctx)` checking the scope chain and then the globals. An
+enum constant has no address, so it must never reach `evaluateLValue`.
