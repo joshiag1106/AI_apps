@@ -304,6 +304,15 @@
   function statement(state) {
     const token = peek(state);
 
+    // Unsupported words lex as identifiers, not keywords, so they must be
+    // caught here as well as at the top level: goto, unsigned, float and long
+    // all appear inside function bodies, which topLevel never sees.
+    if (token.type === 'ident' && Object.prototype.hasOwnProperty.call(
+      UNSUPPORTED, token.value)) {
+      refuse(state, token, skipStatement);
+      return locate({ kind: 'empty' }, token);
+    }
+
     if (atPunct(state, '{')) return block(state);
     if (atPunct(state, ';')) {
       take(state);
@@ -542,8 +551,390 @@
     return ctype;
   }
 
+  // --- unsupported constructs ----------------------------------------------
+
+  /**
+   * The spec promises that leaving the subset produces a clear message rather
+   * than a baffling parse error, so the refusals are a table rather than
+   * something each parse site invents.
+   */
+  const SUPPORTED_HEADERS = Object.freeze(['stdio.h', 'stdlib.h', 'string.h']);
+
+  const UNSUPPORTED = Object.freeze({
+    goto: {
+      terse: "'goto' is not supported",
+      plain: 'Trace supports if, while, for, do, switch, break, continue and '
+        + 'return. Those can express any loop or branch you need here.',
+    },
+    union: {
+      terse: "'union' is not supported",
+      plain: 'Trace supports struct and enum. A struct gives each member its '
+        + 'own storage, which is what you want while learning.',
+    },
+    unsigned: {
+      terse: "'unsigned' is not supported",
+      plain: 'Trace has one integer type, int, which is 4 bytes and signed.',
+    },
+    signed: {
+      terse: "'signed' is not supported",
+      plain: 'Trace has one integer type, int, which is already signed.',
+    },
+    long: {
+      terse: "'long' is not supported",
+      plain: 'Trace has one integer type, int, which is 4 bytes.',
+    },
+    short: {
+      terse: "'short' is not supported",
+      plain: 'Trace has one integer type, int, which is 4 bytes.',
+    },
+    float: {
+      terse: "'float' is not supported",
+      plain: 'Trace has one floating-point type, double, which is 8 bytes.',
+    },
+    static: {
+      terse: "'static' is not supported",
+      plain: 'Every variable in Trace is either local to a function or global.',
+    },
+    extern: {
+      terse: "'extern' is not supported",
+      plain: 'A Trace program is a single file, so there is nothing external '
+        + 'to declare.',
+    },
+    typedef: {
+      terse: "'typedef' is not supported",
+      plain: 'Write the type out in full. Trace supports int, char, double, '
+        + 'void, pointers, arrays, struct and enum.',
+    },
+  });
+
+  /** Reports the refusal once, then skips the construct so it cascades no further. */
+  function refuse(state, token, skip) {
+    const entry = UNSUPPORTED[token.value];
+    state.errors.push({
+      code: 'unsupported-construct',
+      terse: entry.terse,
+      plain: entry.plain,
+      locations: [{ line: token.line, col: token.col, length: token.length }],
+    });
+    take(state);
+    skip(state);
+  }
+
+  /** Skip to just past the next semicolon, stopping at a closing brace or eof. */
+  function skipStatement(state) {
+    for (;;) {
+      if (at(state, 'eof') || atPunct(state, '}')) return;
+      if (atPunct(state, ';')) {
+        take(state);
+        return;
+      }
+      take(state);
+    }
+  }
+
+  /** Skip a whole top-level construct, including any balanced brace group. */
+  function skipTopLevel(state) {
+    let depth = 0;
+    for (;;) {
+      if (at(state, 'eof')) return;
+      if (atPunct(state, '{')) {
+        depth += 1;
+        take(state);
+        continue;
+      }
+      if (atPunct(state, '}')) {
+        take(state);
+        depth -= 1;
+        if (depth <= 0) {
+          if (atPunct(state, ';')) take(state);
+          return;
+        }
+        continue;
+      }
+      if (depth === 0 && atPunct(state, ';')) {
+        take(state);
+        return;
+      }
+      take(state);
+    }
+  }
+
+  // --- top level -----------------------------------------------------------
+
+  /** Resolves the lexer in Node and in the renderer alike. */
+  function lexer() {
+    if (typeof module === 'object' && module.exports) return require('./trace-lex.js');
+    return (typeof self !== 'undefined' ? self : this).TraceLex;
+  }
+
+  function byPosition(a, b) {
+    const left = a.locations[0];
+    const right = b.locations[0];
+    return left.line - right.line || left.col - right.col;
+  }
+
+  function parseProgram(source) {
+    const lexed = lexer().tokenize(source);
+    const macros = Object.create(null);
+    const tokens = preprocess(lexed.tokens, macros, lexed.errors);
+
+    const state = { tokens: tokens, index: 0, errors: [] };
+    const body = [];
+    let guard = 0;
+
+    while (!at(state, 'eof')) {
+      const before = state.index;
+      const node = topLevel(state);
+      if (node) body.push(node);
+      // A parser that consumed nothing would spin. Force progress.
+      if (state.index === before) take(state);
+      guard += 1;
+      if (guard > 100000) break;
+    }
+
+    if (!body.some((n) => n.kind === 'func' && n.name === 'main')) {
+      state.errors.push({
+        code: 'no-main',
+        terse: "no 'main' function",
+        plain: 'Every C program starts at a function called main. Add '
+          + 'int main(void) { ... } to your program.',
+        locations: [{ line: 1, col: 1, length: 1 }],
+      });
+    }
+
+    return {
+      ast: { kind: 'program', body: body },
+      errors: lexed.errors.concat(state.errors).sort(byPosition),
+    };
+  }
+
+  /**
+   * A deliberately tiny preprocessor: object-like #define substitution and
+   * #include validation. Anything else is refused by name.
+   */
+  function preprocess(tokens, macros, errors) {
+    const out = [];
+    let index = 0;
+
+    while (index < tokens.length) {
+      const token = tokens[index];
+
+      if (token.type === 'punct' && token.value === '#') {
+        const directive = tokens[index + 1];
+        const name = directive && directive.value;
+        const consumed = readToEndOfLine(tokens, index);
+
+        if (name === 'include') {
+          const header = consumed.tokens.map((t) => t.raw).join('')
+            .replace(/[<>"]/g, '').replace('include', '').replace('#', '').trim();
+          if (SUPPORTED_HEADERS.indexOf(header) === -1) {
+            errors.push({
+              code: 'unsupported-header',
+              terse: "cannot include '" + header + "'",
+              plain: 'Trace has its library built in. The headers it recognises '
+                + 'are ' + SUPPORTED_HEADERS.join(', ') + '.',
+              locations: [{ line: token.line, col: token.col, length: 1 }],
+            });
+          }
+          index = consumed.next;
+          continue;
+        }
+
+        if (name === 'define') {
+          const parts = consumed.tokens.slice(2); // past '#' and 'define'
+          const macroName = parts[0];
+          // Function-like only when the paren touches the name, as in C.
+          const functionLike = Boolean(macroName && parts[1]
+            && parts[1].type === 'punct' && parts[1].value === '('
+            && parts[1].col === macroName.col + macroName.length);
+          if (!macroName || macroName.type !== 'ident' || functionLike) {
+            errors.push({
+              code: 'unsupported-construct',
+              terse: 'only object-like #define is supported',
+              plain: 'Trace supports object-like defines such as #define MAX 100. '
+                + 'A define that takes arguments is not supported; write a '
+                + 'function instead.',
+              locations: [{ line: token.line, col: token.col, length: 1 }],
+            });
+          } else {
+            macros[macroName.value] = parts.slice(1);
+          }
+          index = consumed.next;
+          continue;
+        }
+
+        errors.push({
+          code: 'unsupported-construct',
+          terse: 'unsupported directive #' + (name || ''),
+          plain: 'Trace supports #include of its own headers and object-like '
+            + '#define. Nothing else.',
+          locations: [{ line: token.line, col: token.col, length: 1 }],
+        });
+        index = consumed.next;
+        continue;
+      }
+
+      if (token.type === 'ident' && macros[token.value]) {
+        for (const replacement of macros[token.value]) {
+          out.push(Object.assign({}, replacement,
+            { line: token.line, col: token.col }));
+        }
+        index += 1;
+        continue;
+      }
+
+      out.push(token);
+      index += 1;
+    }
+    return out;
+  }
+
+  function readToEndOfLine(tokens, start) {
+    const line = tokens[start].line;
+    let index = start;
+    const consumed = [];
+    while (index < tokens.length && tokens[index].line === line
+      && tokens[index].type !== 'eof') {
+      consumed.push(tokens[index]);
+      index += 1;
+    }
+    return { tokens: consumed, next: index };
+  }
+
+  function topLevel(state) {
+    const token = peek(state);
+
+    if (token.type === 'ident' && Object.prototype.hasOwnProperty.call(
+      UNSUPPORTED, token.value)) {
+      refuse(state, token, skipTopLevel);
+      return null;
+    }
+
+    if (at(state, 'keyword', 'struct') && peek(state, 2).value === '{') {
+      return structDefinition(state);
+    }
+    if (at(state, 'keyword', 'enum') && peek(state, 2).value === '{') {
+      return enumDefinition(state);
+    }
+    if (!startsType(state, 0)) {
+      error(state, 'expected-declaration',
+        'expected a declaration',
+        'At the top level of a C program, write a function, a global variable, '
+          + 'a struct or an enum.');
+      return null;
+    }
+
+    const base = parseBaseType(state);
+    const declared = parseDeclarator(state, base);
+
+    if (atPunct(state, '(')) return functionDefinition(state, declared, token);
+
+    // Not a function. Finish the remaining declarators here, so that
+    // `int a = 1, b;` works at file scope exactly as it does in a block.
+    const decls = [];
+    let current = declared;
+    for (;;) {
+      let init = null;
+      if (atPunct(state, '=')) {
+        take(state);
+        init = atPunct(state, '{') ? initialiserList(state) : parseAssign(state);
+      }
+      decls.push({
+        name: current.name,
+        ctype: resolveArrayLength(current.ctype, init),
+        init: init,
+      });
+      if (!atPunct(state, ',')) break;
+      take(state);
+      current = parseDeclarator(state, base);
+    }
+    expectPunct(state, ';');
+    return locate({ kind: 'globalDecl', decls: decls }, token);
+  }
+
+  function functionDefinition(state, declared, token) {
+    expectPunct(state, '(');
+    const params = [];
+    if (!atPunct(state, ')')) {
+      if (at(state, 'keyword', 'void') && peek(state, 1).value === ')') {
+        take(state);
+      } else {
+        for (;;) {
+          const base = parseBaseType(state);
+          const param = parseDeclarator(state, base);
+          // An array parameter is a pointer. Making that explicit here means
+          // the interpreter never has to special-case it.
+          const ctype = param.ctype.k === 'array'
+            ? { k: 'ptr', to: param.ctype.of }
+            : param.ctype;
+          params.push({ name: param.name, ctype: ctype });
+          if (!atPunct(state, ',')) break;
+          take(state);
+        }
+      }
+    }
+    expectPunct(state, ')');
+    return locate({
+      kind: 'func',
+      name: declared.name,
+      returnType: declared.ctype,
+      params: params,
+      body: block(state),
+    }, token);
+  }
+
+  function structDefinition(state) {
+    const token = take(state); // 'struct'
+    const tag = at(state, 'ident') ? take(state).value : null;
+    expectPunct(state, '{');
+    const members = [];
+    while (!atPunct(state, '}') && !at(state, 'eof')) {
+      const base = parseBaseType(state);
+      for (;;) {
+        const member = parseDeclarator(state, base);
+        members.push({ name: member.name, ctype: member.ctype });
+        if (!atPunct(state, ',')) break;
+        take(state);
+      }
+      expectPunct(state, ';');
+    }
+    expectPunct(state, '}');
+    expectPunct(state, ';');
+    return locate({ kind: 'structDef', tag: tag, members: members }, token);
+  }
+
+  function enumDefinition(state) {
+    const token = take(state); // 'enum'
+    const tag = at(state, 'ident') ? take(state).value : null;
+    expectPunct(state, '{');
+    const values = [];
+    let next = 0;
+    while (!atPunct(state, '}') && !at(state, 'eof')) {
+      const name = at(state, 'ident') ? take(state).value : null;
+      if (atPunct(state, '=')) {
+        take(state);
+        const literal = peek(state);
+        if (literal.type === 'int') {
+          next = take(state).value;
+        } else {
+          error(state, 'non-constant-enum',
+            'enum value must be a plain number',
+            'Give this enum constant a whole number, like RED = 1.');
+        }
+      }
+      values.push({ name: name, value: next });
+      next += 1;
+      if (!atPunct(state, ',')) break;
+      take(state);
+    }
+    expectPunct(state, '}');
+    expectPunct(state, ';');
+    return locate({ kind: 'enumDef', tag: tag, values: values }, token);
+  }
+
   return {
-    parseExpression, parseStatement, parseDeclarator, declaration,
+    parseExpression, parseStatement, parseProgram, parseDeclarator, declaration,
+    UNSUPPORTED, SUPPORTED_HEADERS,
     PRECEDENCE, ASSIGN_OPS, UNARY_OPS, TYPE_KEYWORDS,
     // Exported for Tasks 3 and 4, which add statement and top-level parsing to
     // this same file and need the same helpers and the same state object.

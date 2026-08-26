@@ -7693,3 +7693,103 @@ where the logic that can actually be wrong lives.
 **Expected test count on completion.** Roughly 200 new tests on top of the
 existing 81: about 100 across Tasks 1 to 8, about 100 across Tasks 9 to 14
 including the 60 to 80 corpus programs, and about 30 across Tasks 15 to 18.
+
+---
+
+## Amendment to Task 4: refuse unsupported constructs inside function bodies too
+
+**Found while executing Task 4. Apply it as part of that task.**
+
+Task 4 checks `UNSUPPORTED` only in `topLevel`. That catches `union`, which is
+written at file scope, and misses everything else: `goto`, `unsigned`, `float`
+and `long` all appear **inside function bodies**, which are parsed by
+`statement`, not `topLevel`. Four of the five cases in Task 4's own test would
+have produced cascading parse errors instead of the clear refusals the spec
+promises.
+
+These words lex as **identifiers**, not keywords, which is exactly why they slip
+past: nothing in the statement path looks at them.
+
+### The change
+
+Add the same check to the top of `statement()`, before anything else:
+
+```js
+  function statement(state) {
+    const token = peek(state);
+
+    // Unsupported words lex as identifiers, not keywords, so they must be
+    // caught here as well as at the top level: goto, unsigned, float and long
+    // all appear inside function bodies, which topLevel never sees.
+    if (token.type === 'ident' && Object.prototype.hasOwnProperty.call(
+      UNSUPPORTED, token.value)) {
+      refuse(state, token, skipStatement);
+      return locate({ kind: 'empty' }, token);
+    }
+    ...
+```
+
+`refuse` takes the skip strategy as a parameter, because the two sites need
+different recovery, and recovery is what keeps the count at one error per
+occurrence rather than a cascade:
+
+```js
+  function refuse(state, token, skip) {
+    const entry = UNSUPPORTED[token.value];
+    state.errors.push({
+      code: 'unsupported-construct',
+      terse: entry.terse,
+      plain: entry.plain,
+      locations: [{ line: token.line, col: token.col, length: token.length }],
+    });
+    take(state);
+    skip(state);
+  }
+
+  /** Skip to just past the next semicolon, stopping at a closing brace or eof. */
+  function skipStatement(state) {
+    for (;;) {
+      if (at(state, 'eof') || atPunct(state, '}')) return;
+      if (atPunct(state, ';')) { take(state); return; }
+      take(state);
+    }
+  }
+
+  /** Skip a whole top-level construct, including any balanced brace group. */
+  function skipTopLevel(state) {
+    let depth = 0;
+    for (;;) {
+      if (at(state, 'eof')) return;
+      if (atPunct(state, '{')) { depth += 1; take(state); continue; }
+      if (atPunct(state, '}')) {
+        take(state);
+        depth -= 1;
+        if (depth <= 0) {
+          if (atPunct(state, ';')) take(state);
+          return;
+        }
+        continue;
+      }
+      if (depth === 0 && atPunct(state, ';')) { take(state); return; }
+      take(state);
+    }
+  }
+```
+
+`skipTopLevel` walks the balanced braces so `union U { int a; double b; };`
+yields **one** refusal rather than a refusal plus a stray "expected a
+declaration" for the leftover tag.
+
+### Test corrections in the same task
+
+Three of Task 4's test sources have no `main`, so the file's own `no-main`
+diagnostic fires and `ok()` fails on them. Append
+`int main(void) { return 0; }` to the sources in these tests:
+
+- `parameters are named and typed`
+- `a pointer parameter`
+- `an array parameter decays to a pointer`
+
+Do the same for the `struct`, `enum` and `union` sources.
+
+Task 4's expected result stands at **19 tests**.
