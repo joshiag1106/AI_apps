@@ -8075,3 +8075,44 @@ rather than a place, with storage shadowing it as C requires:
 
 with `hasBinding(name, ctx)` checking the scope chain and then the globals. An
 enum constant has no address, so it must never reach `evaluateLValue`.
+
+---
+
+## Amendment to Task 12: printf must round the way C rounds
+
+**Found while executing Task 12. Apply it as part of that task.**
+Its expected result is **22 tests**, including the rewind test moved here from
+Task 11.
+
+Task 12 formats `%f` with `Number(value).toFixed(places)`, and separately
+asserts that `printf("%.0f", 2.5)` prints `2`. Those contradict each other.
+JavaScript's `toFixed` rounds half **away from zero**, so it yields `3`; C
+follows IEEE 754 and rounds half **to even**, giving `2`.
+
+The assertion is the correct one. A learner who runs the same program through
+gcc afterwards should see the same digits, and quietly matching JavaScript
+here would plant a discrepancy they could not explain.
+
+```js
+  function formatFixed(value, places) {
+    if (!Number.isFinite(value)) return String(value);
+    const factor = Math.pow(10, places);
+    const scaled = value * factor;
+    const lower = Math.floor(scaled);
+    const remainder = scaled - lower;
+
+    let rounded;
+    if (remainder > 0.5) rounded = lower + 1;
+    else if (remainder < 0.5) rounded = lower;
+    else rounded = lower % 2 === 0 ? lower : lower + 1;
+
+    return (rounded / factor).toFixed(places);
+  }
+```
+
+Flooring before comparing makes this work for negatives without a special
+case: `-2.5` floors to `-3` with a remainder of exactly `0.5`, and `-3` is odd,
+so it rounds up to `-2` — which is what C prints.
+
+Add tests for `2.5`, `3.5` and `1.5` at zero places, since one example alone
+does not distinguish half-to-even from half-up.
