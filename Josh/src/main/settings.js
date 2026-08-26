@@ -36,6 +36,10 @@ const DEFAULTS = Object.freeze({
   bell: false,
   // Working directories of the tabs open at last exit, for session restore.
   lastSession: [],
+  // Trace pane contents. Kept here because settings.json is the only
+  // persistence Josh has, and using it costs no new IPC channel.
+  traceProgram: '',
+  traceStdin: '',
 });
 
 const ENUMS = Object.freeze({
@@ -82,6 +86,13 @@ function coerce(raw) {
           .filter((p) => typeof p === 'string' && p.length > 0 && p.length <= 4096)
           .slice(0, 20);
       }
+      continue;
+    }
+    // Before the generic string branch below, which caps at 512 characters
+    // and would quietly truncate a program.
+    if (key === 'traceProgram' || key === 'traceStdin') {
+      const cap = key === 'traceProgram' ? 65536 : 8192;
+      if (typeof value === 'string') out[key] = value.slice(0, cap);
       continue;
     }
     if (ENUMS[key]) {

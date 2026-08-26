@@ -41,6 +41,12 @@
     return tab ? tab.panes.get(tab.activePaneId) || null : null;
   }
 
+  /** Run an action only when the focused pane is a Trace pane. */
+  function withTracePane(action) {
+    const pane = activePane();
+    if (pane && pane.kind === 'trace') action(pane);
+  }
+
   // ---- Layout --------------------------------------------------------------
 
   /** Rebuild a tab's DOM from its split tree, reusing existing pane elements. */
@@ -164,10 +170,26 @@
     return tab;
   }
 
-  async function addPane(tab, cwd) {
+  async function addPane(tab, cwd, kind) {
     state.paneSequence += 1;
+    const id = 'p' + state.paneSequence;
+
+    if (kind === 'trace') {
+      // No session: a Trace pane runs its own simulator and must never be
+      // handed a shell.
+      const tracePane = window.TracePane.createTracePane({
+        id: id,
+        settings: state.settings,
+        theme: state.theme,
+        onFocus: (paneId) => focusPane(tab, paneId),
+      });
+      tab.panes.set(tracePane.id, tracePane);
+      tab.element.appendChild(tracePane.element);
+      return tracePane;
+    }
+
     const pane = new window.TerminalPane({
-      id: 'p' + state.paneSequence,
+      id: id,
       settings: state.settings,
       theme: state.theme,
       onTitle: (paneId, title) => onPaneTitle(tab, paneId, title),
@@ -253,14 +275,14 @@
 
   // ---- Splits --------------------------------------------------------------
 
-  async function splitActive(direction) {
+  async function splitActive(direction, kind) {
     const tab = activeTab();
     if (!tab) return;
     const target = tab.activePaneId;
     const source = tab.panes.get(target);
     const cwd = source ? source.cwd : null;
 
-    const pane = await addPane(tab, cwd);
+    const pane = await addPane(tab, cwd, kind);
     tab.tree = SplitTree.splitLeaf(tab.tree, target, pane.id, direction);
     tab.activePaneId = pane.id;
     renderTab(tab);
@@ -398,26 +420,33 @@
     'tab:prev': () => cycleTab(-1),
     'split:right': () => splitActive('row').catch(reportFailure),
     'split:down': () => splitActive('column').catch(reportFailure),
+    'trace:new': () => splitActive('row', 'trace').catch(reportFailure),
+    'trace:run': () => withTracePane((pane) => pane.run()),
+    'trace:step': () => withTracePane((pane) => pane.step()),
+    'trace:stepBack': () => withTracePane((pane) => pane.stepBack()),
+    'trace:reset': () => withTracePane((pane) => pane.reset()),
     'pane:close': closeActivePane,
     'edit:copy': () => {
       const pane = activePane();
       if (!pane) return;
+      if (!pane.getSelection) return;
       const selection = pane.getSelection();
       if (selection) api.clipboard.write(selection).catch(function () {});
     },
     'edit:paste': async () => {
       const pane = activePane();
       if (!pane) return;
+      if (!pane.paste) return;
       const text = await api.clipboard.read().catch(() => '');
       pane.paste(text);
     },
     'edit:selectAll': () => {
       const pane = activePane();
-      if (pane) pane.selectAll();
+      if (pane && pane.selectAll) pane.selectAll();
     },
     'edit:clear': () => {
       const pane = activePane();
-      if (pane) pane.clear();
+      if (pane && pane.clear) pane.clear();
     },
     'find:open': openFind,
     'palette:open': openPalette,
@@ -436,7 +465,7 @@
   function reportFailure(error) {
     const pane = activePane();
     const message = error && error.message ? error.message : 'command failed';
-    if (pane) pane.write('\r\n\x1b[31mjosh: ' + message + '\x1b[0m\r\n');
+    if (pane && pane.write) pane.write('\r\n\x1b[31mjosh: ' + message + '\x1b[0m\r\n');
   }
 
   function openPalette() {
@@ -445,6 +474,11 @@
       { label: 'Close Tab', hint: accel('W'), run: commands['tab:close'] },
       { label: 'Split Right', hint: accel('D'), run: commands['split:right'] },
       { label: 'Split Down', run: commands['split:down'] },
+      { label: 'New Trace Pane', run: commands['trace:new'] },
+      { label: 'Trace: Run', run: commands['trace:run'] },
+      { label: 'Trace: Step', run: commands['trace:step'] },
+      { label: 'Trace: Step Back', run: commands['trace:stepBack'] },
+      { label: 'Trace: Reset', run: commands['trace:reset'] },
       { label: 'Close Pane', run: commands['pane:close'] },
       { label: 'Find in Terminal', hint: accel('F'), run: openFind },
       { label: 'Clear Terminal', hint: accel('K'), run: commands['edit:clear'] },
