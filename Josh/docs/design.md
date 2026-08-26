@@ -48,7 +48,7 @@ source**, which reintroduces every toolchain dependency listed above.
 |  settings       schema-coerced, 0600  |   +---------^---------------+
 +---------------+-----------------------+             |
                 +---- PRELOAD: contextBridge ---------+
-                      15 channels, fixed allowlist
+                      16 channels, fixed allowlist
 ```
 
 The renderer never touches Node, the filesystem, or a shell path. It can only
@@ -119,6 +119,39 @@ unit-tested in plain Node.
 During a divider drag, flex ratios are set directly on the DOM for smoothness;
 the tree is updated once on release, which is also when panes re-measure and the
 PTYs are told their new size.
+
+## Trace
+
+A second kind of pane, running a C interpreter over a simulated machine. Four
+decisions are worth recording.
+
+**A pane type, not a modal panel.** `split-tree.js` already manages geometry
+and `app.js` already holds pane objects in a map, so a Trace pane is simply a
+pane with a different `kind`. Splitting, dragging, focusing and closing came
+free, and the geometry tree still knows nothing about what a pane contains.
+
+**The shadow map does two jobs.** Every live object records its address, size,
+type and per-byte initialisation. That structure is what the diagram draws
+*and* what makes undefined behaviour detectable: raw bytes cannot tell you an
+address is one past the end of an array, but the shadow map can. Dead objects
+are kept rather than deleted, which is the only reason a use-after-free can be
+told apart from a wild pointer, and why the allocator never reuses a freed
+block.
+
+**Generators for stepping.** `execute` yields at each statement boundary, and
+completions ride the generator's return value, so `break` inside an `if` inside
+a `while` needs no bookkeeping. Expression evaluation is a generator too --
+not because expressions pause, but because one can contain a call, and a call
+must be steppable or the stack stays invisible.
+
+**Journal backwards, replay forwards.** Writes are journalled with their
+previous values, so Step Back is instant. A generator cannot be rewound, but
+execution is deterministic, so stepping forward after a rewind restarts and
+replays to the same point -- paid once, on the first forward step.
+
+The whole feature is renderer-side: no IPC channel, no main-process change, no
+filesystem, no subprocess, no `eval`. A Trace pane owns no PTY, so nothing typed
+into it can reach a shell.
 
 ## Testing
 

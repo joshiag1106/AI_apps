@@ -26,6 +26,9 @@ as they do in Terminal.app or Windows Terminal.
 - **Directory awareness** — new tabs and splits open in the current directory
 - **Session restore** — reopens your tabs where you left them
 - **Native chrome** — macOS vibrancy and inset traffic lights, Windows title-bar overlay
+- **Trace** — a second kind of pane that runs a C program one step at a time and
+  draws the memory: stack frames, variables, heap blocks, and pointers as arrows.
+  Needs no compiler. See [Trace](#trace)
 - **No network access at all** — see [Security](#security)
 
 ## Install
@@ -144,9 +147,59 @@ Settings live in a JSON file you can edit directly. Open it from the menu
 | `renderer` | `"webgl"` | `webgl` or `canvas` |
 | `vibrancy` | `true` | macOS translucent background |
 | `bell` | `false` | On a terminal bell, flash the pane and bounce the Dock / flash the taskbar. Visual, not audible |
+| `traceProgram` | `""` | The program in your Trace pane, so it survives a restart. Capped at 64 KiB |
+| `traceStdin` | `""` | The input your Trace program can read. Capped at 8 KiB |
 
 An invalid or corrupt settings file is never fatal: unknown keys are ignored,
 out-of-range numbers are clamped, and wrong types fall back to the default.
+
+## Trace
+
+Open the command palette and choose **New Trace Pane**. Write C on the left,
+press **Step**, and watch the memory on the right: a box per variable, a group
+per stack frame, heap blocks drawn apart from them, and an arrow from every
+pointer to the thing it points at.
+
+**Trace is a teaching simulator, not a C compiler.** It runs its own interpreter
+over a subset of C, so it needs no compiler, no debugger and no network, and it
+behaves identically on macOS, Windows and Linux. Real-world C will not run in
+it, and that is not the goal.
+
+**What it runs.** `int`, `char`, `double`, `void`, pointers, arrays, `struct`
+and `enum`; every operator including `&`, `*`, `.`, `->`, `[]`, `sizeof` and
+casts; `if`, `while`, `for`, `do`, `switch`, `break`, `continue`, `return`;
+functions with recursion; object-like `#define`. Its library is built in:
+`printf`, `puts`, `putchar`, `scanf`, `getchar`, `malloc`, `calloc`, `realloc`,
+`free`, `exit`, `abs`, `rand`, `srand`, and the common `str*` and `mem*`
+functions.
+
+**What it refuses, by name.** `union`, function pointers, `goto`, `long`,
+`short`, `unsigned`, `float`, bitfields, multiple files, a real preprocessor and
+file I/O. Each one produces a message saying what is unsupported and what to use
+instead, never a confusing parse error.
+
+**Why a simulator rather than a real compiler.** Because it knows the extent and
+type of every object, it catches the mistakes real hardware answers with silence
+or garbage, and explains them where they happen:
+
+- Reading memory that was never given a value
+- Reading or writing past the end of an array, naming the array and its real length
+- Using memory after `free`, freeing twice, or freeing something `malloc` never gave you
+- Dereferencing `NULL`
+- Using a local variable after the function that owned it returned
+- Leaking memory, reported at exit with a count and a total
+- Dividing by zero, signed overflow, and a negative index
+
+Every message comes in two forms: a terse compiler-style one, so real `gcc`
+output looks familiar later, and a plain-language explanation of what went
+wrong.
+
+**Stepping backwards.** *Step Back* walks the program backwards through what
+already happened, and *Step* then carries on forwards from there.
+
+**Limits**, each reported as a teaching message rather than a crash: 1 MiB of
+memory, 200 stack frames, and 5,000,000 steps — the last of which is how an
+endless loop announces itself.
 
 ## Security
 
@@ -218,10 +271,12 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-81 tests covering the IPC validators and channel contract, the split-pane tree,
-settings coercion, shell resolution and palette filtering, plus an end-to-end
-test that boots Electron, spawns a real shell and asserts the output
-round-trips.
+488 tests. Ninety-three cover the IPC validators and channel contract, the
+split-pane tree, settings coercion, shell resolution and palette filtering, plus
+an end-to-end test that boots Electron, spawns a real shell and asserts the
+output round-trips. The rest cover Trace: its lexer, parser, memory model,
+diagnostics, evaluator and library, and a corpus of seventy-six whole programs
+run end to end.
 
 Architecture notes are in [docs/design.md](docs/design.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the layout and conventions.
