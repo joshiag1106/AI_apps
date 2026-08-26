@@ -7857,3 +7857,34 @@ flags on those objects are restored separately by the existing `flags` journal,
 which `popFrame` already writes.
 
 **Task 6 needs no change at all**, and its sixteen tests stand unmodified.
+
+### Also in Task 7: hash the memory, do not serialise it
+
+Task 7's `fingerprint` helper calls `Array.from(m.bytes)` and passes the result
+to `JSON.stringify`. That turns a megabyte of memory into a million-element
+array and then a multi-megabyte string, roughly eight times across the file,
+including inside a two-hundred-iteration property loop.
+
+Hash it instead:
+
+```js
+const crypto = require('node:crypto');
+
+function fingerprint(m) {
+  return JSON.stringify({
+    bytes: crypto.createHash('sha256').update(m.bytes).digest('hex'),
+    live: m.liveObjects().map((o) => [o.id, o.address, o.size, o.alive, o.freed,
+      crypto.createHash('sha256').update(o.initialised).digest('hex')]),
+    frames: m.frames().map((f) => [f.id, f.functionName, f.base]),
+  });
+}
+```
+
+The object and frame structure is still compared literally; only the byte
+arrays are reduced. The whole file then runs in about 30ms.
+
+**Do not reach for a smaller machine to make this cheaper.** `createMachine`
+accepts a `capacity`, but `LAYOUT.HEAP_BASE` and `LAYOUT.STACK_TOP` are fixed
+at `0x10000` and `0x100000`, so a machine smaller than the layout has its stack
+outside its own memory and every local write throws. The `capacity` option is
+only meaningful at or above `LAYOUT.CAPACITY`.

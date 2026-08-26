@@ -17,6 +17,8 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  const MAX_JOURNAL = 200000;
+
   const SIZES = Object.freeze({ int: 4, char: 1, double: 8, ptr: 8, enum: 4 });
   const ALIGNS = Object.freeze({ int: 4, char: 1, double: 8, ptr: 8, enum: 4 });
 
@@ -171,7 +173,10 @@
     function popFrame() {
       const frame = frameStack.pop();
       if (!frame) return null;
-      for (const obj of frame.objects) obj.alive = false;
+      for (const obj of frame.objects) {
+        recordFlag(obj, 'alive');
+        obj.alive = false;
+      }
       stackNext = frame.base;
       return frame;
     }
@@ -210,6 +215,8 @@
       if (!record || record.kind !== 'heap') return { ok: false, reason: 'not-heap' };
       if (record.address !== address) return { ok: false, reason: 'not-block-start' };
       if (record.freed) return { ok: false, reason: 'double-free' };
+      recordFlag(record, 'freed');
+      recordFlag(record, 'alive');
       record.freed = true;
       record.alive = false;
       return { ok: true };
@@ -238,9 +245,9 @@
       const obj = objectAt(address);
       if (!obj) return;
       const start = address - obj.address;
-      for (let i = 0; i < count && start + i < obj.size; i += 1) {
-        obj.initialised[start + i] = 1;
-      }
+      const span = Math.max(0, Math.min(count, obj.size - start));
+      recordInitBits(obj, start, span);
+      for (let i = 0; i < span; i += 1) obj.initialised[start + i] = 1;
     }
 
     function isInitialised(address, count) {
@@ -261,9 +268,109 @@
       return objects.filter((o) => o.kind === 'heap' && !o.freed);
     }
 
+    // --- the journal -------------------------------------------------------
+    //
+    // Because `objects` is only ever appended to, and every other piece of
+    // machine state is a scalar, a byte, or the frame stack, one step's undo
+    // record is: the previous bytes of anything written, the previous flags of
+    // anything killed, a shallow copy of the frame stack, and four numbers.
+    // No snapshots of memory.
+
+    const journal = [];
+    let currentStep = null;
+
+    function beginStep() {
+      currentStep = {
+        writes: [],          // {address, previous: Uint8Array}
+        flags: [],           // {objectId, field, previous}
+        initBits: [],        // {objectId, offset, previous: Uint8Array}
+        objectCount: objects.length,
+        frames: frameStack.slice(),
+        globalNext: globalNext,
+        heapNext: heapNext,
+        stackNext: stackNext,
+      };
+    }
+
+    function endStep() {
+      if (!currentStep) return;
+      journal.push(currentStep);
+      currentStep = null;
+      // Dropping the oldest keeps the most recent window, which is the window
+      // a learner actually wants to walk back through.
+      if (journal.length > MAX_JOURNAL) journal.shift();
+    }
+
+    /** Called before anything changes the bytes. */
+    function recordWrite(address, count) {
+      if (!currentStep) return;
+      currentStep.writes.push({
+        address: address,
+        previous: bytes.slice(address, address + count),
+      });
+    }
+
+    function recordFlag(obj, field) {
+      if (!currentStep) return;
+      currentStep.flags.push({ objectId: obj.id, field: field, previous: obj[field] });
+    }
+
+    function recordInitBits(obj, offset, count) {
+      if (!currentStep) return;
+      currentStep.initBits.push({
+        objectId: obj.id,
+        offset: offset,
+        previous: obj.initialised.slice(offset, offset + count),
+      });
+    }
+
+    function objectById(id) {
+      for (let i = objects.length - 1; i >= 0; i -= 1) {
+        if (objects[i].id === id) return objects[i];
+      }
+      return null;
+    }
+
+    function undoStep() {
+      const step = journal.pop();
+      if (!step) return false;
+
+      // Reverse order matters: two writes to one address within a single step
+      // must be undone last-first to land back on the original bytes.
+      for (let i = step.writes.length - 1; i >= 0; i -= 1) {
+        bytes.set(step.writes[i].previous, step.writes[i].address);
+      }
+      for (let i = step.initBits.length - 1; i >= 0; i -= 1) {
+        const entry = step.initBits[i];
+        const obj = objectById(entry.objectId);
+        if (obj) obj.initialised.set(entry.previous, entry.offset);
+      }
+      for (let i = step.flags.length - 1; i >= 0; i -= 1) {
+        const entry = step.flags[i];
+        const obj = objectById(entry.objectId);
+        if (obj) obj[entry.field] = entry.previous;
+      }
+
+      objects.length = step.objectCount;
+      frameStack.length = 0;
+      Array.prototype.push.apply(frameStack, step.frames);
+      globalNext = step.globalNext;
+      heapNext = step.heapNext;
+      stackNext = step.stackNext;
+      return true;
+    }
+
+    function stepsAvailable() {
+      return journal.length;
+    }
+
     return {
       capacity: capacity,
       bytes: bytes,
+      beginStep: beginStep,
+      endStep: endStep,
+      undoStep: undoStep,
+      stepsAvailable: stepsAvailable,
       MAX_FRAMES: MAX_FRAMES,
       declareGlobal: declareGlobal,
       declareLocal: declareLocal,
@@ -288,6 +395,7 @@
 
       writeBytes: function (address, source) {
         checkRange(address, source.length);
+        recordWrite(address, source.length);
         bytes.set(source, address);
       },
 
@@ -320,18 +428,22 @@
         switch (ctype.k) {
           case 'char':
             checkRange(address, 1);
+            recordWrite(address, 1);
             view.setInt8(address, value | 0);
             return;
           case 'int': case 'enum':
             checkRange(address, 4);
+            recordWrite(address, 4);
             view.setInt32(address, value | 0, true);
             return;
           case 'double':
             checkRange(address, 8);
+            recordWrite(address, 8);
             view.setFloat64(address, Number(value), true);
             return;
           case 'ptr':
             checkRange(address, 8);
+            recordWrite(address, 8);
             view.setUint32(address, value >>> 0, true);
             view.setUint32(address + 4, 0, true);
             return;
@@ -342,5 +454,8 @@
     };
   }
 
-  return { SIZES, ALIGNS, LAYOUT, sizeOf, alignOf, structLayout, roundUp, createMachine };
+  return {
+    SIZES, ALIGNS, LAYOUT, MAX_JOURNAL,
+    sizeOf, alignOf, structLayout, roundUp, createMachine,
+  };
 });
