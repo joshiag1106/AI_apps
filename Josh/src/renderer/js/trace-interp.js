@@ -421,8 +421,284 @@
     return obj.address;
   }
 
+  // --- statements ----------------------------------------------------------
+
+  const NORMAL = { flow: 'normal' };
+
+  function pushScope(ctx) {
+    ctx.scopes.push(new Map());
+  }
+  function popScope(ctx) {
+    ctx.scopes.pop();
+  }
+
+  /**
+   * Executes one statement. Yields once before doing its work, so the driver
+   * can show the line about to run; nested statements yield in turn through
+   * `yield*`. Returns a Completion, which `yield*` also propagates, so break,
+   * continue and return need no side channel: an `if` inside a `while` returns
+   * {flow:'break'}, the block passes it up, and the loop acts on it.
+   *
+   * beginStep/endStep wrap only the parts that touch memory, always in
+   * try/finally. A check that fires mid-statement throws TraceHalt through the
+   * evaluator, and the finally closes the journal entry so that partial step
+   * stays undoable. Without it, Step Back across a halted statement would
+   * corrupt the machine.
+   */
+  function* execute(node, ctx) {
+    switch (node.kind) {
+      case 'block': {
+        pushScope(ctx);
+        try {
+          for (const statement of node.body) {
+            const completion = yield* execute(statement, ctx);
+            if (completion.flow !== 'normal') return completion;
+          }
+        } finally {
+          popScope(ctx); // finally, so a halt still tears the scope down
+        }
+        return NORMAL;
+      }
+
+      case 'empty':
+        return NORMAL;
+
+      case 'exprStmt':
+        yield node;
+        ctx.machine.beginStep();
+        try {
+          yield* evaluate(node.expr, ctx);
+        } finally {
+          ctx.machine.endStep();
+        }
+        return NORMAL;
+
+      case 'declStmt':
+        yield node;
+        ctx.machine.beginStep();
+        try {
+          for (const decl of node.decls) yield* declare(decl, ctx, node);
+        } finally {
+          ctx.machine.endStep();
+        }
+        return NORMAL;
+
+      case 'if': {
+        yield node;
+        let test;
+        ctx.machine.beginStep();
+        try {
+          test = decay(yield* evaluate(node.test, ctx)).value;
+        } finally {
+          ctx.machine.endStep();
+        }
+        if (test) return yield* execute(node.then, ctx);
+        if (node.otherwise) return yield* execute(node.otherwise, ctx);
+        return NORMAL;
+      }
+
+      case 'while': {
+        for (;;) {
+          yield node;
+          let test;
+          ctx.machine.beginStep();
+          try {
+            test = decay(yield* evaluate(node.test, ctx)).value;
+          } finally {
+            ctx.machine.endStep();
+          }
+          if (!test) return NORMAL;
+          const completion = yield* execute(node.body, ctx);
+          if (completion.flow === 'break') return NORMAL;
+          if (completion.flow === 'return') return completion;
+        }
+      }
+
+      case 'do': {
+        for (;;) {
+          const completion = yield* execute(node.body, ctx);
+          if (completion.flow === 'break') return NORMAL;
+          if (completion.flow === 'return') return completion;
+          yield node;
+          let test;
+          ctx.machine.beginStep();
+          try {
+            test = decay(yield* evaluate(node.test, ctx)).value;
+          } finally {
+            ctx.machine.endStep();
+          }
+          if (!test) return NORMAL;
+        }
+      }
+
+      case 'for': {
+        // The init declaration belongs to a scope of its own, so `i` does not
+        // leak out of the loop.
+        pushScope(ctx);
+        try {
+          if (node.init) {
+            const completion = yield* execute(node.init, ctx);
+            if (completion.flow === 'return') return completion;
+          }
+          for (;;) {
+            yield node;
+            if (node.test) {
+              let test;
+              ctx.machine.beginStep();
+              try {
+                test = decay(yield* evaluate(node.test, ctx)).value;
+              } finally {
+                ctx.machine.endStep();
+              }
+              if (!test) return NORMAL;
+            }
+
+            const completion = yield* execute(node.body, ctx);
+            if (completion.flow === 'break') return NORMAL;
+            if (completion.flow === 'return') return completion;
+
+            // `continue` reaches here, which is why the update still runs.
+            if (node.update) {
+              ctx.machine.beginStep();
+              try {
+                yield* evaluate(node.update, ctx);
+              } finally {
+                ctx.machine.endStep();
+              }
+            }
+          }
+        } finally {
+          popScope(ctx);
+        }
+      }
+
+      case 'switch': {
+        yield node;
+        let value;
+        ctx.machine.beginStep();
+        try {
+          value = decay(yield* evaluate(node.disc, ctx)).value;
+        } finally {
+          ctx.machine.endStep();
+        }
+
+        let index = node.cases.findIndex(function (entry) {
+          if (entry.test === null) return false;
+          return constantOf(entry.test, ctx) === value;
+        });
+        if (index === -1) index = node.cases.findIndex((entry) => entry.test === null);
+        if (index === -1) return NORMAL;
+
+        pushScope(ctx);
+        try {
+          // Fall through from the matched case onward, until a break.
+          for (let i = index; i < node.cases.length; i += 1) {
+            for (const statement of node.cases[i].body) {
+              const completion = yield* execute(statement, ctx);
+              if (completion.flow === 'break') return NORMAL;
+              if (completion.flow !== 'normal') return completion;
+            }
+          }
+        } finally {
+          popScope(ctx);
+        }
+        return NORMAL;
+      }
+
+      case 'break':
+        yield node;
+        return { flow: 'break' };
+
+      case 'continue':
+        yield node;
+        return { flow: 'continue' };
+
+      case 'return': {
+        yield node;
+        if (!node.value) return { flow: 'return', value: undefined };
+        ctx.machine.beginStep();
+        try {
+          const result = decay(yield* evaluate(node.value, ctx));
+          return { flow: 'return', value: result.value };
+        } finally {
+          ctx.machine.endStep();
+        }
+      }
+
+      default:
+        semantic('cannot-execute', 'cannot execute this statement',
+          'Trace does not know how to run this.', node);
+        return NORMAL;
+    }
+  }
+
+  /** A case label must be a constant, so it is read without side effects. */
+  function constantOf(node, ctx) {
+    if (node.kind === 'num' || node.kind === 'charlit') return node.value;
+    if (node.kind === 'ident') {
+      const enumValue = ctx.enums.get(node.name);
+      if (enumValue !== undefined) return enumValue;
+    }
+    semantic('non-constant-case', 'case label must be a constant',
+      'A case label has to be a plain number or an enum constant.', node);
+    return 0;
+  }
+
+  function* declare(decl, ctx, node) {
+    const obj = ctx.machine.declareLocal({ name: decl.name, ctype: decl.ctype });
+    if (!obj) {
+      halt({
+        code: 'stack-overflow',
+        terse: 'out of stack space',
+        plain: 'Every function call adds a frame to the stack, and this program '
+          + 'has run out of room. A function calling itself with no stopping '
+          + 'condition is the usual cause.',
+        locations: [], highlight: [],
+      }, node);
+    }
+    ctx.scopes[ctx.scopes.length - 1].set(decl.name,
+      { address: obj.address, ctype: decl.ctype });
+    if (decl.init) yield* initialise(obj.address, decl.ctype, decl.init, ctx, node);
+  }
+
+  /** Scalars, initialiser lists, and the string-into-char-array case. */
+  function* initialise(address, ctype, init, ctx, node) {
+    if (ctype.k === 'array' && init.kind === 'str') {
+      const elementSize = sizeOf(ctype.of, ctx);
+      for (let i = 0; i < ctype.length; i += 1) {
+        const code = i < init.value.length ? init.value.charCodeAt(i) : 0;
+        storeTo(address + i * elementSize, ctype.of, code, ctx, node);
+      }
+      return;
+    }
+    if (init.kind === 'initList') {
+      if (ctype.k === 'array') {
+        const elementSize = sizeOf(ctype.of, ctx);
+        for (let i = 0; i < init.items.length && i < ctype.length; i += 1) {
+          yield* initialise(address + i * elementSize, ctype.of, init.items[i], ctx, node);
+        }
+        // C zero-fills the remainder of a partially initialised aggregate.
+        for (let i = init.items.length; i < ctype.length; i += 1) {
+          storeTo(address + i * elementSize, ctype.of, 0, ctx, node);
+        }
+        return;
+      }
+      if (ctype.k === 'struct') {
+        const layout = ctx.structs[ctype.tag];
+        for (let i = 0; i < init.items.length && i < layout.fields.length; i += 1) {
+          const field = layout.fields[i];
+          yield* initialise(address + field.offset, field.ctype, init.items[i], ctx, node);
+        }
+        return;
+      }
+    }
+    const value = decay(yield* evaluate(init, ctx)).value;
+    storeTo(address, ctype, value, ctx, node);
+  }
+
   return {
     TraceHalt, createContext, evaluate, evaluateLValue,
+    execute, pushScope, popScope, initialise,
     loadFrom, storeTo, decay, halt, semantic, sizeOf,
     isPointerish, pointee, internString, checkedInt,
   };

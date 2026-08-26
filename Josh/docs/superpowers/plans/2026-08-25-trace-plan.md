@@ -7958,3 +7958,47 @@ Record the name on the object instead, at the moment it is declared. In
 
 This costs one field per object and removes a lookup that could never succeed.
 Task 6's tests are unaffected, since none of them compares whole objects.
+
+---
+
+## Amendment to Task 10: two defects in its test harness
+
+**Found while executing Task 10. Apply both as part of that task.**
+
+### 1. It calls a function from a later task
+
+Task 10's `run()` helper calls `I.prepareProgram(ctx)`, which Task 11
+introduces. A task cannot depend on one that has not run yet, and Task 10 does
+not need it: nothing in these twenty-four tests uses a struct, a global, an
+enum or a call. Delete the line.
+
+### 2. Every `valueOf` assertion would fail
+
+`run()` drives `I.execute(body, ctx)` on the **function's block**, and a block
+pushes a scope on entry and pops it on exit. By the time a test inspects
+`ctx.scopes`, every variable it means to check has gone with that scope, so
+`valueOf` returns `undefined` for all of them.
+
+Drive the body's statements directly instead, in the scope the helper pushed,
+so it survives the run:
+
+```js
+  const body = parsed.ast.body.find((n) => n.kind === 'func').body;
+  const iterator = (function* driveBody() {
+    for (const statement of body.body) {
+      const completion = yield* I.execute(statement, ctx);
+      if (completion.flow !== 'normal') return completion;
+    }
+    return { flow: 'normal' };
+  }());
+```
+
+This also matches what Task 11 does in practice: `callFunction` executes the
+block and then pops the whole frame, so the scope going with it is exactly
+right there, and only wrong for a test that wants to look afterwards.
+
+Nested blocks still push and pop their own scopes, so the two scope tests --
+`y` gone with its block, and an inner `x` shadowing an outer one -- keep their
+meaning.
+
+Task 10's expected result is **24 tests**.
