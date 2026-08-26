@@ -7793,3 +7793,67 @@ diagnostic fires and `ok()` fails on them. Append
 Do the same for the `struct`, `enum` and `union` sources.
 
 Task 4's expected result stands at **19 tests**.
+
+---
+
+## Amendment to Task 7: snapshot the frame stack, do not refactor it
+
+**Found while executing Task 6. Replaces Task 7's "required refactor first"
+section entirely. Do not perform that refactor.**
+
+Task 7 opens by requiring that Task 6's frame stack be replaced with an
+append-only `allFrames` array plus a `frameDepth` counter, so that undo can
+restore a popped frame by restoring one number. That does not work, and the
+failure is not subtle once the pop-then-push case is considered.
+
+Within a single step a program can pop a frame and then push a different one,
+which is what happens whenever one function returns and another is called:
+
+- **If `allFrames` is never truncated**, `allFrames.slice(0, frameDepth)`
+  returns the *old* frame at the reused index, not the new one. Every frame
+  reader is then wrong.
+- **If `allFrames` is truncated on push**, the popped frame's object is
+  overwritten, so `allFrames.length = step.frameCount` restores the right
+  *count* with the wrong *contents*. Undo silently corrupts the stack.
+
+Neither branch is salvageable by adjusting indices, because the information
+undo needs — the identity of the frame that was popped — has been discarded.
+
+### The change
+
+Keep Task 6's plain `frameStack` exactly as it is, with `push` and `pop`, and
+have the journal record a **shallow copy of it** at the start of each step:
+
+```js
+    function beginStep() {
+      currentStep = {
+        writes: [],
+        flags: [],
+        initBits: [],
+        objectCount: objects.length,
+        frames: frameStack.slice(),   // shallow: an array of references
+        globalNext: globalNext,
+        heapNext: heapNext,
+        stackNext: stackNext,
+      };
+    }
+```
+
+and undo restores it in place:
+
+```js
+      frameStack.length = 0;
+      Array.prototype.push.apply(frameStack, step.frames);
+```
+
+Frames are capped at 200 and a real program rarely exceeds ten, so this copies
+a handful of object references per step — less work than the index arithmetic
+it replaces, and correct by construction rather than by argument. A step
+already allocates a journal record; this adds one small array to it.
+
+The frames themselves are never copied, only the array holding them, so a
+frame's `objects` list and its `base` are restored by identity. The `alive`
+flags on those objects are restored separately by the existing `flags` journal,
+which `popFrame` already writes.
+
+**Task 6 needs no change at all**, and its sixteen tests stand unmodified.

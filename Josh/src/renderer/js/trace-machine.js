@@ -103,9 +103,183 @@
       }
     }
 
+    // --- the shadow map ----------------------------------------------------
+    //
+    // Every live object records where it is, how big it is, what type it holds
+    // and which of its bytes have ever been written. This structure does two
+    // jobs: it is what the diagram draws, and it is what makes undefined
+    // behaviour detectable. Raw bytes cannot tell you an address is one past
+    // the end of an array; this can.
+
+    const MAX_FRAMES = 200;
+
+    const objects = [];          // every record ever created, live or dead
+    const frameStack = [];
+    let globalNext = LAYOUT.GLOBAL_BASE;
+    let heapNext = LAYOUT.HEAP_BASE;
+    let stackNext = LAYOUT.STACK_TOP;
+    let nextObjectId = 1;
+    let nextFrameId = 1;
+    let structs = {};
+
+    function makeObject(name, address, size, ctype, kind, frameId) {
+      const obj = {
+        id: nextObjectId,
+        name: name,
+        address: address,
+        size: size,
+        ctype: ctype,
+        kind: kind,
+        frameId: frameId,
+        alive: true,
+        freed: false,
+        initialised: new Uint8Array(size), // one flag per byte
+      };
+      nextObjectId += 1;
+      objects.push(obj);
+      return obj;
+    }
+
+    function declareGlobal(decl) {
+      const size = sizeOf(decl.ctype, structs);
+      const align = alignOf(decl.ctype, structs);
+      globalNext = roundUp(globalNext, align);
+      const obj = makeObject(decl.name, globalNext, size, decl.ctype, 'global', null);
+      globalNext += size;
+      return obj;
+    }
+
+    /** Returns the new frame id, or null when the depth cap is reached. */
+    function pushFrame(functionName) {
+      if (frameStack.length >= MAX_FRAMES) return null;
+      const frame = {
+        id: nextFrameId,
+        functionName: functionName,
+        base: stackNext,
+        objects: [],
+      };
+      nextFrameId += 1;
+      frameStack.push(frame);
+      return frame.id;
+    }
+
+    /**
+     * Objects are marked dead but kept. Keeping them is what lets a later
+     * dereference say "this pointed at y in inner, which has returned" rather
+     * than the useless "invalid address".
+     */
+    function popFrame() {
+      const frame = frameStack.pop();
+      if (!frame) return null;
+      for (const obj of frame.objects) obj.alive = false;
+      stackNext = frame.base;
+      return frame;
+    }
+
+    function declareLocal(decl) {
+      const frame = frameStack[frameStack.length - 1];
+      if (!frame) return null;
+      const size = sizeOf(decl.ctype, structs);
+      const align = alignOf(decl.ctype, structs);
+      // The stack grows down: move down by the size, then align downward.
+      let address = stackNext - size;
+      address -= address % align;
+      stackNext = address;
+      const obj = makeObject(decl.name, address, size, decl.ctype, 'local', frame.id);
+      frame.objects.push(obj);
+      return obj;
+    }
+
+    /**
+     * A bump allocator that never reuses freed space. Reuse would make a
+     * use-after-free indistinguishable from a legitimate access, which would
+     * cost the feature its most valuable diagnostic. 1 MiB is ample for the
+     * programs a learner writes.
+     */
+    function allocate(size) {
+      const rounded = roundUp(Math.max(1, size), 8);
+      if (heapNext + rounded > stackNext) return 0; // NULL, as C would return
+      const address = heapNext;
+      heapNext += rounded;
+      makeObject(null, address, rounded, null, 'heap', null);
+      return address;
+    }
+
+    function release(address) {
+      const record = recordAt(address);
+      if (!record || record.kind !== 'heap') return { ok: false, reason: 'not-heap' };
+      if (record.address !== address) return { ok: false, reason: 'not-block-start' };
+      if (record.freed) return { ok: false, reason: 'double-free' };
+      record.freed = true;
+      record.alive = false;
+      return { ok: true };
+    }
+
+    function contains(obj, address) {
+      return address >= obj.address && address < obj.address + obj.size;
+    }
+
+    function objectAt(address) {
+      for (let i = objects.length - 1; i >= 0; i -= 1) {
+        if (objects[i].alive && contains(objects[i], address)) return objects[i];
+      }
+      return null;
+    }
+
+    /** Live or dead. The diagnostics in Task 8 need the dead ones. */
+    function recordAt(address) {
+      for (let i = objects.length - 1; i >= 0; i -= 1) {
+        if (contains(objects[i], address)) return objects[i];
+      }
+      return null;
+    }
+
+    function markInitialised(address, count) {
+      const obj = objectAt(address);
+      if (!obj) return;
+      const start = address - obj.address;
+      for (let i = 0; i < count && start + i < obj.size; i += 1) {
+        obj.initialised[start + i] = 1;
+      }
+    }
+
+    function isInitialised(address, count) {
+      const obj = objectAt(address);
+      if (!obj) return false;
+      const start = address - obj.address;
+      for (let i = 0; i < count; i += 1) {
+        if (start + i >= obj.size || !obj.initialised[start + i]) return false;
+      }
+      return true;
+    }
+
+    function liveObjects() {
+      return objects.filter((o) => o.alive);
+    }
+
+    function leakedBlocks() {
+      return objects.filter((o) => o.kind === 'heap' && !o.freed);
+    }
+
     return {
       capacity: capacity,
       bytes: bytes,
+      MAX_FRAMES: MAX_FRAMES,
+      declareGlobal: declareGlobal,
+      declareLocal: declareLocal,
+      pushFrame: pushFrame,
+      popFrame: popFrame,
+      allocate: allocate,
+      release: release,
+      objectAt: objectAt,
+      recordAt: recordAt,
+      markInitialised: markInitialised,
+      isInitialised: isInitialised,
+      liveObjects: liveObjects,
+      leakedBlocks: leakedBlocks,
+      frames: function () { return frameStack.slice(); },
+      setStructs: function (value) { structs = value; },
+      structsRef: function () { return structs; },
 
       readBytes: function (address, count) {
         checkRange(address, count);
