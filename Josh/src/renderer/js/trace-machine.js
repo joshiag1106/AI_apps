@@ -124,7 +124,7 @@
     let nextFrameId = 1;
     let structs = {};
 
-    function makeObject(name, address, size, ctype, kind, frameId) {
+    function makeObject(name, address, size, ctype, kind, frameId, frameName) {
       const obj = {
         id: nextObjectId,
         name: name,
@@ -133,6 +133,7 @@
         ctype: ctype,
         kind: kind,
         frameId: frameId,
+        frameName: frameName || null,
         alive: true,
         freed: false,
         initialised: new Uint8Array(size), // one flag per byte
@@ -190,7 +191,8 @@
       let address = stackNext - size;
       address -= address % align;
       stackNext = address;
-      const obj = makeObject(decl.name, address, size, decl.ctype, 'local', frame.id);
+      const obj = makeObject(decl.name, address, size, decl.ctype, 'local',
+        frame.id, frame.functionName);
       frame.objects.push(obj);
       return obj;
     }
@@ -364,9 +366,241 @@
       return journal.length;
     }
 
+    // --- the checks --------------------------------------------------------
+    //
+    // Answers about memory, so they live on the machine rather than in the
+    // interpreter. The interpreter supplies the source location and decides
+    // whether a diagnostic halts execution.
+
+    const INT_MIN = -2147483648;
+    const INT_MAX = 2147483647;
+    const NEAR = 64; // how far past an object an access is still "past it"
+
+    function diagnostic(code, terse, plain, highlight) {
+      return {
+        code: code,
+        terse: terse,
+        plain: plain,
+        locations: [],              // the interpreter fills these in
+        highlight: highlight || [],
+      };
+    }
+
+    /**
+     * The object an access has just run off the end of.
+     *
+     * An access starting one byte past an array is contained by nothing, so
+     * recordAt cannot name it. Looking for the closest object ending at or
+     * before the address is what turns "wild pointer" into "you read past the
+     * end of a", which is the whole difference between a shrug and a lesson.
+     */
+    function precedingObject(address) {
+      let best = null;
+      let bestEnd = -1;
+      for (const obj of objects) {
+        const end = obj.address + obj.size;
+        if (end <= address && address - end < NEAR && end > bestEnd) {
+          best = obj;
+          bestEnd = end;
+        }
+      }
+      return best;
+    }
+
+    /** A human phrase for an address, reused inside several messages. */
+    function describeAddress(address) {
+      const record = recordAt(address);
+      if (!record) return 'address ' + address;
+      const offset = address - record.address;
+      const where = offset === 0 ? '' : ' plus ' + offset + ' bytes';
+      if (record.kind === 'heap') {
+        return 'a heap block of ' + record.size + ' bytes' + where;
+      }
+      return (record.name || 'an unnamed object') + where;
+    }
+
+    function overrun(record, count, verb) {
+      const elements = record.ctype && record.ctype.k === 'array'
+        ? record.ctype.length : null;
+      const extent = elements !== null
+        ? (record.name || 'it') + ' has ' + elements + ' elements, so the last '
+          + 'valid index is ' + (elements - 1) + '.'
+        : (record.name || 'this block') + ' is ' + record.size + ' bytes long.';
+      return diagnostic(
+        verb === 'write' ? 'out-of-bounds-write' : 'out-of-bounds-read',
+        verb === 'write' ? 'write past the end of an object'
+          : 'read past the end of an object',
+        'This ' + verb + ' goes past the end of ' + (record.name || 'the block')
+          + '. ' + extent,
+        [{ address: record.address, size: record.size }]);
+    }
+
+    function accessProblem(address, count, verb) {
+      if (!Number.isInteger(address)) {
+        return diagnostic('wild-pointer',
+          'invalid address',
+          'This pointer does not hold a usable address. It was probably never '
+            + 'given a value.',
+          []);
+      }
+      if (address >= LAYOUT.NULL_GUARD && address < LAYOUT.GLOBAL_BASE) {
+        return diagnostic('null-dereference',
+          'null pointer dereferenced',
+          'This pointer is NULL, which means it points at nothing. Check '
+            + 'whether it was ever set, and whether a malloc that could have '
+            + 'returned NULL was checked.',
+          []);
+      }
+
+      const record = recordAt(address);
+      if (!record) {
+        const past = precedingObject(address);
+        if (past) return overrun(past, count, verb);
+        return diagnostic('wild-pointer',
+          'address belongs to no object',
+          'This address is not inside any variable or allocated block. The '
+            + 'pointer holds a value that was never a real address.',
+          []);
+      }
+
+      if (record.kind === 'heap' && record.freed) {
+        return diagnostic('use-after-free',
+          'use of freed memory',
+          'This memory was released with free, so it no longer belongs to the '
+            + 'program. Once a block is freed, the pointer to it must not be '
+            + 'used again.',
+          [{ address: record.address, size: record.size }]);
+      }
+
+      if (!record.alive && record.kind === 'local') {
+        return diagnostic('dangling-stack-pointer',
+          'use of a local variable after its function returned',
+          'This points at ' + record.name + ', a local variable of '
+            + (record.frameName || 'a function') + '. That function has '
+            + 'returned, so its locals no longer exist. Returning a pointer to '
+            + 'a local is never safe.',
+          [{ address: record.address, size: record.size }]);
+      }
+
+      if (address + count > record.address + record.size) {
+        return overrun(record, count, verb);
+      }
+
+      return null;
+    }
+
+    function checkRead(address, count) {
+      const problem = accessProblem(address, count, 'read');
+      if (problem) return problem;
+      if (!isInitialised(address, count)) {
+        const record = recordAt(address);
+        const name = record && record.name ? record.name : 'this memory';
+        return diagnostic('uninitialised-read',
+          'read of uninitialised memory',
+          name + ' has never been given a value, so reading it now would give '
+            + 'whatever happened to be in memory. Assign to it before you read '
+            + 'it.',
+          [{ address: address, size: count }]);
+      }
+      return null;
+    }
+
+    function checkWrite(address, count) {
+      return accessProblem(address, count, 'write');
+    }
+
+    function checkFree(address) {
+      if (Number.isInteger(address) && address >= LAYOUT.NULL_GUARD
+        && address < LAYOUT.GLOBAL_BASE) {
+        return null; // free(NULL) is defined and does nothing
+      }
+      const record = recordAt(address);
+      if (!record || record.kind !== 'heap') {
+        return diagnostic('free-of-non-heap',
+          'free of memory that did not come from malloc',
+          'Only memory returned by malloc, calloc or realloc can be freed. '
+            + 'Local variables and globals are managed for you.',
+          record ? [{ address: record.address, size: record.size }] : []);
+      }
+      if (record.address !== address) {
+        return diagnostic('free-of-interior-pointer',
+          'free of a pointer into the middle of a block',
+          'free needs the exact address malloc returned. This pointer has been '
+            + 'moved along by ' + (address - record.address) + ' bytes.',
+          [{ address: record.address, size: record.size }]);
+      }
+      if (record.freed) {
+        return diagnostic('double-free',
+          'memory freed twice',
+          'This block has already been freed. Freeing it again is an error; '
+            + 'set the pointer to NULL after freeing to make that obvious.',
+          [{ address: record.address, size: record.size }]);
+      }
+      return null;
+    }
+
+    function checkIndex(object, index, elementSize) {
+      if (index < 0) {
+        return diagnostic('negative-index',
+          'negative array index',
+          'Array indexes start at 0, so a negative index is always outside the '
+            + 'array.',
+          [{ address: object.address, size: object.size }]);
+      }
+      const count = Math.floor(object.size / elementSize);
+      if (index >= count) {
+        return diagnostic('index-out-of-range',
+          'array index out of range',
+          (object.name || 'This array') + ' has ' + count + ' elements, so the '
+            + 'last valid index is ' + (count - 1) + '. Index ' + index
+            + ' is past the end.',
+          [{ address: object.address, size: object.size }]);
+      }
+      return null;
+    }
+
+    function checkDivide(divisor) {
+      if (divisor !== 0) return null;
+      return diagnostic('divide-by-zero',
+        'division by zero',
+        'Dividing by zero has no answer, and on a real machine it usually stops '
+          + 'the program. Check the divisor before dividing.',
+        []);
+    }
+
+    function checkIntResult(value) {
+      if (value >= INT_MIN && value <= INT_MAX) return null;
+      return diagnostic('signed-overflow',
+        'signed integer overflow',
+        'An int holds whole numbers from ' + INT_MIN + ' to ' + INT_MAX
+          + '. This result is ' + value + ', which does not fit. In real C the '
+          + 'behaviour here is undefined, so the program could do anything.',
+        []);
+    }
+
+    function checkLeaks() {
+      const leaked = leakedBlocks();
+      if (leaked.length === 0) return null;
+      const total = leaked.reduce((sum, block) => sum + block.size, 0);
+      return diagnostic('memory-leak',
+        leaked.length + ' allocation(s) never freed',
+        'The program ended with ' + leaked.length + ' block(s) still '
+          + 'allocated, ' + total + ' bytes in total. Every malloc needs a '
+          + 'matching free.',
+        leaked.map((block) => ({ address: block.address, size: block.size })));
+    }
+
     return {
       capacity: capacity,
       bytes: bytes,
+      checkRead: checkRead,
+      checkWrite: checkWrite,
+      checkFree: checkFree,
+      checkIndex: checkIndex,
+      checkDivide: checkDivide,
+      checkIntResult: checkIntResult,
+      checkLeaks: checkLeaks,
+      describeAddress: describeAddress,
       beginStep: beginStep,
       endStep: endStep,
       undoStep: undoStep,

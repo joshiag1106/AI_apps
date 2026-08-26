@@ -7888,3 +7888,73 @@ accepts a `capacity`, but `LAYOUT.HEAP_BASE` and `LAYOUT.STACK_TOP` are fixed
 at `0x10000` and `0x100000`, so a machine smaller than the layout has its stack
 outside its own memory and every local write throws. The `capacity` option is
 only meaningful at or above `LAYOUT.CAPACITY`.
+
+---
+
+## Amendment to Task 8: two defects in the checks
+
+**Found while executing Task 8. Apply both as part of that task.**
+Task 8's expected result is **19 tests**, not 18; the count was off by one.
+
+### 1. One past the end reports as a wild pointer
+
+`accessProblem` resolves `recordAt(address)` — the object *containing* the
+address. An access that begins exactly one byte past an array is contained by
+nothing, so it falls through to `wild-pointer` and the diagnostic cannot name
+the array that was overrun. Task 8's own out-of-bounds test fails on it.
+
+The existing branch only catches an access that *starts inside* an object and
+*extends past* it, which is the `strcpy` case, not the `a[5]` case.
+
+Add a lookup for the object an access has just run off the end of, and use it
+when nothing contains the address:
+
+```js
+    const NEAR = 64; // how far past an object an access is still "past it"
+
+    function precedingObject(address) {
+      let best = null;
+      let bestEnd = -1;
+      for (const obj of objects) {
+        const end = obj.address + obj.size;
+        if (end <= address && address - end < NEAR && end > bestEnd) {
+          best = obj;
+          bestEnd = end;
+        }
+      }
+      return best;
+    }
+```
+
+and in `accessProblem`, where `record` is null:
+
+```js
+      const past = precedingObject(address);
+      if (past) return overrun(past, count, verb);
+      return diagnostic('wild-pointer', ...);
+```
+
+`NEAR` keeps attribution honest: an address a kilobyte past an array is a wild
+pointer, not an overrun of that array. Factor the out-of-bounds message into an
+`overrun(record, count, verb)` helper, since both paths now produce it.
+
+### 2. The dangling-pointer message cannot name its function
+
+Task 8 writes `const frame = allFrames.find((f) => f.id === record.frameId)`.
+No such array exists, and popped frames are removed from the stack, so the
+lookup fails exactly when it is needed — the frame has returned, which is the
+whole reason the diagnostic is firing. The message would always degrade to "a
+function".
+
+Record the name on the object instead, at the moment it is declared. In
+`makeObject`, take a `frameName` and store it; in `declareLocal`, pass
+`frame.functionName`. Then the message reads it directly:
+
+```js
+          'This points at ' + record.name + ', a local variable of '
+            + (record.frameName || 'a function') + '. That function has '
+            + 'returned, so its locals no longer exist.'
+```
+
+This costs one field per object and removes a lookup that could never succeed.
+Task 6's tests are unaffected, since none of them compares whole objects.
