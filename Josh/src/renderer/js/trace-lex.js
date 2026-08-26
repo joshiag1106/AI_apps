@@ -85,7 +85,8 @@
         col: atCol,
         length: raw.length,
       };
-      if (includeTrivia || (type !== 'comment' && type !== 'space')) tokens.push(token);
+      const trivia = type === 'comment' || type === 'space' || type === 'stray';
+      if (includeTrivia || !trivia) tokens.push(token);
     }
 
     function advance(count) {
@@ -204,6 +205,9 @@
         'stray ' + JSON.stringify(ch) + ' in program',
         'This character has no meaning in C. Delete it.',
         startLine, startCol, 1);
+      // Emitted as trivia so the editor can reproduce the source exactly. The
+      // parser never sees it; the error above is the parser's notification.
+      push('stray', ch, start, startLine, startCol);
     }
 
     tokens.push({ type: 'eof', value: null, raw: '', line: line, col: col, length: 0 });

@@ -8200,3 +8200,48 @@ creates its file.
 
 **Renumbering:** the plan now runs 1 to 14, then 16 (editor), 17 (diagram), 18
 (pane wiring, settings, controls, examples) and 19 (docs). Task 15 is empty.
+
+---
+
+## Amendment to Task 16: the lexer drops stray characters
+
+**Found while executing Task 16. Apply the lexer change as part of that task.**
+Its expected result is **9 tests**, not 6.
+
+Task 16 promises that highlighting reproduces the source exactly, and tests it
+on half-typed input. It does not, because the lexer's stray-character path
+reports the error and advances without emitting a token:
+
+```js
+      advance(1);
+      fail('stray-character', ...);
+```
+
+So `highlight('a @ b')` loses the `@`, and the coloured layer drifts out of
+alignment with the textarea over it from that character onward -- a cursor that
+no longer sits where the caret appears to be.
+
+Emitting it as a plain token instead is not the fix either: `int @ x` would
+then hand the parser a token it has no rule for, and Task 1's test asserting
+the parser stream stays `['keyword', 'ident', 'eof']` would fail.
+
+It is **trivia**: something the editor must reproduce and the parser must never
+see, exactly like a comment. Add `stray` to the trivia set in `push`, and emit
+the token after reporting the error:
+
+```js
+      const trivia = type === 'comment' || type === 'space' || type === 'stray';
+      if (includeTrivia || !trivia) tokens.push(token);
+```
+
+```js
+      push('stray', ch, start, startLine, startCol);
+```
+
+Map it to `tok-error` in the editor's `CLASSES` so the character is visibly
+marked rather than silently swallowed. Add tests for the round trip, for the
+class, and for the parser stream remaining unchanged.
+
+**Script tags:** Task 16 creates `trace-editor.js` but adds no `<script>` tag
+for it. Nothing loads it until the pane exists, so all eight tags go in one
+correctly ordered block in Task 18 rather than accumulating piecemeal.
