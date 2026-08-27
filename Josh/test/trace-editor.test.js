@@ -68,23 +68,34 @@ test('the parser never sees stray characters, only the editor does', () => {
  * Highlighting has to keep up with typing, and the way it stops keeping up is
  * by going accidentally quadratic in the length of the file.
  *
- * A wall-clock budget cannot express that, because it measures the machine.
- * This assertion used to read `elapsed < 250` and it failed on the Intel macOS
- * CI runner for no reason but load: the same suite took 11.3s on one run and
- * 17.3s on the next, and a highlight that normally costs ~10ms took 666ms.
- * Nothing had regressed. A test that fails when the neighbours are busy trains
- * people to ignore it.
+ * Two attempts at guarding that have now failed, and both failures are worth
+ * recording, because the obvious third attempt fails the same way.
  *
- * So the check is the shape of the curve instead, where machine speed cancels
- * out. The two sizes are measured *interleaved*, so load drifting during the
- * run lands on both alike; measured separately the numbers are visibly noisier.
+ * The first was a wall-clock budget, `elapsed < 250`. It measures the machine,
+ * not the code, and it failed on a loaded Intel macOS runner where the same
+ * suite took 17.3s instead of 11.3s. Nothing had regressed.
  *
- * Calibration, rather than a guessed threshold. Cost per line, quadrupling the
- * input: linear is 1.0 and quadratic is 4.0. Ten local runs of the real
- * highlighter land between 1.05 and 1.12; three runs against a deliberately
- * quadratic one land between 2.56 and 2.61. The threshold sits at 1.8 -- 60%
- * clear of the worst honest result and 30% clear of the best dishonest one.
+ * The second was this ratio: cost per line as the input quadruples, on the
+ * theory that machine speed cancels out. It does not. On macos-latest, 2000
+ * lines took 5.6ms -- faster than the laptop this was calibrated on -- while
+ * 8000 lines took 42.8ms, about the same. The small input fits in that
+ * machine's cache and the large one does not, so per-line cost depends on
+ * cache geometry as much as on complexity. Calibrated at 1.05-1.12 locally,
+ * it measured 1.91 there.
+ *
+ * That also collapses the discrimination the ratio was supposed to provide: a
+ * deliberately quadratic highlighter measures 2.56, and an honest one measured
+ * 1.91 on real hardware. There is no threshold between those worth trusting.
+ *
+ * So the timing assertion runs only where the machine is not shared, and CI
+ * keeps the one check that is genuinely machine-independent: the highlighter
+ * must produce output proportional to its input. That will not catch every
+ * quadratic implementation, and pretending otherwise is how the previous two
+ * versions came to fail.
  */
+const ON_SHARED_RUNNER = Boolean(process.env.CI)
+  && 'timing on a shared runner measures the runner; see the note above';
+
 const SMALL_FILE = ('int x = 1; // a line' + NL).repeat(2000);
 const LARGE_FILE = ('int x = 1; // a line' + NL).repeat(8000);
 
@@ -106,7 +117,22 @@ function measureBoth() {
   return { small: small, large: large };
 }
 
-test('highlighting stays linear in the length of the file', () => {
+test('highlighting produces output proportional to its input', () => {
+  // Machine-independent, so it runs everywhere: no clock, no threshold to
+  // calibrate. It catches a highlighter whose *output* goes quadratic, which
+  // is one real failure mode, and it is honest about being only that.
+  const small = Editor.highlight(SMALL_FILE).length;
+  const large = Editor.highlight(LARGE_FILE).length;
+  const growth = large / small;
+
+  assert.ok(
+    growth > 3.5 && growth < 4.5,
+    'four times the input produced ' + growth.toFixed(2) + 'x the spans '
+      + '(' + small + ' -> ' + large + '); linear is 4x'
+  );
+});
+
+test('highlighting stays linear in time', { skip: ON_SHARED_RUNNER }, () => {
   const timing = measureBoth();
   const perLineGrowth = (timing.large / Math.max(timing.small, 0.5)) / 4;
 
@@ -119,9 +145,11 @@ test('highlighting stays linear in the length of the file', () => {
 });
 
 test('highlighting a large file finishes without pathological slowness', () => {
-  // A ceiling, not a target. It catches total breakage only, and sits far
-  // above the worst loaded-runner measurement on record (666ms), so a busy
-  // machine alone can never trip it.
-  const timing = measureBoth();
-  assert.ok(timing.small < 3000, 'took ' + timing.small.toFixed(0) + 'ms');
+  // A ceiling, not a target, and the only timing assertion CI keeps. It sits
+  // far above the worst loaded-runner measurement on record (666ms), so a busy
+  // machine alone cannot trip it, and it catches total breakage only.
+  const started = process.hrtime.bigint();
+  Editor.highlight(SMALL_FILE);
+  const elapsed = Number(process.hrtime.bigint() - started) / 1e6;
+  assert.ok(elapsed < 3000, 'took ' + elapsed.toFixed(0) + 'ms');
 });
