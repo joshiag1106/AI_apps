@@ -191,6 +191,62 @@ function bashPreamble() {
   ].join('\n');
 }
 
+/**
+ * The optional export.
+ *
+ * The same generated script, written where the user can source it from another
+ * terminal: ~/.config/josh/shell-kit/init.zsh, .bash and .ps1.
+ *
+ * Josh writes only inside its own config directory and never edits a dotfile.
+ * Adding the source line is the user's action -- the palette offers to copy it
+ * and the README shows it. That is the promise SECURITY.md makes, and the
+ * reason this whole feature is built on a per-session temp directory rather
+ * than on an installer.
+ *
+ * The bash export carries no PROMPT_COMMAND bootstrap. There is nothing to
+ * disarm when the file is sourced by hand from the user's own rc.
+ *
+ * Files are rewritten only when their content has actually changed, so this
+ * costs nothing on a session that changed no settings, and picks up a settings
+ * change on the next session without any extra plumbing.
+ */
+const EXPORT_TARGETS = Object.freeze({
+  'init.zsh': 'zsh',
+  'init.bash': 'bash',
+  'init.ps1': 'pwsh',
+});
+
+function exportDirFor(home) {
+  return path.join(home, '.config', 'josh', 'shell-kit');
+}
+
+function exportKit(context) {
+  if (typeof context.home !== 'string' || context.home === '') return null;
+
+  const dir = exportDirFor(context.home);
+  fs.mkdirSync(dir, { recursive: true, mode: DIR_MODE });
+  fs.chmodSync(dir, DIR_MODE);
+
+  for (const name of Object.keys(EXPORT_TARGETS)) {
+    const script = emitOptions(context, EXPORT_TARGETS[name]);
+    if (script === '') continue;
+
+    const target = path.join(dir, name);
+    let existing = null;
+    try {
+      existing = fs.readFileSync(target, 'utf8');
+    } catch {
+      existing = null;
+    }
+    if (existing === script) continue;
+
+    fs.writeFileSync(target, script, { mode: FILE_MODE });
+    fs.chmodSync(target, FILE_MODE);
+  }
+
+  return dir;
+}
+
 const BUILDERS = {
   zsh(context) {
     const realZdotdir = context.env.ZDOTDIR || context.home;
@@ -318,10 +374,28 @@ function build({
     return null;
   }
 
+  // Best effort, and deliberately last: an export that fails must not cost
+  // anyone the working session that has already been generated.
+  try {
+    exportKit({
+      home,
+      settings,
+      glyphs: glyphsFor(settings, glyphs),
+      theme: themeFor(settings),
+      packs: packsFor(settings),
+      ui: colours.ui,
+      xterm: colours.xterm,
+    });
+  } catch {
+    // The temp kit is what makes this session work; the export is a
+    // convenience for other terminals and can wait for the next session.
+  }
+
   return { env: built.env, args: built.args, dispose };
 }
 
 module.exports = {
   build, dialectFor, themeFor, packsFor, paletteFor, glyphsFor,
+  exportKit, exportDirFor, EXPORT_TARGETS,
   DIR_MODE, FILE_MODE, BASH_BOOTSTRAP,
 };

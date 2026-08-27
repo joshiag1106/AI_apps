@@ -508,3 +508,166 @@ test('the emitted kit carries the settings that shape it', () => {
     return null;
   });
 });
+
+/* ------------------------------------------------------- the optional export */
+
+/** Every file under a root, relative and sorted, for before/after comparison. */
+function treeOf(root) {
+  const out = [];
+  (function walk(directory, prefix) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const rel = prefix ? prefix + '/' + entry.name : entry.name;
+      if (entry.isDirectory()) walk(path.join(directory, entry.name), rel);
+      else out.push(rel);
+    }
+  })(root, '');
+  return out.sort();
+}
+
+test('the export writes all three dialects where they can be sourced', () => {
+  scratch((where) => {
+    const built = buildZsh(where);
+    const dir = Integration.exportDirFor(where.home);
+    assert.deepStrictEqual(fs.readdirSync(dir).sort(), ['init.bash', 'init.ps1', 'init.zsh']);
+    built.dispose();
+    return null;
+  });
+});
+
+test('the export is 0600 inside a 0700 directory, like everything else', () => {
+  scratch((where) => {
+    const built = buildZsh(where);
+    const dir = Integration.exportDirFor(where.home);
+    assert.strictEqual(fs.statSync(dir).mode & 0o777, Integration.DIR_MODE);
+    for (const name of fs.readdirSync(dir)) {
+      assert.strictEqual(fs.statSync(path.join(dir, name)).mode & 0o777, Integration.FILE_MODE, name);
+    }
+    built.dispose();
+    return null;
+  });
+});
+
+test('the export lives under the config directory and nowhere else', () => {
+  scratch((where) => {
+    const expected = path.join(where.home, '.config', 'josh', 'shell-kit');
+    assert.strictEqual(Integration.exportDirFor(where.home), expected);
+
+    const before = treeOf(where.home);
+    const built = buildZsh(where);
+    const after = treeOf(where.home);
+
+    const added = after.filter((file) => !before.includes(file));
+    assert.ok(added.length > 0, 'the export should have written something');
+    for (const file of added) {
+      assert.ok(file.startsWith('.config/josh/'), 'wrote outside the config directory: ' + file);
+    }
+    built.dispose();
+    return null;
+  });
+});
+
+test('no dotfile is written, ever', () => {
+  scratch((where) => {
+    const built = buildZsh(where);
+    for (const name of ['.zshrc', '.zshenv', '.zprofile', '.bashrc', '.bash_profile', '.profile']) {
+      assert.strictEqual(
+        fs.existsSync(path.join(where.home, name)), false,
+        'Josh wrote ' + name
+      );
+    }
+    built.dispose();
+    return null;
+  });
+});
+
+test('the bash export carries no bootstrap, having nothing to disarm', () => {
+  scratch((where) => {
+    const built = buildZsh(where);
+    const exported = fs.readFileSync(
+      path.join(Integration.exportDirFor(where.home), 'init.bash'), 'utf8'
+    );
+    assert.strictEqual(exported.includes('__josh_boot'), false);
+    assert.ok(exported.includes('__josh_prompt'), 'but it must still install the prompt');
+    built.dispose();
+    return null;
+  });
+});
+
+test('the export is rewritten when the settings behind it change', () => {
+  scratch((where) => {
+    const target = path.join(Integration.exportDirFor(where.home), 'init.zsh');
+
+    const first = buildZsh(where, {
+      settings: { shellKit: true, shellKitPrompt: 'classic', shellKitPacks: [] },
+    });
+    const before = fs.readFileSync(target, 'utf8');
+    first.dispose();
+
+    const second = buildZsh(where, {
+      settings: { shellKit: true, shellKitPrompt: 'stack', shellKitPacks: ['git'] },
+    });
+    const after = fs.readFileSync(target, 'utf8');
+    second.dispose();
+
+    assert.notStrictEqual(before, after);
+    assert.ok(after.includes("__josh_alias 'gst' 'git status'"), 'the new pack must be in it');
+    return null;
+  });
+});
+
+test('an unchanged export is left alone rather than rewritten', () => {
+  scratch((where) => {
+    const target = path.join(Integration.exportDirFor(where.home), 'init.zsh');
+
+    const first = buildZsh(where);
+    const stamp = fs.statSync(target).mtimeMs;
+    first.dispose();
+
+    const second = buildZsh(where);
+    second.dispose();
+
+    assert.strictEqual(fs.statSync(target).mtimeMs, stamp, 'identical content, no rewrite');
+    return null;
+  });
+});
+
+test('disabling the kit leaves the export alone rather than deleting it', () => {
+  scratch((where) => {
+    const built = buildZsh(where);
+    built.dispose();
+    const dir = Integration.exportDirFor(where.home);
+    const before = fs.readdirSync(dir).sort();
+
+    // The user may be sourcing these from another terminal right now.
+    assert.strictEqual(buildZsh(where, { settings: { shellKit: false } }), null);
+    assert.deepStrictEqual(fs.readdirSync(dir).sort(), before);
+    return null;
+  });
+});
+
+test('an export that cannot be written does not cost the session', () => {
+  scratch((where) => {
+    // A file where the config directory needs to be: mkdir will fail.
+    const configDir = path.join(where.home, '.config');
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, 'josh'), 'not a directory');
+
+    let built;
+    assert.doesNotThrow(() => {
+      built = buildZsh(where);
+    });
+    assert.notStrictEqual(built, null, 'the session must still work');
+    assert.strictEqual(fs.existsSync(path.join(kitDir(built), 'josh-kit.zsh')), true);
+    built.dispose();
+    return null;
+  });
+});
+
+test('a session with no home does not attempt an export', () => {
+  scratch((where) => {
+    const built = buildZsh(where, { home: '' });
+    assert.notStrictEqual(built, null);
+    built.dispose();
+    return null;
+  });
+});
