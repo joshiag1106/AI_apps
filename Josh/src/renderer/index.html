@@ -43,6 +43,13 @@
   </div>
 </div>
 
+<div id="kit-preview-backdrop" hidden>
+  <div id="kit-preview" role="dialog" aria-label="Prompt theme">
+    <p id="kit-preview-note"></p>
+    <ul id="kit-preview-list" role="listbox" tabindex="0"></ul>
+  </div>
+</div>
+
 <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
 <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
 <script src="../../node_modules/@xterm/addon-webgl/lib/addon-webgl.js"></script>
@@ -58,6 +65,7 @@
 <script src="js/terminal-pane.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/command-palette.js"></script>
+<script src="js/kit-preview.js"></script>
 
 <!-- Trace, in dependency order: each reads the globals defined above it. -->
 <script src="js/trace-lex.js"></script>

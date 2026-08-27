@@ -614,3 +614,77 @@ body[data-platform="win32"] #titlebar {
 @media (prefers-reduced-motion: reduce) {
   .trace-arrows line { transition: none; }
 }
+
+/* ---------- Prompt theme preview ----------------------------------------- */
+
+/* Deliberately shares the palette's backdrop and dialog shape: it is the same
+   kind of thing, and a second visual language for it would be noise. */
+#kit-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 40;
+}
+
+#kit-preview-backdrop[hidden] {
+  display: none;
+}
+
+#kit-preview {
+  width: min(720px, 90vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+#kit-preview-note {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+#kit-preview-list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  outline: none;
+}
+
+#kit-preview-list li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#kit-preview-list li[aria-selected="true"] {
+  background: var(--selection);
+}
+
+.kit-preview-name {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+/* The prompt is monospace because that is what it will be. */
+.kit-preview-sample {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: pre;
+  overflow-x: auto;
+  padding: 2px 0;
+}
