@@ -314,5 +314,127 @@ function global:__josh_alias {
 }
 `;
 
-  return { POSIX_GIT, POSIX_ALIAS, PWSH_GIT, PWSH_ALIAS };
+  /**
+   * Prompt-time helpers for zsh and bash: the clock, the path formatter and
+   * the duration formatter.
+   *
+   * These do not vary by theme -- only the truncation count is passed in -- so
+   * they live here rather than in kit-emit.js, and are executed by a real bash
+   * and zsh in the test suite. Their output is held to matching the JavaScript
+   * in kit-render.js, because the preview must not disagree with the terminal.
+   *
+   * Clock resolution is one second. EPOCHSECONDS is a bash 5 builtin and a zsh
+   * module; where neither is present the fallback forks date once per command.
+   * Sub-second resolution would need EPOCHREALTIME, whose decimal separator is
+   * locale-dependent, and a prompt that misreads a comma is worse than a
+   * prompt that rounds.
+   */
+  const POSIX_PROMPT = `
+__josh_now_ms() {
+  if [ -n "\$EPOCHSECONDS" ]; then
+    JOSH_NOW_MS=\$(( EPOCHSECONDS * 1000 ))
+  else
+    JOSH_NOW_MS=\$(( \$(date +%s) * 1000 ))
+  fi
+}
+
+__josh_timer_start() {
+  __josh_now_ms
+  JOSH_TIMER_START=\$JOSH_NOW_MS
+}
+
+__josh_timer_stop() {
+  if [ -z "\$JOSH_TIMER_START" ]; then
+    JOSH_DURATION_MS=0
+    return 0
+  fi
+  __josh_now_ms
+  JOSH_DURATION_MS=\$(( JOSH_NOW_MS - JOSH_TIMER_START ))
+  if [ "\$JOSH_DURATION_MS" -lt 0 ]; then
+    JOSH_DURATION_MS=0
+  fi
+  JOSH_TIMER_START=""
+}
+
+# Collapse the home directory, then keep only the trailing components. The
+# home test is an exact match or a home-plus-slash prefix, never a bare
+# prefix, so /home/username is not mangled by a user living at /home/u. A
+# count of zero means no truncation, and a path whose every component already
+# fits is returned untouched.
+__josh_cwd_fmt() {
+  __josh_p=\$PWD
+  case "\$__josh_p" in
+    "\$HOME")
+      __josh_p="~"
+      ;;
+    "\$HOME"/*)
+      __josh_p="~\${__josh_p#"\$HOME"}"
+      ;;
+  esac
+
+  if [ "\$1" -gt 0 ]; then
+    __josh_acc=""
+    __josh_work=\$__josh_p
+    __josh_n=\$1
+    while [ "\$__josh_n" -gt 0 ]; do
+      case "\$__josh_work" in
+        */*)
+          __josh_seg=\${__josh_work##*/}
+          __josh_work=\${__josh_work%/*}
+          ;;
+        *)
+          __josh_seg=\$__josh_work
+          __josh_work=""
+          ;;
+      esac
+      if [ -z "\$__josh_acc" ]; then
+        __josh_acc=\$__josh_seg
+      else
+        __josh_acc="\$__josh_seg/\$__josh_acc"
+      fi
+      __josh_n=\$(( __josh_n - 1 ))
+      if [ -z "\$__josh_work" ]; then
+        break
+      fi
+    done
+    if [ -n "\$__josh_work" ]; then
+      __josh_p="\$JOSH_ELISION/\$__josh_acc"
+    fi
+  fi
+
+  JOSH_CWD=\$__josh_p
+}
+
+# Milliseconds to something a person reads off a prompt. Seconds carry one
+# decimal, and only when there is one to carry; the sixty-second boundary
+# rolls into minutes rather than printing 60s.
+__josh_dur_fmt() {
+  __josh_ms=\$1
+  if [ "\$__josh_ms" -lt 1000 ]; then
+    JOSH_DUR="\${__josh_ms}ms"
+    return 0
+  fi
+
+  __josh_tenths=\$(( (__josh_ms + 50) / 100 ))
+  if [ "\$__josh_tenths" -lt 600 ]; then
+    if [ "\$(( __josh_tenths % 10 ))" -eq 0 ]; then
+      JOSH_DUR="\$(( __josh_tenths / 10 ))s"
+    else
+      JOSH_DUR="\$(( __josh_tenths / 10 )).\$(( __josh_tenths % 10 ))s"
+    fi
+    return 0
+  fi
+
+  __josh_secs=\$(( (__josh_ms + 500) / 1000 ))
+  __josh_min=\$(( __josh_secs / 60 ))
+  __josh_rest=\$(( __josh_secs % 60 ))
+  if [ "\$__josh_rest" -gt 0 ]; then
+    JOSH_DUR="\${__josh_min}m \${__josh_rest}s"
+  else
+    JOSH_DUR="\${__josh_min}m"
+  fi
+}
+`;
+
+  return { POSIX_GIT, POSIX_ALIAS, POSIX_PROMPT, PWSH_GIT, PWSH_ALIAS };
 });

@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const KitLib = require('../src/shared/kit-lib.js');
+const KitRender = require('../src/shared/kit-render.js');
 
 const TAB = String.fromCharCode(9);
 
@@ -311,8 +312,134 @@ for (const shell of SHELLS) {
   });
 }
 
+/* ------------------------------------- the prompt helpers, in real shells */
+
+/** Format a real directory, having really changed into it. */
+function cwdIn(shell, home, target, keep) {
+  const script = KitLib.POSIX_PROMPT + '\n'
+    + 'JOSH_ELISION="..."\n'
+    + 'HOME=$1\n'
+    + 'cd "$2" || exit 1\n'
+    + '__josh_cwd_fmt "$3"\n'
+    + 'printf "cwd=%s\\n" "$JOSH_CWD"\n';
+  return withScript(script, (driver) => {
+    return readPairs(shellOut(shell, [driver, home, target, String(keep)])).cwd;
+  });
+}
+
+function durations(shell, values) {
+  const script = KitLib.POSIX_PROMPT + '\n'
+    + 'for __josh_arg in "$@"; do\n'
+    + '  __josh_dur_fmt "$__josh_arg"\n'
+    + '  printf "%s=%s\\n" "$__josh_arg" "$JOSH_DUR"\n'
+    + 'done\n';
+  return withScript(script, (driver) => {
+    return readPairs(shellOut(shell, [driver].concat(values.map(String))));
+  });
+}
+
+for (const shell of SHELLS) {
+  test(shell + ': home collapses to a tilde, exactly and with a slash', () => {
+    withScript('', (unused, dir) => {
+      fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
+      assert.strictEqual(cwdIn(shell, dir, dir, 0), '~');
+      assert.strictEqual(cwdIn(shell, dir, path.join(dir, 'src'), 0), '~/src');
+      return null;
+    });
+  });
+
+  test(shell + ': a sibling sharing the home prefix is not mangled', () => {
+    withScript('', (unused, dir) => {
+      const home = path.join(dir, 'u');
+      const other = path.join(dir, 'username', 'src');
+      fs.mkdirSync(home, { recursive: true });
+      fs.mkdirSync(other, { recursive: true });
+      assert.strictEqual(cwdIn(shell, home, other, 0), other);
+      return null;
+    });
+  });
+
+  test(shell + ': truncation keeps the trailing components, or nothing at all', () => {
+    withScript('', (unused, dir) => {
+      const deep = path.join(dir, 'a', 'b', 'c', 'd', 'e');
+      fs.mkdirSync(deep, { recursive: true });
+      const nowhere = path.join(dir, 'nohome');
+      assert.strictEqual(cwdIn(shell, nowhere, deep, 2), '.../d/e');
+      assert.strictEqual(cwdIn(shell, nowhere, deep, 0), deep);
+      assert.strictEqual(cwdIn(shell, nowhere, deep, 99), deep);
+      return null;
+    });
+  });
+
+  test(shell + ': a path that already fits is returned untouched', () => {
+    withScript('', (unused, dir) => {
+      const home = path.join(dir, 'home');
+      fs.mkdirSync(home, { recursive: true });
+      assert.strictEqual(cwdIn(shell, home, home, 3), '~');
+      assert.strictEqual(cwdIn(shell, path.join(dir, 'nohome'), '/', 2), '/');
+      return null;
+    });
+  });
+
+  test(shell + ': the shell path formatter agrees with the JavaScript one', () => {
+    withScript('', (unused, dir) => {
+      const deep = path.join(dir, 'a', 'b', 'c', 'd', 'e');
+      fs.mkdirSync(deep, { recursive: true });
+      const home = path.join(dir, 'a');
+      for (const keep of [0, 1, 2, 3, 9]) {
+        assert.strictEqual(
+          cwdIn(shell, home, deep, keep),
+          KitRender.formatCwd(deep, home, keep, 'plain'),
+          'keep ' + keep
+        );
+      }
+      return null;
+    });
+  });
+
+  test(shell + ': the shell duration formatter agrees with the JavaScript one', () => {
+    const values = [0, 1, 850, 999, 1000, 1400, 59950, 60000, 120000, 125000, 3600000];
+    const got = durations(shell, values);
+    for (const ms of values) {
+      assert.strictEqual(got[String(ms)], KitRender.formatDuration(ms), ms + 'ms');
+    }
+  });
+
+  test(shell + ': a timer that never started reports no duration', () => {
+    const script = KitLib.POSIX_PROMPT + '\n'
+      + 'JOSH_TIMER_START=""\n'
+      + '__josh_timer_stop\n'
+      + 'printf "ms=%s\\n" "$JOSH_DURATION_MS"\n';
+    const got = withScript(script, (driver) => readPairs(shellOut(shell, [driver])));
+    assert.strictEqual(got.ms, '0');
+  });
+
+  test(shell + ': a started timer reports a duration and disarms itself', () => {
+    const script = KitLib.POSIX_PROMPT + '\n'
+      + '__josh_timer_start\n'
+      + 'printf "armed=%s\\n" "$JOSH_TIMER_START"\n'
+      + '__josh_timer_stop\n'
+      + 'printf "ms=%s\\n" "$JOSH_DURATION_MS"\n'
+      + 'printf "disarmed=[%s]\\n" "$JOSH_TIMER_START"\n';
+    const got = withScript(script, (driver) => readPairs(shellOut(shell, [driver])));
+    assert.match(got.armed, /^[0-9]+$/);
+    assert.match(got.ms, /^[0-9]+$/);
+    assert.strictEqual(got.disarmed, '[]');
+  });
+
+  test(shell + ': a clock that runs backwards reports zero, not a negative', () => {
+    const script = KitLib.POSIX_PROMPT + '\n'
+      + '__josh_now_ms\n'
+      + 'JOSH_TIMER_START=$(( JOSH_NOW_MS + 60000 ))\n'
+      + '__josh_timer_stop\n'
+      + 'printf "ms=%s\\n" "$JOSH_DURATION_MS"\n';
+    const got = withScript(script, (driver) => readPairs(shellOut(shell, [driver])));
+    assert.strictEqual(got.ms, '0');
+  });
+}
+
 test('every shipped snippet is plain ASCII with no control characters', () => {
-  for (const name of ['POSIX_GIT', 'POSIX_ALIAS', 'PWSH_GIT', 'PWSH_ALIAS']) {
+  for (const name of ['POSIX_GIT', 'POSIX_ALIAS', 'POSIX_PROMPT', 'PWSH_GIT', 'PWSH_ALIAS']) {
     const text = KitLib[name];
     assert.strictEqual(typeof text, 'string', name);
     assert.ok(text.length > 0, name);
@@ -325,14 +452,15 @@ test('every shipped snippet is plain ASCII with no control characters', () => {
 });
 
 test('the POSIX snippets define only __josh_ prefixed names', () => {
-  const text = KitLib.POSIX_GIT + '\n' + KitLib.POSIX_ALIAS;
+  const text = [KitLib.POSIX_GIT, KitLib.POSIX_ALIAS, KitLib.POSIX_PROMPT].join('\n');
   const found = [...text.matchAll(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(\)/gm)].map((m) => m[1]);
   assert.ok(found.length > 0, 'no functions found, the regex has drifted');
   for (const name of found) assert.match(name, /^__josh_/, name);
 });
 
 test('no snippet borrows from the framework this one is not', () => {
-  const all = [KitLib.POSIX_GIT, KitLib.POSIX_ALIAS, KitLib.PWSH_GIT, KitLib.PWSH_ALIAS]
+  const all = [KitLib.POSIX_GIT, KitLib.POSIX_ALIAS, KitLib.POSIX_PROMPT,
+    KitLib.PWSH_GIT, KitLib.PWSH_ALIAS]
     .join('\n')
     .toLowerCase();
   for (const banned of ['oh-my-zsh', 'ohmyzsh', 'omz_', 'zsh_theme', 'zsh_custom', 'plugins=(']) {
