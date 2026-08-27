@@ -23,6 +23,25 @@ function available(shell) {
 
 const SHELLS = ['bash', 'zsh'].filter(available);
 
+/**
+ * Why the path tests below do not run on Windows.
+ *
+ * Git Bash ships with the Windows runners, so `available('bash')` is true
+ * there and the loop runs. But its MSYS layer rewrites paths between Windows
+ * and POSIX conventions: these tests hand the shell a HOME that Node computed
+ * (C:\...\Temp\josh-kit-X) and then compare it against a cwd the shell reports
+ * in POSIX form (/tmp/josh-kit-X). The tilde can never match, because the two
+ * strings describe the same directory in different dialects.
+ *
+ * That is an artifact of the harness, not a defect in the prompt code: in real
+ * use HOME and PWD both come from the shell itself and agree. Every assertion
+ * here still runs on macOS and Linux, so the formatter keeps its coverage on
+ * the platforms where POSIX shells are Josh's default.
+ */
+const NO_SHELL_PATHS =
+  process.platform === 'win32' &&
+  'Git Bash rewrites paths between Windows and POSIX form; see the note above';
+
 /** Run a driver script through a real shell, in a temp directory of its own. */
 function withScript(body, run) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'josh-kit-'));
@@ -339,7 +358,7 @@ function durations(shell, values) {
 }
 
 for (const shell of SHELLS) {
-  test(shell + ': home collapses to a tilde, exactly and with a slash', () => {
+  test(shell + ': home collapses to a tilde, exactly and with a slash', { skip: NO_SHELL_PATHS }, () => {
     withScript('', (unused, dir) => {
       fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
       assert.strictEqual(cwdIn(shell, dir, dir, 0), '~');
@@ -348,7 +367,7 @@ for (const shell of SHELLS) {
     });
   });
 
-  test(shell + ': a sibling sharing the home prefix is not mangled', () => {
+  test(shell + ': a sibling sharing the home prefix is not mangled', { skip: NO_SHELL_PATHS }, () => {
     withScript('', (unused, dir) => {
       const home = path.join(dir, 'u');
       const other = path.join(dir, 'username', 'src');
@@ -359,7 +378,7 @@ for (const shell of SHELLS) {
     });
   });
 
-  test(shell + ': truncation keeps the trailing components, or nothing at all', () => {
+  test(shell + ': truncation keeps the trailing components, or nothing at all', { skip: NO_SHELL_PATHS }, () => {
     withScript('', (unused, dir) => {
       const deep = path.join(dir, 'a', 'b', 'c', 'd', 'e');
       fs.mkdirSync(deep, { recursive: true });
@@ -371,7 +390,7 @@ for (const shell of SHELLS) {
     });
   });
 
-  test(shell + ': a path that already fits is returned untouched', () => {
+  test(shell + ': a path that already fits is returned untouched', { skip: NO_SHELL_PATHS }, () => {
     withScript('', (unused, dir) => {
       const home = path.join(dir, 'home');
       fs.mkdirSync(home, { recursive: true });
@@ -381,7 +400,7 @@ for (const shell of SHELLS) {
     });
   });
 
-  test(shell + ': the shell path formatter agrees with the JavaScript one', () => {
+  test(shell + ': the shell path formatter agrees with the JavaScript one', { skip: NO_SHELL_PATHS }, () => {
     withScript('', (unused, dir) => {
       const deep = path.join(dir, 'a', 'b', 'c', 'd', 'e');
       fs.mkdirSync(deep, { recursive: true });

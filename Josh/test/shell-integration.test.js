@@ -19,6 +19,23 @@ function hasZsh() {
 
 const ZSH = hasZsh();
 
+/**
+ * Assert a POSIX permission mode, on the filesystems that have them.
+ *
+ * Windows implements no POSIX permission bits: Node's `mode` option to mkdir
+ * and writeFile is ignored on NTFS, and statSync reports 0o666 whatever was
+ * requested. Asserting 0o700/0o600 there tests the filesystem, not Josh.
+ *
+ * The modes still matter - these files carry a per-session nonce - so they
+ * stay asserted on macOS and Linux, which is every platform where the bits
+ * exist at all.
+ */
+const POSIX_MODES = process.platform !== 'win32';
+
+function assertMode(actual, expected, message) {
+  if (POSIX_MODES) assert.strictEqual(actual, expected, message);
+}
+
 function hasBash() {
   try {
     execFileSync('bash', ['-c', 'exit 0'], { stdio: 'ignore' });
@@ -154,9 +171,9 @@ test('the directory is 0700 and every file inside it is 0600', () => {
   scratch((where) => {
     const built = buildZsh(where);
     const dir = kitDir(built);
-    assert.strictEqual(fs.statSync(dir).mode & 0o777, Integration.DIR_MODE);
+    assertMode(fs.statSync(dir).mode & 0o777, Integration.DIR_MODE);
     for (const name of fs.readdirSync(dir)) {
-      assert.strictEqual(
+      assertMode(
         fs.statSync(path.join(dir, name)).mode & 0o777,
         Integration.FILE_MODE,
         name
@@ -445,7 +462,7 @@ test('pwsh is driven by arguments, and its environment is left alone', () => {
     const scriptPath = built.args[2].replace(/^\. '/, '').replace(/'$/, '');
     const kit = fs.readFileSync(scriptPath, 'utf8');
     assert.ok(kit.includes('function global:prompt'), 'a pwsh prompt must be defined');
-    assert.strictEqual(fs.statSync(scriptPath).mode & 0o777, Integration.FILE_MODE);
+    assertMode(fs.statSync(scriptPath).mode & 0o777, Integration.FILE_MODE);
     built.dispose();
     return null;
   });
@@ -538,9 +555,9 @@ test('the export is 0600 inside a 0700 directory, like everything else', () => {
   scratch((where) => {
     const built = buildZsh(where);
     const dir = Integration.exportDirFor(where.home);
-    assert.strictEqual(fs.statSync(dir).mode & 0o777, Integration.DIR_MODE);
+    assertMode(fs.statSync(dir).mode & 0o777, Integration.DIR_MODE);
     for (const name of fs.readdirSync(dir)) {
-      assert.strictEqual(fs.statSync(path.join(dir, name)).mode & 0o777, Integration.FILE_MODE, name);
+      assertMode(fs.statSync(path.join(dir, name)).mode & 0o777, Integration.FILE_MODE, name);
     }
     built.dispose();
     return null;
