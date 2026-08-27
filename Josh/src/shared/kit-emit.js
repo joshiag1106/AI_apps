@@ -304,6 +304,12 @@
       '  *) PROMPT_COMMAND="__josh_prompt${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;',
       'esac',
       "trap '__josh_timer_start' DEBUG",
+      '',
+      '# Render once now. PROMPT_COMMAND sets PS1 when it runs, and it runs',
+      '# before the *next* prompt, so without this the first prompt of every',
+      '# bash session would still be the default one. zsh needs no equivalent:',
+      '# its precmd hook fires before the first prompt already.',
+      '__josh_prompt',
     ].join('\n');
   }
 
