@@ -23,6 +23,14 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      dry_run_release:
+        description: >-
+          Exercise the release job without publishing anything. Builds every
+          installer, then runs the download and publish steps against a draft
+          release, so the release path can be proven before a tag depends on it.
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -210,9 +218,12 @@ jobs:
             Josh/dist/*.AppImage
             Josh/dist/*.deb
 
+  # The release job is the only place download-artifact and action-gh-release
+  # run, and a tag push is a bad moment to discover either of them is broken.
+  # `dry_run_release` runs this same job on demand -- the real one, not a copy.
   release:
     name: release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.dry_run_release
     needs: dist
     runs-on: ubuntu-latest
     steps:
@@ -228,6 +239,12 @@ jobs:
         with:
           files: artifacts/**/*
           generate_release_notes: true
+          # Fail-safe rather than input-driven: anything not triggered by a
+          # real version tag can only ever produce a draft, so a dry run cannot
+          # publish even if its input is wrong. A draft holds its tag name
+          # without creating the ref, so no tag is left behind either.
+          draft: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'dry-run' }}
           body: |
             **Josh** is a fast, secure, cross-platform terminal emulator: real
             PTYs, GPU-accelerated rendering, tabs and split panes.
