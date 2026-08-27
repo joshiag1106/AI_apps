@@ -31,6 +31,7 @@
   const panesBySession = new Map();
   let tabStrip = null;
   let palette = null;
+  let kitPreview = null;
 
   // ---- Tab and pane lookup -------------------------------------------------
 
@@ -468,6 +469,90 @@
     if (pane && pane.write) pane.write('\r\n\x1b[31mjosh: ' + message + '\x1b[0m\r\n');
   }
 
+  // ---- Shell Kit -----------------------------------------------------------
+
+  /**
+   * Every kit change applies to new tabs and panes only.
+   *
+   * Josh never writes into a live PTY. The shell may not be at a prompt, and
+   * without OSC 133 marking there is no way to know: if the pane is inside
+   * vim, injected keystrokes go into the file. So the hint says so rather than
+   * leaving the user to discover it.
+   */
+  const NEW_PANES_ONLY = 'applies to new tabs and panes';
+
+  function kitGlyphMode() {
+    if (!window.KitGlyphs) return 'plain';
+    return window.KitGlyphs.resolveGlyphs(
+      state.settings,
+      window.KitGlyphs.measureWithCanvas(state.settings.fontFamily, state.settings.fontSize)
+    );
+  }
+
+  function openKitPreview() {
+    if (!kitPreview || !window.KitPreview) return;
+    const pane = activePane();
+    kitPreview.open(window.KitPreview.previewModel({
+      cwd: (pane && pane.cwd) || '',
+      home: (state.info && state.info.home) || '',
+      ui: state.theme ? state.theme.ui : null,
+      xterm: state.theme ? state.theme.xterm : null,
+      glyphs: kitGlyphMode(),
+      selected: state.settings.shellKitPrompt,
+    }));
+  }
+
+  /** The source line for the exported kit, for a shell of the given path. */
+  function kitSourceLine(shellPath) {
+    const base = String(shellPath || '').split(/[\\/]/).pop().toLowerCase().replace(/\.exe$/, '');
+    if (base === 'pwsh') return '. ~/.config/josh/shell-kit/init.ps1';
+    if (base === 'bash') return 'source ~/.config/josh/shell-kit/init.bash';
+    return 'source ~/.config/josh/shell-kit/init.zsh';
+  }
+
+  function shellKitEntries() {
+    const on = state.settings.shellKit === true;
+    const chosen = Array.isArray(state.settings.shellKitPacks) ? state.settings.shellKitPacks : [];
+
+    const entries = [
+      {
+        label: 'Shell Kit: ' + (on ? 'on' : 'off'),
+        hint: NEW_PANES_ONLY,
+        run: () => patchSettings({ shellKit: !on }),
+      },
+      {
+        label: 'Prompt Theme...',
+        hint: state.settings.shellKitPrompt,
+        run: openKitPreview,
+      },
+    ];
+
+    const packNames = window.KitPacks ? window.KitPacks.packNames() : [];
+    for (const name of packNames) {
+      const enabled = chosen.includes(name);
+      entries.push({
+        label: 'Pack: ' + name + ' (' + (enabled ? 'on' : 'off') + ')',
+        hint: NEW_PANES_ONLY,
+        run: () => patchSettings({
+          shellKitPacks: enabled
+            ? chosen.filter((item) => item !== name)
+            : chosen.concat([name]),
+        }),
+      });
+    }
+
+    const pane = activePane();
+    entries.push({
+      label: 'Copy Shell Kit source line',
+      hint: 'for another terminal',
+      run: () => {
+        api.clipboard.write(kitSourceLine(pane && pane.shell)).catch(function () {});
+      },
+    });
+
+    return entries;
+  }
+
   function openPalette() {
     const entries = [
       { label: 'New Tab', hint: accel('T'), run: commands['tab:new'] },
@@ -499,6 +584,8 @@
         run: () => patchSettings({ theme: name }),
       });
     }
+
+    for (const entry of shellKitEntries()) entries.push(entry);
 
     palette.open(entries);
   }
@@ -595,6 +682,15 @@
       onSelect: activateTab,
       onClose: closeTab,
     });
+    if (window.KitPreview) {
+      kitPreview = new window.KitPreview.KitPreviewPanel({
+        backdrop: el('kit-preview-backdrop'),
+        list: el('kit-preview-list'),
+        note: el('kit-preview-note'),
+        onChoose: (name) => patchSettings({ shellKitPrompt: name }),
+      });
+    }
+
     palette = new window.CommandPalette({
       backdrop: el('palette-backdrop'),
       input: el('palette-input'),

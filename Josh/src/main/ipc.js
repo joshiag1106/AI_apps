@@ -155,6 +155,10 @@ function registerIpc({ ptyManager, settings, windowManager }) {
       chrome: process.versions.chrome,
       node: process.versions.node,
       darkMode: nativeTheme.shouldUseDarkColors,
+      // So the prompt preview can collapse the home directory to a tilde the
+      // way the real prompt will. The renderer already sees this path in every
+      // cwd it is sent.
+      home: app.getPath('home'),
     }))
   );
 
