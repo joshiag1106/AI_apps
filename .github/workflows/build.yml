@@ -44,9 +44,9 @@ jobs:
         # replacement for Intel coverage, supported until Fall 2027.)
         os: [macos-latest, macos-15-intel, windows-latest, ubuntu-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -119,9 +119,9 @@ jobs:
             arch: arm64
             artifact: windows-arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -199,7 +199,7 @@ jobs:
 
           Write-Host 'sed/awk fallback packaged and runnable.'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: josh-${{ matrix.artifact }}
           retention-days: 14
@@ -216,7 +216,7 @@ jobs:
     needs: dist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -224,7 +224,7 @@ jobs:
       # instructions, every downloader hits a Gatekeeper or SmartScreen block
       # and reasonably concludes the app is broken or malicious.
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: artifacts/**/*
           generate_release_notes: true
