@@ -14,6 +14,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
+const KitPacks = require('../shared/kit-packs.js');
+
 const DEFAULTS = Object.freeze({
   fontFamily:
     'JetBrains Mono, Fira Code, SF Mono, Menlo, Consolas, DejaVu Sans Mono, monospace',
@@ -36,11 +38,30 @@ const DEFAULTS = Object.freeze({
   bell: false,
   // Working directories of the tabs open at last exit, for session restore.
   lastSession: [],
+  // Trace pane contents. Kept here because settings.json is the only
+  // persistence Josh has, and using it costs no new IPC channel.
+  traceProgram: '',
+  traceStdin: '',
+
+  // Shell Kit. The master switch defaults off on purpose: silently replacing
+  // the prompt of someone running starship, Powerlevel10k or oh-my-zsh on a
+  // version upgrade would be hostile.
+  shellKit: false,
+  shellKitPrompt: 'classic',
+  shellKitPacks: ['git', 'core'],
+  shellKitGlyphs: 'auto',
+  shellKitGitUntracked: true,
+  shellKitGitSkip: [],
+  shellKitSafeRemove: false,
 });
+
+/** A prompt theme name is an identifier, never a path. */
+const KIT_NAME_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
 
 const ENUMS = Object.freeze({
   cursorStyle: ['bar', 'block', 'underline'],
   renderer: ['webgl', 'canvas'],
+  shellKitGlyphs: ['auto', 'rich', 'plain'],
 });
 
 const NUMERIC_RANGES = Object.freeze({
@@ -81,6 +102,37 @@ function coerce(raw) {
         out.lastSession = value
           .filter((p) => typeof p === 'string' && p.length > 0 && p.length <= 4096)
           .slice(0, 20);
+      }
+      continue;
+    }
+    // Before the generic string branch below, which caps at 512 characters
+    // and would quietly truncate a program.
+    if (key === 'traceProgram' || key === 'traceStdin') {
+      const cap = key === 'traceProgram' ? 65536 : 8192;
+      if (typeof value === 'string') out[key] = value.slice(0, cap);
+      continue;
+    }
+    if (key === 'shellKitPrompt') {
+      if (typeof value === 'string' && KIT_NAME_PATTERN.test(value)) out.shellKitPrompt = value;
+      continue;
+    }
+    if (key === 'shellKitPacks') {
+      // An unknown pack name is dropped here rather than at emit time, so that
+      // what the settings file says and what the shell gets are the same list.
+      if (Array.isArray(value)) {
+        out.shellKitPacks = KitPacks.selectPacks(
+          value.filter((name) => typeof name === 'string')
+        ).map((pack) => pack.name);
+      }
+      continue;
+    }
+    if (key === 'shellKitGitSkip') {
+      if (Array.isArray(value)) {
+        out.shellKitGitSkip = value
+          .filter((prefix) => typeof prefix === 'string')
+          .map((prefix) => prefix.trim())
+          .filter((prefix) => prefix.length > 0 && prefix.length <= 4096)
+          .slice(0, 32);
       }
       continue;
     }

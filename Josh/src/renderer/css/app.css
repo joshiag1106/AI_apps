@@ -405,3 +405,286 @@ body[data-platform="win32"] #titlebar {
 .xterm .xterm-selection div {
   background: var(--selection) !important;
 }
+
+/* ---- Trace ---------------------------------------------------------------
+ * A Trace pane is a terminal pane's sibling: same .pane box, different
+ * contents. Every colour comes from the active theme's tokens, so the pane
+ * follows the terminal's theme and its light/dark switch without knowing
+ * which theme is on.
+ */
+
+.trace-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+/* The editor: a transparent textarea over a coloured layer. Both must share
+   identical metrics or the caret drifts away from the glyph under it. */
+.trace-editor {
+  position: relative;
+  flex: 0 0 40%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.trace-gutter,
+.trace-layer,
+.trace-input {
+  font: inherit;
+  font-family: var(--mono, monospace);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 6px 0;
+  margin: 0;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.trace-gutter {
+  grid-column: 1;
+  padding-inline: 8px;
+  text-align: right;
+  color: var(--muted);
+  user-select: none;
+  overflow: hidden;
+}
+
+.trace-gutter .is-current { color: var(--accent); font-weight: 600; }
+.trace-gutter .is-error { color: #f7768e; font-weight: 600; }
+
+.trace-layer,
+.trace-input {
+  grid-column: 2;
+  grid-row: 1;
+  padding-inline: 8px;
+  overflow: auto;
+  border: 0;
+}
+
+.trace-layer { pointer-events: none; }
+
+.trace-input {
+  color: transparent;
+  caret-color: var(--accent);
+  background: transparent;
+  resize: none;
+  outline: none;
+}
+
+.tok-keyword { color: var(--accent); }
+.tok-builtin { color: var(--accent); opacity: 0.85; }
+.tok-number { color: #e0af68; }
+.tok-string { color: #9ece6a; }
+.tok-comment { color: var(--muted); font-style: italic; }
+.tok-punct { color: var(--fg); opacity: 0.75; }
+.tok-ident { color: var(--fg); }
+.tok-error { color: #f7768e; text-decoration: underline wavy; }
+
+.trace-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.trace-button {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  color: var(--fg);
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.trace-button:disabled { opacity: 0.4; cursor: default; }
+.trace-button:not(:disabled):hover { border-color: var(--accent); }
+
+.trace-examples {
+  font: inherit;
+  font-size: 12px;
+  margin-left: auto;
+  color: var(--fg);
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.trace-lower {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.trace-diagram {
+  position: relative;
+  flex: 1 1 60%;
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+
+/* The arrows sit over the boxes and must never swallow a click. */
+.trace-arrows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.trace-arrows line {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+.trace-group { margin-bottom: 10px; }
+
+.trace-group-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.trace-slot {
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 3px;
+  background: var(--chrome);
+}
+
+/* An unwritten slot is visibly not a value, matching the '?' it carries. */
+.trace-slot.is-unset { opacity: 0.6; border-style: dashed; }
+
+.trace-right {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 40%;
+  min-width: 0;
+}
+
+.trace-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.trace-status.is-error { border-color: #f7768e; color: #f7768e; }
+.trace-status.is-done { border-color: #9ece6a; }
+.trace-status.is-idle { color: var(--muted); }
+
+.trace-output,
+.trace-stdin {
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+  margin: 0;
+  padding: 6px 8px;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.trace-output { flex: 1 1 auto; min-height: 0; }
+.trace-stdin { flex: 0 0 20%; resize: none; outline: none; }
+.trace-stdin:focus { border-color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-arrows line { transition: none; }
+}
+
+/* ---------- Prompt theme preview ----------------------------------------- */
+
+/* Deliberately shares the palette's backdrop and dialog shape: it is the same
+   kind of thing, and a second visual language for it would be noise. */
+#kit-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 40;
+}
+
+#kit-preview-backdrop[hidden] {
+  display: none;
+}
+
+#kit-preview {
+  width: min(720px, 90vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+#kit-preview-note {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+#kit-preview-list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  outline: none;
+}
+
+#kit-preview-list li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#kit-preview-list li[aria-selected="true"] {
+  background: var(--selection);
+}
+
+.kit-preview-name {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+/* The prompt is monospace because that is what it will be. */
+.kit-preview-sample {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: pre;
+  overflow-x: auto;
+  padding: 2px 0;
+}

@@ -80,7 +80,16 @@ function runSmokeTest() {
     // abort that no JavaScript try/catch can intercept. The run then reports
     // failure even after the test itself printed SMOKE PASS. Exiting closes
     // the pty file descriptors, so the shell gets SIGHUP and the OS reaps it.
-    app.exit(code);
+    //
+    // The exit is deferred for the same reason, by a different route.
+    // finish() is reached from inside onData, a callback the native binding
+    // invokes from C++. Exiting there destroys the process while that C++
+    // frame is still on the stack, and the binding's own callback then fires
+    // into a torn-down context - producing the identical Napi abort. It is
+    // intermittent, which is what the race looks like from CI: SMOKE PASS on
+    // stdout, Napi::Error on stderr, and a null exit code from the signal.
+    // setImmediate lets the native frame unwind before the process goes away.
+    setImmediate(() => app.exit(code));
   };
 
   const manager = new PtyManager({

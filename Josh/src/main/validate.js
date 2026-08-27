@@ -92,6 +92,18 @@ function assertCwd(value) {
  * Decides whether a URL from terminal output may be handed to the OS.
  * Returns false (never throws) so callers can silently ignore hostile links.
  */
+/**
+ * The renderer measured the font and says whether it has powerline glyphs.
+ * That is a claim from an untrusted process like any other, so it is checked
+ * against the two-value enum rather than passed through: the value ends up
+ * baked into shell script, where "rich" and "anything at all" are not the same
+ * thing. Absent is rejected too; the caller decides what a missing value means.
+ */
+function assertGlyphMode(value) {
+  if (value !== 'rich' && value !== 'plain') fail('glyph mode must be rich or plain');
+  return value;
+}
+
 function isSafeExternalUrl(value) {
   if (typeof value !== 'string' || value.length === 0) return false;
   if (value.length > LIMITS.MAX_URL) return false;
@@ -114,5 +126,6 @@ module.exports = {
   assertDimensions,
   sanitizeTitle,
   assertCwd,
+  assertGlyphMode,
   isSafeExternalUrl,
 };
