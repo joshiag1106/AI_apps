@@ -19,6 +19,17 @@ function hasZsh() {
 
 const ZSH = hasZsh();
 
+function hasBash() {
+  try {
+    execFileSync('bash', ['-c', 'exit 0'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const BASH = hasBash();
+
 /** A scratch root that stands in for both the OS temp dir and a user's home. */
 function scratch(run) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'josh-integration-'));
@@ -36,7 +47,7 @@ function scratch(run) {
 function buildZsh(where, overrides) {
   return Integration.build(Object.assign({
     shell: '/bin/zsh',
-    settings: { shellKit: true, shellKitTheme: 'classic', shellKitPacks: ['git'] },
+    settings: { shellKit: true, shellKitPrompt: 'classic', shellKitPacks: ['git'] },
     glyphs: 'plain',
     env: {},
     home: where.home,
@@ -81,7 +92,7 @@ test('an explicit shellArgs is a choice Josh must not override', () => {
   scratch((where) => {
     const built = buildZsh(where, {
       settings: {
-        shellKit: true, shellKitTheme: 'classic', shellKitPacks: [],
+        shellKit: true, shellKitPrompt: 'classic', shellKitPacks: [],
         shellArgs: ['-f'],
       },
     });
@@ -95,7 +106,7 @@ test('an empty shellArgs is not an explicit choice', () => {
   scratch((where) => {
     const built = buildZsh(where, {
       settings: {
-        shellKit: true, shellKitTheme: 'classic', shellKitPacks: [], shellArgs: [],
+        shellKit: true, shellKitPrompt: 'classic', shellKitPacks: [], shellArgs: [],
       },
     });
     assert.notStrictEqual(built, null);
@@ -223,7 +234,7 @@ test('zsh is pointed at the generated directory, and given no extra arguments', 
 test('the emitted kit reflects the chosen theme and packs', () => {
   scratch((where) => {
     const built = buildZsh(where, {
-      settings: { shellKit: true, shellKitTheme: 'stack', shellKitPacks: ['git'] },
+      settings: { shellKit: true, shellKitPrompt: 'stack', shellKitPacks: ['git'] },
     });
     const kit = fs.readFileSync(path.join(kitDir(built), 'josh-kit.zsh'), 'utf8');
     assert.ok(kit.includes("__josh_alias 'gst' 'git status'"), 'the git pack should be present');
@@ -236,7 +247,7 @@ test('the emitted kit reflects the chosen theme and packs', () => {
 test('an unknown theme name falls back rather than failing the session', () => {
   scratch((where) => {
     const built = buildZsh(where, {
-      settings: { shellKit: true, shellKitTheme: '../../etc/passwd', shellKitPacks: [] },
+      settings: { shellKit: true, shellKitPrompt: '../../etc/passwd', shellKitPacks: [] },
     });
     assert.notStrictEqual(built, null);
     assert.strictEqual(
@@ -297,6 +308,165 @@ test('a real zsh sources the user config, installs the kit, and restores ZDOTDIR
     assert.match(out, /rendered=[1-9][0-9]*/, 'the prompt must render to something');
 
     built.dispose();
+    return null;
+  });
+});
+
+/* ------------------------------------------------------------------- bash */
+
+function buildBash(where, overrides) {
+  return Integration.build(Object.assign({
+    shell: '/bin/bash',
+    settings: { shellKit: true, shellKitPrompt: 'classic', shellKitPacks: ['git'] },
+    glyphs: 'plain',
+    env: {},
+    home: where.home,
+    tmpdir: where.tmpdir,
+  }, overrides || {}));
+}
+
+test('bash gets its hook through the environment, and no extra arguments', () => {
+  scratch((where) => {
+    const built = buildBash(where);
+    assert.deepStrictEqual(built.args, [], '--rcfile is ignored for login shells');
+    assert.strictEqual(built.env.PROMPT_COMMAND, Integration.BASH_BOOTSTRAP);
+    assert.match(built.env.JOSH_KIT_FILE, /josh-kit\.bash$/);
+    assert.strictEqual(fs.existsSync(built.env.JOSH_KIT_FILE), true);
+    built.dispose();
+    return null;
+  });
+});
+
+test('the bash bootstrap carries no glob metacharacter, so it can be matched literally', () => {
+  for (const character of ['*', '?', '[', ']', '\\']) {
+    assert.strictEqual(
+      Integration.BASH_BOOTSTRAP.includes(character),
+      false,
+      'bootstrap contains ' + character
+    );
+  }
+});
+
+test('the bash kit takes the bootstrap back out of PROMPT_COMMAND', () => {
+  scratch((where) => {
+    const built = buildBash(where);
+    const kit = fs.readFileSync(built.env.JOSH_KIT_FILE, 'utf8');
+    assert.ok(kit.includes('PROMPT_COMMAND=${PROMPT_COMMAND/"$__josh_boot"/}'),
+      'the hook must disarm itself after its one run');
+    const removeAt = kit.indexOf('$__josh_boot');
+    const installAt = kit.indexOf('__josh_prompt${PROMPT_COMMAND');
+    assert.ok(removeAt !== -1 && installAt !== -1);
+    assert.ok(removeAt < installAt, 'disarm before installing, or the install is undone');
+    built.dispose();
+    return null;
+  });
+});
+
+test('a real bash disarms the bootstrap and keeps what the user appended', {
+  skip: BASH ? false : 'bash is not installed',
+}, () => {
+  scratch((where) => {
+    const built = buildBash(where);
+    const probe = [
+      'JOSH_KIT_FILE=' + JSON.stringify(built.env.JOSH_KIT_FILE),
+      // Exactly what bash holds when a .bashrc appended to the inherited hook.
+      'PROMPT_COMMAND=' + JSON.stringify(Integration.BASH_BOOTSTRAP + '; echo mine >/dev/null'),
+      'eval "$PROMPT_COMMAND"',
+      'printf "pc=%s\\n" "$PROMPT_COMMAND"',
+      'if declare -F __josh_prompt >/dev/null; then printf "prompt=yes\\n"; fi',
+      'if alias gst >/dev/null 2>&1; then printf "alias=yes\\n"; fi',
+      '__josh_prompt',
+      'printf "rendered=%s\\n" "${#PS1}"',
+    ].join('\n');
+
+    const out = execFileSync('bash', ['-c', probe], {
+      cwd: where.root,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    assert.match(out, /prompt=yes/, 'the prompt function must be installed');
+    assert.match(out, /alias=yes/, 'the git pack must be installed');
+    assert.match(out, /rendered=[1-9][0-9]*/, 'the prompt must render to something');
+
+    const line = out.match(/pc=(.*)/)[1];
+    assert.strictEqual(line.includes(Integration.BASH_BOOTSTRAP), false,
+      'the bootstrap must remove itself');
+    assert.ok(line.includes('echo mine'), 'what the user appended must survive');
+    assert.ok(line.includes('__josh_prompt'), 'the real hook must be installed');
+
+    built.dispose();
+    return null;
+  });
+});
+
+test('a bashrc that assigns PROMPT_COMMAND wipes the hook, and Josh does nothing', {
+  skip: BASH ? false : 'bash is not installed',
+}, () => {
+  scratch((where) => {
+    const built = buildBash(where);
+    const probe = [
+      'JOSH_KIT_FILE=' + JSON.stringify(built.env.JOSH_KIT_FILE),
+      'PROMPT_COMMAND=' + JSON.stringify(Integration.BASH_BOOTSTRAP),
+      // The documented caveat: an assignment, not an append.
+      'PROMPT_COMMAND="echo mine >/dev/null"',
+      'eval "$PROMPT_COMMAND"',
+      'if declare -F __josh_prompt >/dev/null; then printf "prompt=yes\\n"; ',
+      'else printf "prompt=no\\n"; fi',
+    ].join('\n');
+
+    const out = execFileSync('bash', ['-c', probe], {
+      cwd: where.root, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    assert.match(out, /prompt=no/, 'nothing at all, rather than half-applied');
+    built.dispose();
+    return null;
+  });
+});
+
+/* ------------------------------------------------------------------- pwsh */
+
+test('pwsh is driven by arguments, and its environment is left alone', () => {
+  scratch((where) => {
+    const built = Integration.build({
+      shell: '/usr/local/bin/pwsh',
+      settings: { shellKit: true, shellKitPrompt: 'classic', shellKitPacks: ['git'] },
+      glyphs: 'plain',
+      env: {},
+      home: where.home,
+      tmpdir: where.tmpdir,
+    });
+
+    assert.deepStrictEqual(built.env, {}, 'profiles load before -Command; no env needed');
+    assert.strictEqual(built.args[0], '-NoExit');
+    assert.strictEqual(built.args[1], '-Command');
+    assert.match(built.args[2], /^\. '.*josh-kit\.ps1'$/);
+
+    const scriptPath = built.args[2].replace(/^\. '/, '').replace(/'$/, '');
+    const kit = fs.readFileSync(scriptPath, 'utf8');
+    assert.ok(kit.includes('function global:prompt'), 'a pwsh prompt must be defined');
+    assert.strictEqual(fs.statSync(scriptPath).mode & 0o777, Integration.FILE_MODE);
+    built.dispose();
+    return null;
+  });
+});
+
+test('Windows PowerShell 5.1 gets nothing, its VT processing being off', () => {
+  scratch((where) => {
+    const built = Integration.build({
+      shell: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+      settings: { shellKit: true, shellKitPrompt: 'classic', shellKitPacks: [] },
+      env: {}, home: where.home, tmpdir: where.tmpdir,
+    });
+    assert.strictEqual(built, null);
+    assert.deepStrictEqual(fs.readdirSync(where.tmpdir), []);
+    return null;
+  });
+});
+
+test('fish gets nothing, being out of this spec rather than unsupported forever', () => {
+  scratch((where) => {
+    assert.strictEqual(buildBash(where, { shell: '/usr/local/bin/fish' }), null);
     return null;
   });
 });
