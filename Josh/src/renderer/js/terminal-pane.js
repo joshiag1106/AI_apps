@@ -79,7 +79,22 @@
       this._fitOnly();
 
       const dims = this._dimensions();
-      const session = await api.pty.create({ cols: dims.cols, rows: dims.rows, cwd: cwd || null });
+      // Measure the configured font, not a guess: the pane already holds the
+      // real font stack, and whether it has powerline glyphs is something only
+      // the process that owns the window can answer.
+      const glyphs = window.KitGlyphs
+        ? window.KitGlyphs.resolveGlyphs(
+          this.settings,
+          window.KitGlyphs.measureWithCanvas(this.settings.fontFamily, this.settings.fontSize)
+        )
+        : 'plain';
+
+      const session = await api.pty.create({
+        cols: dims.cols,
+        rows: dims.rows,
+        cwd: cwd || null,
+        glyphs,
+      });
       this.sessionId = session.sessionId;
       this.shell = session.shell;
       this.cwd = session.cwd;
