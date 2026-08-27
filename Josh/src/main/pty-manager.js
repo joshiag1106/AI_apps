@@ -16,10 +16,12 @@
  *     which keeps `cat` of a large file smooth.
  */
 
+const os = require('node:os');
 const { randomUUID } = require('node:crypto');
 const nodePty = require('@lydell/node-pty');
 const { LIMITS, assertDimensions, assertWriteData, sanitizeTitle } = require('./validate');
 const { resolveShell, sanitizeEnv } = require('./shell-resolver');
+const shellIntegration = require('./shell-integration');
 
 const FLUSH_INTERVAL_MS = 8; // ~120fps; below human perception, far above per-chunk IPC
 const FLUSH_THRESHOLD_BYTES = 64 * 1024;
@@ -71,7 +73,7 @@ class PtyManager {
     return record;
   }
 
-  create({ windowId, cols, rows, cwd = null, settings = {} }) {
+  create({ windowId, cols, rows, cwd = null, glyphs = 'plain', settings = {} }) {
     assertDimensions(cols, rows);
     const owned = this._ownedSet(windowId);
     if (owned.size >= LIMITS.MAX_SESSIONS_PER_WINDOW) {
@@ -87,13 +89,41 @@ class PtyManager {
     const env = sanitizeEnv(process.env, { platform: process.platform, binDir: this.binDir });
     const startCwd = cwd || env.HOME || env.USERPROFILE || process.cwd();
 
-    const pty = nodePty.spawn(resolved.file, shellArgs, {
-      name: 'xterm-256color',
-      cols,
-      rows,
-      cwd: startCwd,
-      env,
-    });
+    // A broken kit must never cost someone their terminal. Anything that goes
+    // wrong here leaves the session spawning exactly as it did before the kit
+    // existed, and says nothing to the user about it.
+    let integration = null;
+    try {
+      integration = shellIntegration.build({
+        shell: resolved.file,
+        settings,
+        glyphs,
+        env,
+        home: env.HOME || env.USERPROFILE || '',
+        tmpdir: os.tmpdir(),
+      });
+    } catch {
+      integration = null;
+    }
+
+    const spawnEnv = integration ? { ...env, ...integration.env } : env;
+    const spawnArgs = integration && integration.args.length > 0
+      ? shellArgs.concat(integration.args)
+      : shellArgs;
+
+    let pty;
+    try {
+      pty = nodePty.spawn(resolved.file, spawnArgs, {
+        name: 'xterm-256color',
+        cols,
+        rows,
+        cwd: startCwd,
+        env: spawnEnv,
+      });
+    } catch (error) {
+      if (integration) integration.dispose();
+      throw error;
+    }
 
     const sessionId = randomUUID();
     const record = {
@@ -106,6 +136,7 @@ class PtyManager {
       buffer: [],
       bufferedBytes: 0,
       flushTimer: null,
+      disposeKit: integration ? integration.dispose : null,
       writeBudget: WRITE_RATE_LIMIT_BYTES_PER_SEC,
       budgetResetAt: Date.now() + 1000,
       exited: false,
@@ -247,6 +278,10 @@ class PtyManager {
     const record = this.sessions.get(sessionId);
     if (!record) return;
     if (record.flushTimer) clearTimeout(record.flushTimer);
+    if (record.disposeKit) {
+      record.disposeKit();
+      record.disposeKit = null;
+    }
     this.sessions.delete(sessionId);
     const owned = this.byWindow.get(record.windowId);
     if (owned) owned.delete(sessionId);

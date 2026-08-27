@@ -18,6 +18,7 @@ const {
   assertWriteData,
   assertDimensions,
   assertCwd,
+  assertGlyphMode,
   sanitizeTitle,
   LIMITS,
 } = require('./validate');
@@ -51,11 +52,15 @@ function registerIpc({ ptyManager, settings, windowManager }) {
       const opts = options && typeof options === 'object' ? options : {};
       const { cols, rows } = assertDimensions(opts.cols, opts.rows);
       const cwd = assertCwd(opts.cwd === undefined ? null : opts.cwd);
+      // No new channel: the glyph mode rides the payload that was already
+      // here. A renderer that says nothing gets the safe answer.
+      const glyphs = assertGlyphMode(opts.glyphs === undefined ? 'plain' : opts.glyphs);
       return ptyManager.create({
         windowId: win.id,
         cols,
         rows,
         cwd,
+        glyphs,
         settings: settings.get(),
       });
     })
