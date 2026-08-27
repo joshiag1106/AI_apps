@@ -74,6 +74,44 @@
     return typeof name === 'string' && BINARY_PATTERN.test(name);
   }
 
+  /** Skip prefixes, colon-joined. A path carrying a colon cannot be expressed
+   *  in that list, so it is dropped rather than silently splitting in two. */
+  function skipList(value) {
+    if (!Array.isArray(value)) return '';
+    return value
+      .filter((item) => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0 && item.length <= 4096 && item.indexOf(':') === -1)
+      .slice(0, 32)
+      .join(':');
+  }
+
+  /**
+   * Interactive rm, cp and mv.
+   *
+   * These deliberately shadow the real commands, which is the whole point of
+   * the opt-in, so they bypass the non-clobbering installer that every other
+   * alias goes through. Aliasing rm is contentious enough that it gets its own
+   * switch and is off by default.
+   */
+  function safeRemoveLines(dialect) {
+    if (dialect === 'pwsh') {
+      return [
+        '# shellKitSafeRemove: -Confirm is PowerShell own -i. Covered by the',
+        '# end-to-end task, which is the only place pwsh actually runs.',
+        'function global:rm { param([Parameter(ValueFromRemainingArguments = $true)]'
+          + ' $JoshArgs) Remove-Item -Confirm @JoshArgs }',
+      ].join('\n');
+    }
+    return [
+      '# shellKitSafeRemove: these deliberately shadow the real commands, which',
+      '# is the point of the opt-in, so they skip the non-clobbering installer.',
+      "alias rm='rm -i'",
+      "alias cp='cp -i'",
+      "alias mv='mv -i'",
+    ].join('\n');
+  }
+
   /* --------------------------------------------------------- POSIX prompt */
 
   /**
@@ -425,16 +463,21 @@
     if (dialect === 'pwsh') {
       if (wantsGit) parts.push(KitLib.PWSH_GIT);
       if (wantsAliases) parts.push(KitLib.PWSH_ALIAS, pwshPacks(accepted));
+      if (config.safeRemove === true) parts.push(safeRemoveLines('pwsh'));
       parts.push(pwshPrompt(safeTheme, slots, glyphs));
       return parts.join('\n') + '\n';
     }
 
     parts.push('JOSH_ELISION=' + quote(glyphs === 'rich' ? '…' : '...', dialect));
+    parts.push('JOSH_GIT_UNTRACKED_FLAG='
+      + quote(config.gitUntracked === false ? '--untracked-files=no' : '', dialect));
+    parts.push('JOSH_GIT_SKIP=' + quote(skipList(config.gitSkip), dialect));
     parts.push('JOSH_USER=${USER:-}');
     parts.push(dialect === 'zsh' ? 'JOSH_HOST=${HOST:-}' : 'JOSH_HOST=${HOSTNAME:-}');
     parts.push(KitLib.POSIX_PROMPT);
     if (wantsGit) parts.push(KitLib.POSIX_GIT, posixGitFormatter(glyphs));
     if (wantsAliases) parts.push(KitLib.POSIX_ALIAS, posixPacks(accepted, dialect));
+    if (config.safeRemove === true) parts.push(safeRemoveLines(dialect));
     parts.push(posixColours(slots));
     parts.push(posixPrompt(safeTheme, dialect, slots, glyphs));
     parts.push(posixHooks(dialect));
@@ -442,5 +485,7 @@
     return parts.join('\n') + '\n';
   }
 
-  return { DIALECTS, emit, wrap, quote, colourEscape, resetEscape, isSafeBinary };
+  return {
+    DIALECTS, emit, wrap, quote, colourEscape, resetEscape, isSafeBinary, skipList,
+  };
 });

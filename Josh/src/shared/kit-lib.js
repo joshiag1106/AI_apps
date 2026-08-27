@@ -139,7 +139,35 @@ __josh_git_root() {
 }
 
 # The root is cached, so repeated prompts inside one tree skip the walk.
+#
+# JOSH_GIT_SKIP is a colon-separated list of prefixes where the git segment is
+# suppressed entirely -- a network mount, or a repository so large that status
+# costs a visible pause. The list is walked with parameter expansion rather
+# than a for loop, because zsh does not word-split an unquoted parameter and a
+# loop that worked in bash would silently see one item in zsh.
 __josh_git_collect() {
+  __josh_rest=\$JOSH_GIT_SKIP
+  while [ -n "\$__josh_rest" ]; do
+    case "\$__josh_rest" in
+      *:*)
+        __josh_prefix=\${__josh_rest%%:*}
+        __josh_rest=\${__josh_rest#*:}
+        ;;
+      *)
+        __josh_prefix=\$__josh_rest
+        __josh_rest=""
+        ;;
+    esac
+    if [ -n "\$__josh_prefix" ]; then
+      case "\$PWD" in
+        "\$__josh_prefix"|"\$__josh_prefix"/*)
+          __josh_git_reset
+          return 1
+          ;;
+      esac
+    fi
+  done
+
   __josh_root=""
   if [ -n "\$JOSH_GIT_CACHE_ROOT" ]; then
     case "\$PWD" in
@@ -161,7 +189,14 @@ __josh_git_collect() {
     return 1
   fi
 
-  __josh_status=\$(command git status --porcelain=v2 --branch 2>/dev/null)
+  # An untracked scan is the expensive half of git status in a large tree, so
+  # it is optional. The flag is branched on rather than interpolated, because
+  # an empty unquoted parameter is one thing in bash and another in zsh.
+  if [ -n "\$JOSH_GIT_UNTRACKED_FLAG" ]; then
+    __josh_status=\$(command git status --porcelain=v2 --branch "\$JOSH_GIT_UNTRACKED_FLAG" 2>/dev/null)
+  else
+    __josh_status=\$(command git status --porcelain=v2 --branch 2>/dev/null)
+  fi
   if [ -z "\$__josh_status" ]; then
     __josh_git_reset
     return 1

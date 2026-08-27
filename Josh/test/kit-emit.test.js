@@ -298,3 +298,64 @@ for (const shell of SHELLS) {
     assert.ok(shown.includes('\n') || shown.includes('\\n'), 'no line break was emitted');
   });
 }
+
+/* ------------------------------------------------- the settings that emit */
+
+test('an untracked scan is on by default and can be turned off', () => {
+  assert.ok(emit('zsh').includes("JOSH_GIT_UNTRACKED_FLAG=''"), 'default is a full scan');
+  assert.ok(
+    emit('zsh', null, null, { gitUntracked: false })
+      .includes("JOSH_GIT_UNTRACKED_FLAG='--untracked-files=no'"),
+    'turning it off must reach the git call'
+  );
+});
+
+test('skip prefixes are colon-joined, and one carrying a colon is dropped', () => {
+  assert.strictEqual(KitEmit.skipList(['/a', '/b']), '/a:/b');
+  assert.strictEqual(KitEmit.skipList(['/a', '/has:colon', '/b']), '/a:/b');
+  assert.strictEqual(KitEmit.skipList('nope'), '');
+  assert.strictEqual(KitEmit.skipList(null), '');
+  assert.strictEqual(KitEmit.skipList(['  /a  ', '', '   ']), '/a');
+  assert.strictEqual(KitEmit.skipList(Array.from({ length: 99 }, (u, i) => '/p' + i))
+    .split(':').length, 32);
+});
+
+test('safe remove is off by default, and deliberately shadows when asked for', () => {
+  assert.strictEqual(emit('zsh').includes("alias rm='rm -i'"), false);
+  const on = emit('zsh', null, null, { safeRemove: true });
+  assert.ok(on.includes("alias rm='rm -i'"));
+  assert.ok(on.includes("alias cp='cp -i'"));
+  assert.ok(on.includes("alias mv='mv -i'"));
+  assert.strictEqual(on.includes("__josh_alias 'rm'"), false,
+    'the whole point is to bypass the non-clobbering installer');
+  assert.ok(emit('pwsh', null, null, { safeRemove: true }).includes('Remove-Item -Confirm'));
+});
+
+for (const shell of SHELLS) {
+  const dialect = shell;
+
+  test(shell + ': a skipped prefix suppresses the git segment entirely', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'josh-skip-'));
+    try {
+      const repo = path.join(dir, 'repo');
+      fs.mkdirSync(path.join(repo, '.git'), { recursive: true });
+
+      const script = KitEmit.emit(KitThemes.THEMES.classic, [], dialect,
+        Object.assign({}, OPTIONS, { gitSkip: [repo] }));
+      const file = path.join(dir, 'kit.sh');
+      fs.writeFileSync(file, script
+        + '\ncd ' + JSON.stringify(repo) + '\n'
+        + 'if __josh_git_collect; then printf "collected=1\\n"; '
+        + 'else printf "collected=0\\n"; fi\n'
+        + 'printf "branch=[%s]\\n" "$JOSH_GIT_BRANCH"\n', { mode: 0o700 });
+
+      const out = execFileSync(shell, [file], {
+        cwd: dir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.match(out, /collected=0/, 'a skipped prefix must not reach git');
+      assert.match(out, /branch=\[\]/, 'and must leave no stale branch behind');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}

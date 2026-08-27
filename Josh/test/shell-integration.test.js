@@ -470,3 +470,41 @@ test('fish gets nothing, being out of this spec rather than unsupported forever'
     return null;
   });
 });
+
+/* ------------------------------------------------------------ glyph mode */
+
+test('auto defers to what the renderer measured', () => {
+  assert.strictEqual(Integration.glyphsFor({ shellKitGlyphs: 'auto' }, 'rich'), 'rich');
+  assert.strictEqual(Integration.glyphsFor({ shellKitGlyphs: 'auto' }, 'plain'), 'plain');
+  assert.strictEqual(Integration.glyphsFor({}, 'rich'), 'rich');
+});
+
+test('an explicit choice overrides the measurement, having better information', () => {
+  assert.strictEqual(Integration.glyphsFor({ shellKitGlyphs: 'plain' }, 'rich'), 'plain');
+  assert.strictEqual(Integration.glyphsFor({ shellKitGlyphs: 'rich' }, 'plain'), 'rich');
+});
+
+test('anything else is treated as auto, and an unmeasured font as plain', () => {
+  for (const junk of ['powerline', '', null, 42]) {
+    assert.strictEqual(Integration.glyphsFor({ shellKitGlyphs: junk }, 'rich'), 'rich');
+  }
+  assert.strictEqual(Integration.glyphsFor({}, undefined), 'plain');
+});
+
+test('the emitted kit carries the settings that shape it', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      settings: {
+        shellKit: true, shellKitPrompt: 'classic', shellKitPacks: [],
+        shellKitGitUntracked: false, shellKitGitSkip: ['/mnt/slow'],
+        shellKitSafeRemove: true,
+      },
+    });
+    const kit = fs.readFileSync(path.join(kitDir(built), 'josh-kit.zsh'), 'utf8');
+    assert.ok(kit.includes("JOSH_GIT_UNTRACKED_FLAG='--untracked-files=no'"));
+    assert.ok(kit.includes("JOSH_GIT_SKIP='/mnt/slow'"));
+    assert.ok(kit.includes("alias rm='rm -i'"));
+    built.dispose();
+    return null;
+  });
+});

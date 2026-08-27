@@ -74,6 +74,34 @@ function quote(value) {
 }
 
 /**
+ * The glyph mode actually used.
+ *
+ * `shellKitGlyphs` is auto by default, which defers to what the renderer
+ * measured against the real font. An explicit rich or plain overrides that,
+ * because a user who has told Josh which one they want has better information
+ * than a measurement.
+ */
+function glyphsFor(settings, detected) {
+  const wanted = settings && typeof settings.shellKitGlyphs === 'string'
+    ? settings.shellKitGlyphs
+    : 'auto';
+  if (wanted === 'rich' || wanted === 'plain') return wanted;
+  return detected === 'rich' ? 'rich' : 'plain';
+}
+
+/** Every builder emits through this, so the three cannot drift apart. */
+function emitOptions(context, dialect) {
+  return KitEmit.emit(context.theme, context.packs, dialect, {
+    glyphs: context.glyphs,
+    ui: context.ui,
+    xterm: context.xterm,
+    gitUntracked: context.settings.shellKitGitUntracked !== false,
+    gitSkip: context.settings.shellKitGitSkip,
+    safeRemove: context.settings.shellKitSafeRemove === true,
+  });
+}
+
+/**
  * zsh, and the subtlety that matters.
  *
  * Setting ZDOTDIR redirects *all four* startup files, not just .zshrc.
@@ -168,11 +196,7 @@ const BUILDERS = {
     const realZdotdir = context.env.ZDOTDIR || context.home;
     const kitPath = path.join(context.dir, 'josh-kit.zsh');
 
-    const script = KitEmit.emit(context.theme, context.packs, 'zsh', {
-      glyphs: context.glyphs,
-      ui: context.ui,
-      xterm: context.xterm,
-    });
+    const script = emitOptions(context, 'zsh');
     if (script === '') return null;
 
     const files = zshFiles(realZdotdir, kitPath);
@@ -191,11 +215,7 @@ const BUILDERS = {
   bash(context) {
     const kitPath = path.join(context.dir, 'josh-kit.bash');
 
-    const script = KitEmit.emit(context.theme, context.packs, 'bash', {
-      glyphs: context.glyphs,
-      ui: context.ui,
-      xterm: context.xterm,
-    });
+    const script = emitOptions(context, 'bash');
     if (script === '') return null;
 
     fs.writeFileSync(kitPath, bashPreamble() + script, { mode: FILE_MODE });
@@ -214,11 +234,7 @@ const BUILDERS = {
   pwsh(context) {
     const kitPath = path.join(context.dir, 'josh-kit.ps1');
 
-    const script = KitEmit.emit(context.theme, context.packs, 'pwsh', {
-      glyphs: context.glyphs,
-      ui: context.ui,
-      xterm: context.xterm,
-    });
+    const script = emitOptions(context, 'pwsh');
     if (script === '') return null;
 
     fs.writeFileSync(kitPath, script, { mode: FILE_MODE });
@@ -286,7 +302,8 @@ function build({
       dir,
       env,
       home,
-      glyphs: glyphs === 'rich' ? 'rich' : 'plain',
+      settings,
+      glyphs: glyphsFor(settings, glyphs),
       theme: themeFor(settings),
       packs: packsFor(settings),
       ui: colours.ui,
@@ -305,6 +322,6 @@ function build({
 }
 
 module.exports = {
-  build, dialectFor, themeFor, packsFor, paletteFor,
+  build, dialectFor, themeFor, packsFor, paletteFor, glyphsFor,
   DIR_MODE, FILE_MODE, BASH_BOOTSTRAP,
 };
