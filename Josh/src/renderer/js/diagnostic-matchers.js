@@ -233,16 +233,23 @@
     condense(lines, context) {
       const text = lines.map(stripSgr).join('');
 
+      // Three vocabularies for the same event. GNU ld says "undefined
+      // reference to" with the symbol mangled inline; Apple ld heads a block
+      // with "Undefined symbols for architecture" and puts the symbol, already
+      // demangled, on the following line. Keying only off GNU's phrasing meant
+      // every link error on macOS opened a block and then failed to summarise
+      // it -- found by running this matcher over a real Apple ld capture.
       const undefinedRef = /\bundefined reference to\s*/.exec(text);
+      const appleUndef = /\bundefined symbols? for architecture\b[^\n]*\n/i.exec(text);
       const duplicate = /\bduplicate symbol\s*/.exec(text);
-      const anchor = undefinedRef || duplicate;
+      const anchor = undefinedRef || appleUndef || duplicate;
       if (!anchor) return null;
 
       const rest = text.slice(anchor.index + anchor[0].length);
       const quoted = SYMBOL.exec(rest);
       if (!quoted) return null;
 
-      const kind = undefinedRef ? 'undefined reference to' : 'duplicate symbol';
+      const kind = (undefinedRef || appleUndef) ? 'undefined reference to' : 'duplicate symbol';
       const headline = 'link error: ' + kind + ' ' + Demangle.demangle(quoted[1]);
 
       // "in function" is the linker's own phrasing; failing that, the first

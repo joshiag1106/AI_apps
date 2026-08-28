@@ -192,3 +192,29 @@ test('a linker block with no recognisable symbol condenses to null', () => {
 test('the registry consults the template matcher before the linker matcher', () => {
   assert.deepStrictEqual(Matchers.ALL.map((m) => m.id), ['cxx-template', 'cxx-linker']);
 });
+
+const APPLE_UNDEFINED = [
+  'Undefined symbols for architecture x86_64:\n',
+  '  "Widget::push(int)", referenced from:\n',
+  '      _main in link-4e9acc.o\n',
+  'ld: symbol(s) not found for architecture x86_64\n',
+];
+
+test('the linker matcher understands Apple ld, not only GNU ld', () => {
+  // Apple heads the block with "Undefined symbols for architecture" and puts
+  // the symbol, already demangled, on the next line. Keying only off GNU's
+  // "undefined reference to" meant every link error on macOS opened a block
+  // and then failed to summarise it.
+  const out = Matchers.cxxLinker.condense(APPLE_UNDEFINED, { cwd: null });
+  assert.ok(out, 'Apple ld output must condense');
+  assert.match(out.headline, /link error:/);
+  assert.match(out.headline, /Widget::push\(int\)/);
+  assert.match(out.location, /link-4e9acc\.o/);
+});
+
+test('an already-demangled symbol survives demangling unchanged', () => {
+  // Apple demangles for us. demangle() must pass through anything that is not
+  // an Itanium mangled name rather than mangling it further.
+  const out = Matchers.cxxLinker.condense(APPLE_UNDEFINED, { cwd: null });
+  assert.doesNotMatch(out.headline, /_ZN/);
+});

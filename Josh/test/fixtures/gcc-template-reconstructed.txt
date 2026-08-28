@@ -1,0 +1,29 @@
+In file included from /usr/include/c++/13/algorithm:61,
+                 from deep.cpp:1:
+/usr/include/c++/13/bits/stl_algo.h:1889:5: error: no match for 'operator<' (operand types are 'P' and 'P')
+ 1889 |     if (__comp(*__i, *__first))
+      |     ^~
+/usr/include/c++/13/bits/stl_algo.h:1889:5: note: candidate: 'operator<(int, int)' (built-in)
+/usr/include/c++/13/bits/stl_algo.h:1890:7: note: candidate expects 2 arguments, 2 provided
+/usr/include/c++/13/bits/predefined_ops.h:45:23: note: in instantiation of function template specialization here
+/usr/include/c++/13/bits/predefined_ops.h:46:23: note: candidate is not viable
+/usr/include/c++/13/bits/stl_algo.h:1901:11: note: required from 'void std::__insertion_sort(_RandomAccessIterator, _RandomAccessIterator, _Compare)'
+/usr/include/c++/13/bits/stl_algo.h:1926:25: note: required from 'void std::__final_insertion_sort(_RandomAccessIterator, _RandomAccessIterator, _Compare)'
+/usr/include/c++/13/bits/stl_algo.h:4861:18: note: required from 'void std::sort(_RAIter, _RAIter)'
+/usr/include/c++/13/bits/stl_algo.h:4862:18: note: required from here
+/usr/include/c++/13/bits/stl_algo.h:1863:12: note: candidate expects 1 argument, 2 provided
+/usr/include/c++/13/bits/stl_algo.h:1864:12: note: no known conversion for argument 1
+/usr/include/c++/13/bits/stl_algo.h:1865:12: note: template argument deduction/substitution failed
+/usr/include/c++/13/bits/stl_algo.h:1866:12: note: mismatched types 'const std::pair<_T1, _T2>' and 'P'
+/usr/include/c++/13/bits/stl_algo.h:1867:12: note: candidate function not viable
+/usr/include/c++/13/bits/stl_algo.h:1868:12: note: no operator< matching these operands
+/usr/include/c++/13/bits/stl_algo.h:1869:12: note: substitution of deduced template arguments resulted in errors
+/usr/include/c++/13/bits/stl_algo.h:1870:12: note: candidate expects 2 arguments, 1 provided
+/usr/include/c++/13/bits/stl_algo.h:1871:12: note: in expansion of macro '__glibcxx_requires_valid_range'
+/usr/include/c++/13/bits/stl_algo.h:1872:12: note: required by substitution of template arguments
+/usr/include/c++/13/bits/stl_algo.h:1873:12: note: candidate template ignored
+/usr/include/c++/13/bits/stl_algo.h:1874:12: note: could not convert argument
+/usr/include/c++/13/bits/stl_algo.h:1875:12: note: cannot bind rvalue reference
+deep.cpp:6:8:   required from here
+/usr/include/c++/13/bits/stl_algo.h:1876:12: note: in instantiation of member function requested here
+make: *** [all] Error 1

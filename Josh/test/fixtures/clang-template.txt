@@ -1,0 +1,370 @@
+^DIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1835:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/adjacent_find.h:13:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:41:18: [0m[0;1;31merror: [0m[1minvalid operands to binary expression ('const P' and 'const P')[0m
+   41 |     [0;34mreturn[0m __lhs < __rhs;[0m
+      | [0;1;32m           ~~~~~ ^ ~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sift_down.h:47:32: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__less<>::operator()<P, P>' requested here[0m
+   47 |   [0;34mif[0m ((__child + [0;32m1[0m) < __len && __comp(*__child_i, *(__child_i + difference_type([0;32m1[0m)))) {[0m
+      | [0;1;32m                               ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/make_heap.h:39:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sift_down<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   39 |       std::__sift_down<_AlgPolicy>(__first, __comp_ref, __n, __first + __start);[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:41:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__make_heap<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   41 |   std::__make_heap<_AlgPolicy>(__first, __middle, __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:65:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort_impl<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, P *>' requested here[0m
+   65 |       std::__partial_sort_impl<_AlgPolicy>(__first, __middle, __last, [0;34mstatic_cast[0m<__comp_ref_type<_Compare> >(__comp));[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:950:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort<std::_ClassicAlgPolicy, std::__less<void, void>, P *, P *>' requested here[0m
+  950 |     std::__partial_sort<_AlgPolicy>([0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1868:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/make_heap.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sift_down.h:54:7: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+   54 |   [0;34mif[0m (__comp(*__child_i, *__start))[0m
+      | [0;1;32m      ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/make_heap.h:39:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sift_down<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   39 |       std::__sift_down<_AlgPolicy>(__first, __comp_ref, __n, __first + __start);[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:41:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__make_heap<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   41 |   std::__make_heap<_AlgPolicy>(__first, __middle, __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:65:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort_impl<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, P *>' requested here[0m
+   65 |       std::__partial_sort_impl<_AlgPolicy>(__first, __middle, __last, [0;34mstatic_cast[0m<__comp_ref_type<_Compare> >(__comp));[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:950:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort<std::_ClassicAlgPolicy, std::__less<void, void>, P *, P *>' requested here[0m
+  950 |     std::__partial_sort<_AlgPolicy>([0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1868:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/make_heap.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sift_down.h:71:34: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+   71 |     [0;34mif[0m ((__child + [0;32m1[0m) < __len && __comp(*__child_i, *(__child_i + difference_type([0;32m1[0m)))) {[0m
+      | [0;1;32m                                 ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:17:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:46:9: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+   46 |     [0;34mif[0m (__comp(*__i, *__first)) {[0m
+      | [0;1;32m        ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:65:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort_impl<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, P *>' requested here[0m
+   65 |       std::__partial_sort_impl<_AlgPolicy>(__first, __middle, __last, [0;34mstatic_cast[0m<__comp_ref_type<_Compare> >(__comp));[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:950:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort<std::_ClassicAlgPolicy, std::__less<void, void>, P *, P *>' requested here[0m
+  950 |     std::__partial_sort<_AlgPolicy>([0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1868:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/make_heap.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sift_down.h:98:34: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+   98 |     [0;34mif[0m ((__child + [0;32m1[0m) < __len && __comp(*__child_i, *(__child_i + difference_type([0;32m1[0m)))) {[0m
+      | [0;1;32m                                 ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/pop_heap.h:47:41: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__floyd_sift_down<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   47 |     _RandomAccessIterator __hole = std::__floyd_sift_down<_AlgPolicy>(__first, __comp_ref, __len);[0m
+      | [0;1;32m                                        ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort_heap.h:40:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__pop_heap<std::_ClassicAlgPolicy, std::__less<void, void>, P *>' requested here[0m
+   40 |     std::__pop_heap<_AlgPolicy>(__first, __last, __comp_ref, __n);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:51:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_heap<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   51 |   std::__sort_heap<_AlgPolicy>(std::move(__first), std::move(__middle), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:65:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort_impl<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, P *>' requested here[0m
+   65 |       std::__partial_sort_impl<_AlgPolicy>(__first, __middle, __last, [0;34mstatic_cast[0m<__comp_ref_type<_Compare> >(__comp));[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:950:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort<std::_ClassicAlgPolicy, std::__less<void, void>, P *, P *>' requested here[0m
+  950 |     std::__partial_sort<_AlgPolicy>([0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:17:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:17:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort_heap.h:15:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/pop_heap.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/push_heap.h:42:9: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+   42 |     [0;34mif[0m (__comp(*__ptr, *--__last)) {[0m
+      | [0;1;32m        ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/pop_heap.h:56:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sift_up<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   56 |       std::__sift_up<_AlgPolicy>(__first, __hole, __comp_ref, __hole - __first);[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort_heap.h:40:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__pop_heap<std::_ClassicAlgPolicy, std::__less<void, void>, P *>' requested here[0m
+   40 |     std::__pop_heap<_AlgPolicy>(__first, __last, __comp_ref, __n);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:51:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_heap<std::_ClassicAlgPolicy, std::__less<void, void> &, P *>' requested here[0m
+   51 |   std::__sort_heap<_AlgPolicy>(std::move(__first), std::move(__middle), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/partial_sort.h:65:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort_impl<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, P *>' requested here[0m
+   65 |       std::__partial_sort_impl<_AlgPolicy>(__first, __middle, __last, [0;34mstatic_cast[0m<__comp_ref_type<_Compare> >(__comp));[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:950:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__partial_sort<std::_ClassicAlgPolicy, std::__less<void, void>, P *, P *>' requested here[0m
+  950 |     std::__partial_sort<_AlgPolicy>([0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:736:11: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+  736 |       [0;34mif[0m (__comp(*--__last, *__first))[0m
+      | [0;1;32m          ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:888:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__introsort<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, false>' requested here[0m
+  888 |   std::__introsort<_AlgPolicy, _Comp&, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator> >([0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:953:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_dispatch<std::_ClassicAlgPolicy, P *, std::__less<void, void>>' requested here[0m
+  953 |     std::__sort_dispatch<_AlgPolicy>(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:115:8: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+  115 |   [0;34mif[0m (!__c(*__y, *__x)) [0;33m// if x <= y[0m
+      | [0;1;32m       ^~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:740:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort3<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, 0>' requested here[0m
+  740 |       std::__sort3<_AlgPolicy, _Compare>(__first, __first + difference_type([0;32m1[0m), --__last, __comp);[0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:888:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__introsort<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, false>' requested here[0m
+  888 |   std::__introsort<_AlgPolicy, _Comp&, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator> >([0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:953:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_dispatch<std::_ClassicAlgPolicy, P *, std::__less<void, void>>' requested here[0m
+  953 |     std::__sort_dispatch<_AlgPolicy>(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:125:7: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+  125 |   [0;34mif[0m (__c(*__z, *__y)) [0;33m// x > y, if y > z[0m
+      | [0;1;32m      ^~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:132:7: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+  132 |   [0;34mif[0m (__c(*__z, *__y))         [0;33m// if y > z[0m
+      | [0;1;32m      ^~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:776:9: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort3'[0m
+  776 |         std::__sort3<_AlgPolicy, _Compare>(__first, __first + __half_len, __last - difference_type([0;32m1[0m), __comp);[0m
+      | [0;1;32m        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:888:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__introsort<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, false>' requested here[0m
+  888 |   std::__introsort<_AlgPolicy, _Comp&, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator> >([0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:953:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_dispatch<std::_ClassicAlgPolicy, P *, std::__less<void, void>>' requested here[0m
+  953 |     std::__sort_dispatch<_AlgPolicy>(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:101:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  101 | __sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:112:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  112 | __sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:777:9: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort3'[0m
+  777 |         std::__sort3<_AlgPolicy, _Compare>([0m
+      | [0;1;32m        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:101:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  101 | __sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:112:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  112 | __sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:779:9: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort3'[0m
+  779 |         std::__sort3<_AlgPolicy, _Compare>([0m
+      | [0;1;32m        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:101:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  101 | __sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:112:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  112 | __sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:781:9: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort3'[0m
+  781 |         std::__sort3<_AlgPolicy, _Compare>([0m
+      | [0;1;32m        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:101:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  101 | __sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:112:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  112 | __sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:785:9: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort3'[0m
+  785 |         std::__sort3<_AlgPolicy, _Compare>(__first + __half_len, __first, __last - difference_type([0;32m1[0m), __comp);[0m
+      | [0;1;32m        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:101:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  101 | __sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:112:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  112 | __sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:796:25: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+  796 |     [0;34mif[0m (!__leftmost && !__comp(*(__first - difference_type([0;32m1[0m)), *__first)) {[0m
+      | [0;1;32m                        ^~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:167:3: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort3'[0m
+  167 |   std::__sort3<_AlgPolicy, _Compare>(__x1, __x2, __x3, __c);[0m
+      | [0;1;32m  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:743:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort4<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, 0>' requested here[0m
+  743 |       std::__sort4<_AlgPolicy, _Compare>([0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:888:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__introsort<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, false>' requested here[0m
+  888 |   std::__introsort<_AlgPolicy, _Comp&, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator> >([0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:953:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_dispatch<std::_ClassicAlgPolicy, P *, std::__less<void, void>>' requested here[0m
+  953 |     std::__sort_dispatch<_AlgPolicy>(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:101:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  101 | __sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:112:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  112 | __sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:168:7: [0m[0;1;31merror: [0m[1mno matching function for call to object of type 'std::__less<void, void>'[0m
+  168 |   [0;34mif[0m (__c(*__x4, *__x3)) {[0m
+      | [0;1;32m      ^~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:40:60: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _Tp = P, _Up = P][0m
+   40 |   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 [0;34mbool[0m [0;34moperator[0m()([0;34mconst[0m _Tp& __lhs, [0;34mconst[0m _Up& __rhs) [0;34mconst[0m {[0m
+      | [0;1;32m                                                           ^
+[0mIn file included from deep.cpp:1:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm:1881:
+In file included from /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/nth_element.h:15:
+[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:213:3: [0m[0;1;31merror: [0m[1mno matching function for call to '__sort4'[0m
+  213 |   std::__sort4<_AlgPolicy, _Compare>(__x1, __x2, __x3, __x4, __comp);[0m
+      | [0;1;32m  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:747:12: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort5<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, 0>' requested here[0m
+  747 |       std::__sort5<_AlgPolicy, _Compare>([0m
+      | [0;1;32m           ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:888:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__introsort<std::_ClassicAlgPolicy, std::__less<void, void> &, P *, false>' requested here[0m
+  888 |   std::__introsort<_AlgPolicy, _Comp&, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator> >([0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:953:10: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_dispatch<std::_ClassicAlgPolicy, P *, std::__less<void, void>>' requested here[0m
+  953 |     std::__sort_dispatch<_AlgPolicy>(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);[0m
+      | [0;1;32m         ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:961:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::__sort_impl<std::_ClassicAlgPolicy, std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  961 |   std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:967:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>, std::__less<void, void>>' requested here[0m
+  967 |   std::sort(__first, __last, __less<>());[0m
+      | [0;1;32m       ^
+[0m[1mdeep.cpp:6:8: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::sort<std::__wrap_iter<P *>>' requested here[0m
+    6 |   std::sort(v.begin(), v.end());[0m
+      | [0;1;32m       ^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:144:1: [0m[0;1;36mnote: [0mcandidate template ignored: requirement '__use_branchless_sort<std::__less<void, void> &, P *>' was not satisfied [with $0 = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *][0m
+  144 | __sort4(_RandomAccessIterator __x1,[0m
+      | [0;1;32m^
+[0m[1m/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h:161:1: [0m[0;1;36mnote: [0mcandidate template ignored: substitution failure [with _AlgPolicy = std::_ClassicAlgPolicy, _Compare = std::__less<void, void> &, _RandomAccessIterator = P *, $3 = 0][0m
+  161 | __sort4(_RandomAccessIterator __x1,[0m
+      | [0;1;32m^
+[0m[0;1;31mfatal error: [0m[1mtoo many errors emitted, stopping now [-ferror-limit=][0m
+20 errors generated.
