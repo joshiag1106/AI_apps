@@ -118,8 +118,83 @@
     return mine[0];
   }
 
+  /**
+   * C++ template instantiation.
+   *
+   * Keys off both compilers' vocabulary: GCC's "In instantiation of",
+   * "required from" and "required from here"; Clang's "in instantiation of ...
+   * requested here"; and the shared location line shape.
+   */
+  const cxxTemplate = {
+    id: 'cxx-template',
+
+    starts: [
+      /\bin instantiation of\b/i,
+      /\brequired from here\b/,
+      /\brequired from\b/,
+      /\bin file included from\b/i,
+      // The error line itself, because it arrives *before* the instantiation
+      // vocabulary does. Opening only on that vocabulary loses the headline:
+      // by the time "required from here" appears, the `error:` line has
+      // already been flushed and the summary has nothing to report. Notes are
+      // deliberately not openers - they never start a diagnostic.
+      /^(.+):(\d+):(\d+):\s+(error|fatal error):/,
+    ],
+
+    /** What distinguishes this family from an ordinary compiler error. */
+    isTemplateFamily(lines) {
+      return lines.some((line) =>
+        /\bin instantiation of\b|\brequired from\b|\bin file included from\b/i.test(
+          stripSgr(line)
+        )
+      );
+    },
+
+    /**
+     * The block ends at the first line that is neither a compiler location
+     * nor an indented continuation. `make`'s own output is the usual
+     * terminator.
+     */
+    isEnd(lines) {
+      const line = stripSgr(lines[lines.length - 1] || '');
+      if (/^\s*$/.test(line)) return false;
+      if (/^\s/.test(line)) return false;
+      return parseLocation(line) === null;
+    },
+
+    condense(lines, context) {
+      // Opening on a bare error line means ordinary short errors open blocks
+      // too. They are filtered here rather than at the opener, because a
+      // block cannot be classified until it has finished arriving.
+      if (!cxxTemplate.isTemplateFamily(lines)) return null;
+
+      const locations = lines.map(parseLocation).filter(Boolean);
+      if (!locations.length) return null;
+
+      const error = locations.find(
+        (l) => l.severity === 'error' || l.severity === 'fatal error'
+      );
+      if (!error) return null;
+
+      const frame = pickUserFrame(locations.map((l) => l.path), context && context.cwd);
+      if (!frame) return null;
+
+      const at = locations.find((l) => l.path === frame);
+      const position = at.column === null
+        ? frame + ':' + at.line
+        : frame + ':' + at.line + ':' + at.column;
+
+      return {
+        headline: error.severity + ': ' + error.message,
+        location: position,
+        hiddenCount: lines.length,
+      };
+    },
+  };
+
   return {
-    ALL: [],
+    ALL: [cxxTemplate],
+    cxxTemplate,
     parseLocation,
     isVendorPath,
     pickUserFrame,

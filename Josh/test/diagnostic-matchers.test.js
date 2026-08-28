@@ -83,3 +83,58 @@ test('when every frame is a vendor path there is no user frame', () => {
 test('the registry is an array so matchers are consulted in order', () => {
   assert.ok(Array.isArray(Matchers.ALL));
 });
+
+const GCC_TEMPLATE = [
+  'In file included from /usr/include/c++/13/vector:60,\n',
+  '                 from src/widget.cpp:1:\n',
+  '/usr/include/c++/13/bits/stl_vector.h:1234:7: error: no matching function for call to push_back\n',
+  '/usr/include/c++/13/bits/stl_vector.h:1235:9: note: candidate expects 1 argument\n',
+  'src/widget.cpp:42:15:   required from here\n',
+  '/usr/include/c++/13/bits/stl_algo.h:99:1: note: in instantiation of member function\n',
+];
+
+test('the template matcher claims a block that mentions instantiation', () => {
+  const claimed = Matchers.cxxTemplate.starts.some((re) =>
+    GCC_TEMPLATE.some((line) => re.test(line))
+  );
+  assert.strictEqual(claimed, true);
+});
+
+test('the template matcher reports the error and the user own frame', () => {
+  const out = Matchers.cxxTemplate.condense(GCC_TEMPLATE, { cwd: null });
+  assert.match(out.headline, /no matching function for call to/);
+  assert.strictEqual(out.location, 'src/widget.cpp:42:15');
+  assert.strictEqual(out.hiddenCount, GCC_TEMPLATE.length);
+});
+
+test('the headline is the error, not a note', () => {
+  const lines = [
+    '/usr/include/c++/13/vector:10:1: note: candidate here\n',
+    '/usr/include/c++/13/vector:11:1: error: the actual problem\n',
+    'src/widget.cpp:42:15:   required from here\n',
+  ];
+  const out = Matchers.cxxTemplate.condense(lines, { cwd: null });
+  assert.match(out.headline, /the actual problem/);
+});
+
+test('a block with no frame of the user own condenses to null', () => {
+  // An error genuinely inside a library. Showing "your code: <nothing>" would
+  // be worse than showing the original.
+  const lines = [
+    '/usr/include/c++/13/vector:10:1: error: in instantiation of something\n',
+    '/usr/include/c++/13/bits/stl_algo.h:99:1: note: required from here\n',
+  ];
+  assert.strictEqual(Matchers.cxxTemplate.condense(lines, { cwd: null }), null);
+});
+
+test('a block with no error line at all condenses to null', () => {
+  const lines = ['src/widget.cpp:1:1: note: in instantiation of foo\n'];
+  assert.strictEqual(Matchers.cxxTemplate.condense(lines, { cwd: null }), null);
+});
+
+test('the block ends at a line that is neither a location nor indented', () => {
+  assert.strictEqual(Matchers.cxxTemplate.isEnd(['make: *** [all] Error 1\n']), true);
+  assert.strictEqual(Matchers.cxxTemplate.isEnd(['src/a.cpp:1:1: note: x\n']), false);
+  assert.strictEqual(Matchers.cxxTemplate.isEnd(['    indented continuation\n']), false);
+  assert.strictEqual(Matchers.cxxTemplate.isEnd(['\n']), false);
+});
