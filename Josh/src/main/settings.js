@@ -36,6 +36,10 @@ const DEFAULTS = Object.freeze({
   renderer: 'webgl',
   vibrancy: true,
   bell: false,
+  // Diagnostic condensing. On by default: the failure mode is a diagnostic
+  // shown in full, which is exactly today's behaviour.
+  condenseDiagnostics: true,
+  condenseDiagnosticsMinLines: 20,
   // Working directories of the tabs open at last exit, for session restore.
   lastSession: [],
   // Trace pane contents. Kept here because settings.json is the only
@@ -69,6 +73,7 @@ const NUMERIC_RANGES = Object.freeze({
   lineHeight: [0.8, 3],
   letterSpacing: [-5, 10],
   scrollback: [100, 200000],
+  condenseDiagnosticsMinLines: [1, 10000],
 });
 
 function clamp(value, range) {
@@ -157,6 +162,7 @@ function coerce(raw) {
   // These two must stay integers or xterm misbehaves.
   out.scrollback = Math.round(out.scrollback);
   out.fontSize = Math.round(out.fontSize);
+  out.condenseDiagnosticsMinLines = Math.round(out.condenseDiagnosticsMinLines);
   return out;
 }
 

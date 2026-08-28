@@ -23,6 +23,22 @@
       this.shell = null;
       this.disposed = false;
 
+      // Diagnostic condensing sits between the PTY and xterm. It is built
+      // unconditionally and consulted per write, so toggling the setting takes
+      // effect on the next line rather than needing a new pane.
+      this.overlay = new window.DiagnosticOverlay.DiagnosticOverlay({
+        document: document,
+        onCopy: (text) => api.clipboard.write(text).catch(function () {}),
+      });
+      this.condenser = new window.Diagnostics.Condenser({
+        emit: (text) => { if (!this.disposed && this.term) this.term.write(text); },
+        onCondensed: (record) => this.overlay.remember(record),
+        matchers: window.DiagnosticMatchers.ALL,
+        cwd: () => this.cwd,
+        enabled: () => this.settings.condenseDiagnostics !== false,
+        minLines: () => this.settings.condenseDiagnosticsMinLines || 20,
+      });
+
       this.element = document.createElement('div');
       this.element.className = 'pane';
       this.element.dataset.paneId = this.id;
@@ -186,7 +202,13 @@
     }
 
     write(data) {
-      if (!this.disposed && this.term) this.term.write(data);
+      if (this.disposed || !this.term) return;
+      this.condenser.write(data);
+    }
+
+    /** Show the original bytes of the most recent condensed diagnostic. */
+    expandLastDiagnostic() {
+      return this.overlay ? this.overlay.openLast() : false;
     }
 
     focus() {
@@ -237,6 +259,10 @@
 
     dispose() {
       if (this.disposed) return;
+      // Released before `disposed` is set, so anything the condenser is still
+      // holding reaches the terminal rather than being emitted into a no-op.
+      if (this.condenser) this.condenser.dispose();
+      if (this.overlay) this.overlay.dispose();
       this.disposed = true;
       if (this._observer) this._observer.disconnect();
       if (this.sessionId) api.pty.kill(this.sessionId).catch(function () {});
