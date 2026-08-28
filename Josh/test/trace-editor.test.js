@@ -116,21 +116,42 @@ const LARGE_FILE = ('int x = 1; // a line' + NL).repeat(8000);
  * did not trend upward with load at all.
  */
 function measureBoth() {
-  let small = Infinity;
-  let large = Infinity;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    let started = process.cpuUsage();
-    Editor.highlight(SMALL_FILE);
-    const smallTook = cpuMillis(started);
-    if (smallTook < small) small = smallTook;
-
-    started = process.cpuUsage();
-    Editor.highlight(LARGE_FILE);
-    const largeTook = cpuMillis(started);
-    if (largeTook < large) large = largeTook;
-  }
-  return { small: small, large: large };
+  return {
+    small: perRunCpu(() => Editor.highlight(SMALL_FILE)),
+    large: perRunCpu(() => Editor.highlight(LARGE_FILE)),
+  };
 }
+
+/**
+ * Milliseconds of CPU per run, measured over enough runs to outlast the clock.
+ *
+ * A single highlight cannot be timed directly: process.cpuUsage() advances in
+ * steps of about 15.6ms on Windows, where the small file takes less than one
+ * step and therefore measures 0.0ms. Dividing by that produced a fabricated
+ * 8.00x ratio on a perfectly linear highlighter -- the first version of this
+ * fix failed CI exactly that way.
+ *
+ * Accumulating until the total is far above one step makes the measurement
+ * independent of how coarse the clock is, which is the property that was
+ * missing rather than a threshold that needed loosening.
+ */
+function perRunCpu(thunk) {
+  const started = process.cpuUsage();
+  let runs = 0;
+  let elapsed = 0;
+  do {
+    thunk();
+    runs += 1;
+    elapsed = cpuMillis(started);
+  } while (elapsed < MIN_MEASURED_MS && runs < MAX_RUNS);
+  return elapsed / runs;
+}
+
+/** Comfortably more than a dozen clock steps, even on the coarsest of them. */
+const MIN_MEASURED_MS = 250;
+
+/** A stop, so a pathologically slow machine cannot spin here forever. */
+const MAX_RUNS = 500;
 
 /** User plus system CPU since `since`, in milliseconds. */
 function cpuMillis(since) {
@@ -162,12 +183,12 @@ test('highlighting stays linear in CPU time', () => {
   // See the note at the top of this file for where 2.5 comes from: above
   // every honest reading recorded on this project, below every quadratic one.
   const timing = measureBoth();
-  const perLineGrowth = (timing.large / Math.max(timing.small, 0.5)) / 4;
+  const perLineGrowth = (timing.large / timing.small) / 4;
 
   assert.ok(
     perLineGrowth < 2.5,
     'CPU per line grew ' + perLineGrowth.toFixed(2) + 'x when the file quadrupled '
-      + '(' + timing.small.toFixed(1) + 'ms -> ' + timing.large.toFixed(1) + 'ms CPU). '
+      + '(' + timing.small.toFixed(3) + 'ms -> ' + timing.large.toFixed(3) + 'ms CPU per run). '
       + 'Linear is 1.0, quadratic is 4.0.'
   );
 });
