@@ -9,9 +9,6 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const Integration = require('../src/main/shell-integration.js');
@@ -27,17 +24,19 @@ function available(command, args) {
 const HAS_ZSH = available('zsh', ['-f', '-c', 'exit 0']);
 const HAS_BASH = available('bash', ['--norc', '-c', 'exit 0']);
 
+/**
+ * Run `body` with the snippet already defined.
+ *
+ * The snippet is passed inline rather than sourced from a temp file. Writing
+ * it to disk and interpolating the path into a `source` command breaks on
+ * Windows, where os.tmpdir() is a backslash path and git-bash reads those
+ * backslashes as escapes: `C:\Users\RUNNER~1\...` arrives as
+ * `C:UsersRUNNER~1...` and the source silently finds nothing. Inlining has no
+ * path to quote and behaves the same on every platform.
+ */
 function withSnippet(dialect, body, shell, shellArgs) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'josh-recall-'));
-  const file = path.join(dir, 'init.sh');
-  fs.writeFileSync(file, Integration.recallSnippet(dialect, NONCE));
-  try {
-    return spawnSync(shell, shellArgs.concat(['source ' + file + '\n' + body]), {
-      encoding: 'utf8',
-    });
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const snippet = Integration.recallSnippet(dialect, NONCE);
+  return spawnSync(shell, shellArgs.concat([snippet + '\n' + body]), { encoding: 'utf8' });
 }
 
 /** Every event the real parser accepts from real shell output. */
@@ -135,13 +134,10 @@ test('bash: a user PROMPT_COMMAND set before Josh is preserved', {
   skip: HAS_BASH ? false : 'bash is not installed',
 }, () => {
   // Josh appends; it never replaces. Someone else's prompt work must survive.
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'josh-recall-'));
-  const file = path.join(dir, 'init.sh');
-  fs.writeFileSync(file, Integration.recallSnippet('bash', NONCE));
+  const snippet = Integration.recallSnippet('bash', NONCE);
   const run = spawnSync('bash', ['--norc', '-c',
-    'PROMPT_COMMAND="echo mine"\nsource ' + file + '\necho "PC=$PROMPT_COMMAND"'],
+    'PROMPT_COMMAND="echo mine"\n' + snippet + '\necho "PC=$PROMPT_COMMAND"'],
   { encoding: 'utf8' });
-  fs.rmSync(dir, { recursive: true, force: true });
   assert.match(run.stdout, /echo mine/, 'the user’s PROMPT_COMMAND must survive');
   assert.match(run.stdout, /__josh_prompt/);
 });
