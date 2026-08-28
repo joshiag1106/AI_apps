@@ -58,10 +58,16 @@ const DEFAULTS = Object.freeze({
   shellKitGitSkip: [],
   shellKitSafeRemove: false,
 
-  // Recall. On by default: the store is local, 0600 and redacted before any
-  // write, and a terminal that cannot learn from what you already ran is the
-  // status quo this feature exists to change.
-  recall: true,
+  // Recall. Off by default, for the same reason the Shell Kit is: silently
+  // beginning to record someone's command history on a version upgrade is
+  // more invasive than silently replacing their prompt, not less. Changing a
+  // prompt is cosmetic, instantly visible and trivially undone; a shell
+  // history written to disk is none of those. The store being local, 0600 and
+  // redacted bounds the harm -- it does not substitute for being asked.
+  //
+  // recallInlineSuggest stays on so that turning this one key on gives the
+  // whole feature rather than half of it.
+  recall: false,
   recallInlineSuggest: true,
   recallExcludePatterns: [],
   recallMaxEntries: 50000,

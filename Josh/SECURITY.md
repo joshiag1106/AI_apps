@@ -50,6 +50,8 @@ most likely to accept it.
 Josh mints a random nonce per session and ignores any OSC 133 sequence not
 carrying it, so `cat`-ing a file full of crafted sequences achieves nothing.
 
+Recall is off by default and records nothing until a user turns it on.
+
 **Stated plainly: the nonce does not defend against untrusted execution.** Any
 program you actually run inherits the shell's environment and can therefore
 read the nonce and forge sequences. That is not specific to Josh — a process

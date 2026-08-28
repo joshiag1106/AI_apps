@@ -5,8 +5,14 @@ const assert = require('node:assert');
 
 const { coerce, DEFAULTS } = require('../src/main/settings.js');
 
-test('recall and inline suggestion default on', () => {
-  assert.strictEqual(DEFAULTS.recall, true);
+test('RECALL DEFAULTS OFF, AND INLINE SUGGESTION DEFAULTS ON', () => {
+  // Recall must be asked for. Recording a shell history without being asked is
+  // more invasive than the prompt change the Shell Kit already refuses to make
+  // silently, so this default is a deliberate decision and not an oversight to
+  // be "fixed" later.
+  assert.strictEqual(DEFAULTS.recall, false);
+  // Gated behind `recall`, so it costs nothing until Recall is switched on and
+  // means one key gives the whole feature.
   assert.strictEqual(DEFAULTS.recallInlineSuggest, true);
 });
 
@@ -16,8 +22,8 @@ test('the exclude list defaults empty and the cap defaults to fifty thousand', (
 });
 
 test('the switches accept booleans and reject anything else', () => {
-  assert.strictEqual(coerce({ recall: false }).recall, false);
-  assert.strictEqual(coerce({ recall: 'yes' }).recall, true);
+  assert.strictEqual(coerce({ recall: true }).recall, true);
+  assert.strictEqual(coerce({ recall: 'yes' }).recall, false);
   assert.strictEqual(coerce({ recallInlineSuggest: false }).recallInlineSuggest, false);
 });
 
