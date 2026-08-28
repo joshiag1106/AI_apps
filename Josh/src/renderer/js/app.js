@@ -620,6 +620,11 @@
       if (pane) pane.write(payload.data);
     });
 
+    api.on('recall:suggestion', (payload) => {
+      const pane = panesBySession.get(payload.sessionId);
+      if (pane && pane.showSuggestion) pane.showSuggestion(payload.text);
+    });
+
     api.on('pty:exit', (payload) => onSessionExit(payload.sessionId));
 
     api.on('pty:cwd', (payload) => {
