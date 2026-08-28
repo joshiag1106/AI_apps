@@ -1,0 +1,6 @@
+# These files are byte-exact captures of what a terminal actually produced.
+# The lossless-passthrough tests compare emitted bytes against them, and
+# `script` writes CRLF, so any normalisation git performs on checkout would
+# silently change what the fixtures represent -- and on a Windows clone with
+# autocrlf it would change them again.
+*.txt -text -diff
