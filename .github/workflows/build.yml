@@ -151,12 +151,56 @@ jobs:
       # what restricts the build to this runner's own architecture, and it
       # only works because electron-builder.yml no longer hard-codes an arch
       # list per target.
-      - name: Build installer
-        run: npm run ${{ matrix.command }} -- --${{ matrix.arch }} --publish never
+      # Signing is opt-in and degrades cleanly. Secrets are unreadable from
+      # forked pull requests and absent until someone configures them, so the
+      # build must still work without them — an unsigned artifact is a warning
+      # for the downloader, but a build that fails outright helps nobody.
+      #
+      # Secrets cannot be referenced in an `if:` expression, so presence is
+      # detected here and exposed as a step output instead.
+      - name: Detect macOS signing availability
+        id: signing
+        if: runner.os == 'macOS'
         env:
-          # Unsigned builds are expected for forks and pull requests. Configure
-          # signing secrets in repository settings to produce signed output.
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        run: |
+          if [ -n "$CERTIFICATE" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Developer ID certificate found - this build will be signed and notarized."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "No MACOS_CERTIFICATE secret - building unsigned (expected for forks and PRs)."
+          fi
+
+      # `--config.mac.notarize=true` is passed on the command line rather than
+      # set in electron-builder.yml, because notarization declared in config
+      # fails the build when no Apple credentials are present. Adding it only
+      # for signed runs keeps the unsigned path byte-for-byte as it was.
+      - name: Build installer
+        run: npm run ${{ matrix.command }} -- --${{ matrix.arch }} --publish never ${{ steps.signing.outputs.enabled == 'true' && '--config.mac.notarize=true' || '' }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ steps.signing.outputs.enabled == 'true' && 'true' || 'false' }}
+          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # Signing that silently did nothing is the failure mode worth guarding:
+      # electron-builder logs a warning and produces an unsigned app, which
+      # looks like success until a user hits Gatekeeper. `spctl` is the check
+      # Gatekeeper itself performs, so this asserts the actual outcome rather
+      # than trusting that the signing step ran.
+      - name: Verify the macOS build is signed and accepted by Gatekeeper
+        if: runner.os == 'macOS' && steps.signing.outputs.enabled == 'true'
+        run: |
+          set -e
+          app=$(find dist -name '*.app' -maxdepth 3 | head -1)
+          if [ -z "$app" ]; then echo "No .app found in dist/"; exit 1; fi
+          echo "checking: $app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          spctl --assess --type execute --verbose=4 "$app"
+          echo "Signed, notarized and accepted by Gatekeeper."
 
       # The guard for the bug described at the top of this file. A mismatch
       # means the installer would launch and then fail to open a shell, which
