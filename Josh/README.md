@@ -35,6 +35,9 @@ as they do in Terminal.app or Windows Terminal.
   three: the error, the frame in *your* code, and a count of what was hidden.
   The original is one keystroke away and is never discarded. See
   [Diagnostic condensing](#diagnostic-condensing)
+- **Recall** — Josh learns which commands actually worked, and where, then
+  suggests one inline as you type. Local, redacted before it is written, and
+  authenticated so hostile output cannot forge it. See [Recall](#recall)
 - **No network access at all** — see [Security](#security)
 
 ## Install
@@ -159,6 +162,10 @@ Settings live in a JSON file you can edit directly. Open it from the menu
 | `traceStdin` | `""` | The input your Trace program can read. Capped at 8 KiB |
 | `condenseDiagnostics` | `true` | Condense long compiler and linker errors inline |
 | `condenseDiagnosticsMinLines` | `20` | Leave shorter diagnostics alone; they are already readable |
+| `recall` | `true` | Learn from finished commands, and mark prompts semantically |
+| `recallInlineSuggest` | `true` | Ghost-text suggestion while you type |
+| `recallExcludePatterns` | `[]` | Extra regexes; matching commands are never recorded |
+| `recallMaxEntries` | `50000` | The store is compacted beyond this |
 | `shellKit` | `false` | Master switch for the Shell Kit |
 | `shellKitPrompt` | `"classic"` | Prompt theme: `plain`, `classic`, `rail`, `stack` or `context` |
 | `shellKitPacks` | `["git","core"]` | Enabled alias packs: `git`, `core`, `dev`, `systems` |
@@ -346,6 +353,54 @@ coloured and carry inline suggestions, and condensing them would degrade output
 better than anything this produces. TypeScript, Java, Python, Node and Go
 matchers are designed but not built.
 
+## Recall
+
+Josh watches which commands finish, where they ran, and what they returned,
+then offers the one you probably want next as dim text after the cursor.
+**Right Arrow** or **End** accepts it, **Esc** dismisses it, and **Tab is
+untouched** — it belongs to your shell's own completion.
+
+Ranking prefers commands that succeeded, that ran in this directory, and that
+ran recently, and it counts repetition sublinearly so one habit does not drown
+everything else. The strongest signal is a repair pair: when a command failed
+and a similar one worked moments later, typing the failing form suggests the
+one that actually worked.
+
+**It is authenticated.** Terminal output is attacker-controlled — `cat` a
+hostile file and that file chooses what Josh receives. Josh mints a random
+nonce per session and ignores any prompt marker not carrying it, so crafted
+sequences in a file achieve nothing. **What the nonce does not defend against,
+plainly: any program you actually run inherits your environment and can read
+it.** That is untrusted *execution*, which no terminal can prevent, and it is
+out of scope. The nonce defends against untrusted *output*, which is the real
+threat.
+
+**Redaction happens before anything is written.** A command is dropped
+entirely — never truncated, never partly stored — if it assigns to a
+secret-shaped variable (`*_TOKEN`, `*_KEY`, `*_SECRET`, `*PASSWORD*`), passes
+`--password`, `--token` or `--api-key`, carries an authorization header, or
+contains a long high-entropy literal. Short hex is deliberately kept, because
+`git show a1b2c3d` is exactly the kind of command this feature exists to
+suggest. Add your own patterns with `recallExcludePatterns`.
+
+The store is `~/.config/josh/recall.jsonl`, written `0600`, compacted past
+`recallMaxEntries`. It is plain text you can read, edit or delete.
+
+**It says nothing rather than guessing.** Between the prompt and the command
+no sequence fires per keystroke, so Josh models the typed line only as far as
+certainty goes: printable characters and backspace. An arrow key, Tab, `Ctrl+R`
+or any escape sequence invalidates it, and Josh suggests nothing until the next
+prompt resyncs. A wrong suggestion is worse than no suggestion.
+
+**Per-shell support.** zsh, bash and PowerShell 7 are marked and recorded.
+Where integration cannot be established, Recall disables itself for that
+session rather than guessing prompt boundaries from raw output.
+
+**Not included.** fish and cmd.exe. The fish hooks are written and tested, but
+Josh's shell detection does not yet recognise fish, so they never run — see
+[docs/design.md](docs/design.md). Turn the whole feature off with
+`"recall": false`.
+
 ## Security
 
 A terminal displays fully attacker-controlled output — `cat` a hostile file and
@@ -416,7 +471,7 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-856 tests. Ninety-six cover the IPC validators and channel contract, the
+985 tests. Ninety-six cover the IPC validators and channel contract, the
 split-pane tree, settings coercion, shell resolution, palette filtering and the
 checksum verification for the bundled Windows tools, plus an end-to-end test
 that boots Electron, spawns a real shell and asserts the output round-trips.
@@ -425,10 +480,13 @@ renderer and themes, glyph detection, settings and preview, plus an end-to-end
 test that runs the generated script in a real zsh, bash and pwsh. Three hundred
 and ninety-seven cover Trace: its lexer, parser, memory model, diagnostics,
 evaluator and library, and a corpus of seventy-six whole programs run end to
-end. The last ninety-eight cover diagnostic condensing: the line splitter, the
-escape guards, the state machine, both C++ matchers, the demangler and the
-overlay, plus an end-to-end suite that replays real captured compiler output
-through the condenser in randomly sized chunks.
+end. Ninety-eight cover diagnostic condensing: the line splitter, the escape
+guards, the state machine, both C++ matchers, the demangler and the overlay,
+plus an end-to-end suite that replays real captured compiler output through the
+condenser in randomly sized chunks. The last hundred and twenty-nine cover
+Recall: the authenticated prompt parser, the input tracker, redaction, the
+store, ranking, the suggestion overlay, and a suite that sources the generated
+hooks in a real zsh and bash and feeds their output back through the parser.
 
 Architecture notes are in [docs/design.md](docs/design.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the layout and conventions.
