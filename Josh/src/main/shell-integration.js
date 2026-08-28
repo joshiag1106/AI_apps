@@ -316,10 +316,15 @@ const BUILDERS = {
  */
 function build({
   shell, settings = {}, glyphs = 'plain', env = {}, home = '', tmpdir = '', palette = null,
+  recall = null,
 } = {}) {
-  // Opt-in. An absent setting means the session starts exactly as it does
-  // today, which is the only safe reading while the feature is new.
-  if (settings.shellKit !== true) return null;
+  // Two features share this module and either can be on alone. Standing down
+  // the moment the Shell Kit is off would silently disable Recall for everyone
+  // who does not want the prompt -- with no error, because "disabled for this
+  // session" is a legitimate state, which is exactly how it would go unnoticed.
+  const wantsKit = settings.shellKit === true;
+  const wantsRecall = settings.recall === true && typeof recall === 'string' && recall !== '';
+  if (!wantsKit && !wantsRecall) return null;
 
   // An explicit shellArgs is a choice the user made. Josh must not quietly
   // override it, so the kit stands down for the session.
@@ -394,8 +399,139 @@ function build({
   return { env: built.env, args: built.args, dispose };
 }
 
+
+/**
+ * The shell-side half of Recall: OSC 133 markers carrying the session nonce.
+ *
+ * Every sequence carries the nonce, because the parser ignores any that does
+ * not -- a dialect that forgets it disables Recall for that shell silently,
+ * with no error, since "disabled for this session" is a legitimate state.
+ *
+ * The command text is percent-encoded *in the shell*, not here. A command
+ * containing a semicolon would otherwise split the sequence and desynchronise
+ * the parser, and the shell is the only place that knows the exact text --
+ * history recall, Tab completion and Ctrl+R all rewrite the line without Josh
+ * seeing meaningful keystrokes.
+ *
+ * Returns '' for any dialect Josh cannot mark reliably. Guessing prompt
+ * boundaries from raw output is the fragile inference this design refuses.
+ */
+function recallSnippet(dialect, nonce) {
+  if (typeof nonce !== 'string' || !/^[0-9a-f]{8,}$/.test(nonce)) return '';
+
+  // POSIX percent-encoder, shared by zsh and bash. LC_ALL=C keeps ${#s} and
+  // the substring expansion counting bytes rather than characters.
+  const posixEncoder = [
+    '__josh_enc() {',
+    '  local LC_ALL=C s=$1 out= i c',
+    '  for (( i=0; i<${#s}; i++ )); do',
+    '    c=${s:$i:1}',
+    '    case $c in',
+    '      [a-zA-Z0-9.~_-]) out=$out$c ;;',
+    "      *) out=$out$(printf '%%%02X' \"'$c\") ;;",
+    '    esac',
+    '  done',
+    "  printf '%s' \"$out\"",
+    '}',
+  ].join('\n');
+
+  if (dialect === 'zsh') {
+    return [
+      posixEncoder,
+      '__josh_precmd() {',
+      // $? must be captured before anything else can clobber it.
+      '  local __josh_exit=$?',
+      `  printf '\\033]133;D;nonce=${nonce};%d\\033\\\\' "$__josh_exit"`,
+      `  printf '\\033]133;A;nonce=${nonce}\\033\\\\'`,
+      `  printf '\\033]133;B;nonce=${nonce}\\033\\\\'`,
+      '}',
+      '__josh_preexec() {',
+      `  printf '\\033]133;C;nonce=${nonce};cmd=%s\\033\\\\' "$(__josh_enc "$1")"`,
+      '}',
+      'typeset -ag precmd_functions preexec_functions',
+      'precmd_functions+=(__josh_precmd)',
+      'preexec_functions+=(__josh_preexec)',
+      '',
+    ].join('\n');
+  }
+
+  if (dialect === 'bash') {
+    return [
+      posixEncoder,
+      '__josh_prompt() {',
+      '  local __josh_exit=$?',
+      `  printf '\\033]133;D;nonce=${nonce};%d\\033\\\\' "$__josh_exit"`,
+      `  printf '\\033]133;A;nonce=${nonce}\\033\\\\'`,
+      `  printf '\\033]133;B;nonce=${nonce}\\033\\\\'`,
+      '  __josh_running=',
+      '}',
+      '__josh_debug() {',
+      // The DEBUG trap fires for the prompt command too; only the first hit
+      // after a prompt is the user's command.
+      '  [ -n "$COMP_LINE" ] && return',
+      '  [ -n "$__josh_running" ] && return',
+      '  __josh_running=1',
+      `  printf '\\033]133;C;nonce=${nonce};cmd=%s\\033\\\\' "$(__josh_enc "$BASH_COMMAND")"`,
+      '}',
+      'case ";$PROMPT_COMMAND;" in',
+      '  *";__josh_prompt;"*) ;;',
+      '  *) PROMPT_COMMAND="__josh_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;',
+      'esac',
+      // Suppressed until the first prompt clears it, and the trap is installed
+      // last: DEBUG fires on every command including the rest of this snippet,
+      // so an earlier trap records Josh's own setup as the user's command.
+      '__josh_running=1',
+      "trap '__josh_debug' DEBUG",
+      '',
+    ].join('\n');
+  }
+
+  if (dialect === 'fish') {
+    return [
+      'function __josh_preexec --on-event fish_preexec',
+      `    printf '\\033]133;C;nonce=${nonce};cmd=%s\\033\\\\' (string escape --style=url -- $argv[1])`,
+      'end',
+      'function __josh_postexec --on-event fish_postexec',
+      `    printf '\\033]133;D;nonce=${nonce};%d\\033\\\\' $status`,
+      'end',
+      'function __josh_prompt_marker --on-event fish_prompt',
+      `    printf '\\033]133;A;nonce=${nonce}\\033\\\\'`,
+      `    printf '\\033]133;B;nonce=${nonce}\\033\\\\'`,
+      'end',
+      '',
+    ].join('\n');
+  }
+
+  if (dialect === 'pwsh') {
+    return [
+      'if (-not (Test-Path function:__josh_original_prompt)) {',
+      '  Copy-Item function:prompt function:__josh_original_prompt',
+      '}',
+      'function prompt {',
+      '  $__josh_exit = if ($LASTEXITCODE -ne $null) { $LASTEXITCODE } else { 0 }',
+      `  [Console]::Write("\`e]133;D;nonce=${nonce};$__josh_exit\`e\\\\")`,
+      `  [Console]::Write("\`e]133;A;nonce=${nonce}\`e\\\\")`,
+      `  [Console]::Write("\`e]133;B;nonce=${nonce}\`e\\\\")`,
+      '  __josh_original_prompt',
+      '}',
+      'if (Get-Command Set-PSReadLineKeyHandler -ErrorAction SilentlyContinue) {',
+      '  function global:PSConsoleHostReadLine {',
+      '    $line = [Microsoft.PowerShell.PSConsoleReadLine]::ReadLine($host.Runspace, $ExecutionContext)',
+      '    $enc = [uri]::EscapeDataString($line)',
+      `    [Console]::Write("\`e]133;C;nonce=${nonce};cmd=$enc\`e\\\\")`,
+      '    $line',
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+  }
+
+  // cmd.exe and anything unrecognised: Recall stands down for the session.
+  return '';
+}
+
 module.exports = {
-  build, dialectFor, themeFor, packsFor, paletteFor, glyphsFor,
+  build, dialectFor, recallSnippet, themeFor, packsFor, paletteFor, glyphsFor,
   exportKit, exportDirFor, EXPORT_TARGETS,
   DIR_MODE, FILE_MODE, BASH_BOOTSTRAP,
 };
