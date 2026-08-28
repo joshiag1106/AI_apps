@@ -364,10 +364,14 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-488 tests. Ninety-three cover the IPC validators and channel contract, the
-split-pane tree, settings coercion, shell resolution and palette filtering, plus
-an end-to-end test that boots Electron, spawns a real shell and asserts the
-output round-trips. The rest cover Trace: its lexer, parser, memory model,
+758 tests. Ninety-six cover the IPC validators and channel contract, the
+split-pane tree, settings coercion, shell resolution, palette filtering and the
+checksum verification for the bundled Windows tools, plus an end-to-end test
+that boots Electron, spawns a real shell and asserts the output round-trips.
+Two hundred and sixty-five cover the Shell Kit: its emitter, alias packs, prompt
+renderer and themes, glyph detection, settings and preview, plus an end-to-end
+test that runs the generated script in a real zsh, bash and pwsh. The remaining
+three hundred and ninety-seven cover Trace: its lexer, parser, memory model,
 diagnostics, evaluator and library, and a corpus of seventy-six whole programs
 run end to end.
 
