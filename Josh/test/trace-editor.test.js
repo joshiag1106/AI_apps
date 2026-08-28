@@ -87,34 +87,79 @@ test('the parser never sees stray characters, only the editor does', () => {
  * deliberately quadratic highlighter measures 2.56, and an honest one measured
  * 1.91 on real hardware. There is no threshold between those worth trusting.
  *
- * So the timing assertion runs only where the machine is not shared, and CI
- * keeps the one check that is genuinely machine-independent: the highlighter
- * must produce output proportional to its input. That will not catch every
- * quadratic implementation, and pretending otherwise is how the previous two
- * versions came to fail.
+ * The third version -- this one -- changes the clock rather than the theory,
+ * and measures CPU time instead of wall clock. Wall clock counts the seconds
+ * this process spent descheduled while something else used the core, which is
+ * most of what a shared runner adds. Measured directly under eight competing
+ * processes: the wall-clock ratio climbed to 1.43-1.60 while the CPU ratio
+ * stayed between 1.06 and 1.12, against 1.10 idle. It does not drift with load.
+ *
+ * The threshold is 2.5, chosen against evidence rather than taste. Every
+ * honest reading this project has recorded sits below it, including the 1.91
+ * from macos-latest that broke version two. A deliberately quadratic
+ * highlighter measures 3.60-4.79, so it sits below every dishonest reading
+ * too. Cache geometry can still move the number -- CPU time counts a stall --
+ * but it now has to move it more than twice as far to matter.
  */
-const ON_SHARED_RUNNER = Boolean(process.env.CI)
-  && 'timing on a shared runner measures the runner; see the note above';
 
 const SMALL_FILE = ('int x = 1; // a line' + NL).repeat(2000);
 const LARGE_FILE = ('int x = 1; // a line' + NL).repeat(8000);
 
-/** Best-of-five for each size, interleaved, in milliseconds. */
+/**
+ * Best-of-five for each size, interleaved, in milliseconds of CPU time.
+ *
+ * CPU time, not wall clock. Wall clock counts the seconds this process spent
+ * descheduled while something else used the core, so on a busy machine it
+ * measures the machine. Measured directly under eight competing processes:
+ * the wall-clock ratio climbed to 1.43-1.60 and CI once recorded 2.28, while
+ * the CPU ratio stayed between 0.60 and 1.06 and -- the part that matters --
+ * did not trend upward with load at all.
+ */
 function measureBoth() {
-  let small = Infinity;
-  let large = Infinity;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    let started = process.hrtime.bigint();
-    Editor.highlight(SMALL_FILE);
-    const smallTook = Number(process.hrtime.bigint() - started) / 1e6;
-    if (smallTook < small) small = smallTook;
+  return {
+    small: perRunCpu(() => Editor.highlight(SMALL_FILE)),
+    large: perRunCpu(() => Editor.highlight(LARGE_FILE)),
+  };
+}
 
-    started = process.hrtime.bigint();
-    Editor.highlight(LARGE_FILE);
-    const largeTook = Number(process.hrtime.bigint() - started) / 1e6;
-    if (largeTook < large) large = largeTook;
-  }
-  return { small: small, large: large };
+/**
+ * Milliseconds of CPU per run, measured over enough runs to outlast the clock.
+ *
+ * A single highlight cannot be timed directly: process.cpuUsage() advances in
+ * steps of about 15.6ms on Windows, where the small file takes less than one
+ * step and therefore measures 0.0ms. Dividing by that produced a fabricated
+ * 8.00x ratio on a perfectly linear highlighter -- the first version of this
+ * fix failed CI exactly that way.
+ *
+ * Accumulating until the total is far above one step makes the measurement
+ * independent of how coarse the clock is, which is the property that was
+ * missing rather than a threshold that needed loosening. Verified against a
+ * cpuUsage quantised to 15.6ms steps: measuring single runs reports 15.60-23.40
+ * for a linear highlighter, and accumulating reports 1.12-1.35, which is what
+ * the same highlighter measures on a fine-grained clock.
+ */
+function perRunCpu(thunk) {
+  const started = process.cpuUsage();
+  let runs = 0;
+  let elapsed = 0;
+  do {
+    thunk();
+    runs += 1;
+    elapsed = cpuMillis(started);
+  } while (elapsed < MIN_MEASURED_MS && runs < MAX_RUNS);
+  return elapsed / runs;
+}
+
+/** Comfortably more than a dozen clock steps, even on the coarsest of them. */
+const MIN_MEASURED_MS = 250;
+
+/** A stop, so a pathologically slow machine cannot spin here forever. */
+const MAX_RUNS = 500;
+
+/** User plus system CPU since `since`, in milliseconds. */
+function cpuMillis(since) {
+  const used = process.cpuUsage(since);
+  return (used.user + used.system) / 1000;
 }
 
 test('highlighting produces output proportional to its input', () => {
@@ -132,14 +177,21 @@ test('highlighting produces output proportional to its input', () => {
   );
 });
 
-test('highlighting stays linear in time', { skip: ON_SHARED_RUNNER }, () => {
+test('highlighting stays linear in CPU time', () => {
+  // Runs everywhere, including CI. The previous two versions measured wall
+  // clock and had to be skipped on shared runners to stop them failing, which
+  // meant the one check that actually catches a quadratic *algorithm* never
+  // ran where regressions arrive. Measuring CPU time buys that coverage back.
+  //
+  // See the note at the top of this file for where 2.5 comes from: above
+  // every honest reading recorded on this project, below every quadratic one.
   const timing = measureBoth();
-  const perLineGrowth = (timing.large / Math.max(timing.small, 0.5)) / 4;
+  const perLineGrowth = (timing.large / timing.small) / 4;
 
   assert.ok(
-    perLineGrowth < 1.8,
-    'cost per line grew ' + perLineGrowth.toFixed(2) + 'x when the file quadrupled '
-      + '(' + timing.small.toFixed(1) + 'ms -> ' + timing.large.toFixed(1) + 'ms). '
+    perLineGrowth < 2.5,
+    'CPU per line grew ' + perLineGrowth.toFixed(2) + 'x when the file quadrupled '
+      + '(' + timing.small.toFixed(3) + 'ms -> ' + timing.large.toFixed(3) + 'ms CPU per run). '
       + 'Linear is 1.0, quadratic is 4.0.'
   );
 });
