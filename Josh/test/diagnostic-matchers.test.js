@@ -138,3 +138,57 @@ test('the block ends at a line that is neither a location nor indented', () => {
   assert.strictEqual(Matchers.cxxTemplate.isEnd(['    indented continuation\n']), false);
   assert.strictEqual(Matchers.cxxTemplate.isEnd(['\n']), false);
 });
+
+const LD_UNDEFINED = [
+  '/usr/bin/ld: main.o: in function `main\':\n',
+  'main.cpp:(.text+0x1f): undefined reference to `_ZN3vecIiE4pushEi\'\n',
+  'collect2: error: ld returned 1 exit status\n',
+];
+
+test('the linker matcher claims an undefined-reference block', () => {
+  const claimed = Matchers.cxxLinker.starts.some((re) =>
+    LD_UNDEFINED.some((line) => re.test(line))
+  );
+  assert.strictEqual(claimed, true);
+});
+
+test('the linker matcher demangles the missing symbol into the headline', () => {
+  const out = Matchers.cxxLinker.condense(LD_UNDEFINED, { cwd: null });
+  assert.match(out.headline, /link error: undefined reference to/);
+  assert.match(out.headline, /vec<int>::push\(int\)/);
+  assert.strictEqual(out.hiddenCount, LD_UNDEFINED.length);
+});
+
+test('the linker matcher reports what the symbol was referenced from', () => {
+  const out = Matchers.cxxLinker.condense(LD_UNDEFINED, { cwd: null });
+  assert.match(out.location, /main/);
+});
+
+test('a symbol that will not demangle appears mangled rather than wrong', () => {
+  const lines = ['/usr/bin/ld: main.o: undefined reference to `_ZQQQnonsense\'\n'];
+  const out = Matchers.cxxLinker.condense(lines, { cwd: null });
+  assert.match(out.headline, /_ZQQQnonsense/);
+});
+
+test('a linker block naming no object file at all condenses to null', () => {
+  // Consistent with the template matcher: a summary that cannot say where the
+  // symbol was wanted is not worth the transformation.
+  const lines = ['/usr/bin/ld: undefined reference to `_ZQQQnonsense\'\n'];
+  assert.strictEqual(Matchers.cxxLinker.condense(lines, { cwd: null }), null);
+});
+
+test('a duplicate symbol is recognised', () => {
+  const lines = ['duplicate symbol `_ZN3foo3barEv\' in:\n', '    a.o\n', '    b.o\n'];
+  const out = Matchers.cxxLinker.condense(lines, { cwd: null });
+  assert.match(out.headline, /duplicate symbol/);
+  assert.match(out.headline, /foo::bar\(\)/);
+});
+
+test('a linker block with no recognisable symbol condenses to null', () => {
+  const lines = ['/usr/bin/ld: something went wrong\n'];
+  assert.strictEqual(Matchers.cxxLinker.condense(lines, { cwd: null }), null);
+});
+
+test('the registry consults the template matcher before the linker matcher', () => {
+  assert.deepStrictEqual(Matchers.ALL.map((m) => m.id), ['cxx-template', 'cxx-linker']);
+});

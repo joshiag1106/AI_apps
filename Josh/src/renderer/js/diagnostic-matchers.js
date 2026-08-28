@@ -192,9 +192,83 @@
     },
   };
 
+  /** Both quoting conventions ld uses, straight and typographic. */
+  const SYMBOL = /[`'\u2018"]([^'\u2019"`]+)['\u2019"`]/;
+
+  /**
+   * C++ linking.
+   *
+   * Shorter blocks than template errors, but the symbol is mangled, which is
+   * exactly the part a human cannot read. Demangling it is most of the value
+   * here; the line count saved is incidental.
+   */
+  const cxxLinker = {
+    id: 'cxx-linker',
+
+    starts: [
+      /\bundefined reference to\b/,
+      /\bduplicate symbol\b/,
+      /\bundefined symbols? for architecture\b/i,
+      /^\/?[^\s:]*\bld\b:/,
+      /^collect2: error:/,
+    ],
+
+    /**
+     * Linker output ends at collect2's summary, or at a line that is plainly
+     * something else.
+     *
+     * A line that still speaks the linker's vocabulary is never an end: the
+     * `undefined reference` line itself is neither indented nor a parseable
+     * location, and closing the block there would drop the collect2 summary
+     * and undercount what was hidden.
+     */
+    isEnd(lines) {
+      const line = stripSgr(lines[lines.length - 1] || '');
+      if (/^collect2: error:/.test(line)) return true;
+      if (/^\s*$/.test(line)) return false;
+      if (cxxLinker.starts.some((pattern) => pattern.test(line))) return false;
+      return !/^\s/.test(line) && parseLocation(line) === null;
+    },
+
+    condense(lines, context) {
+      const text = lines.map(stripSgr).join('');
+
+      const undefinedRef = /\bundefined reference to\s*/.exec(text);
+      const duplicate = /\bduplicate symbol\s*/.exec(text);
+      const anchor = undefinedRef || duplicate;
+      if (!anchor) return null;
+
+      const rest = text.slice(anchor.index + anchor[0].length);
+      const quoted = SYMBOL.exec(rest);
+      if (!quoted) return null;
+
+      const kind = undefinedRef ? 'undefined reference to' : 'duplicate symbol';
+      const headline = 'link error: ' + kind + ' ' + Demangle.demangle(quoted[1]);
+
+      // "in function" is the linker's own phrasing; failing that, the first
+      // object or source file that is not a toolchain path.
+      const referenced = /\bin function\s*[`'\u2018"]([^'\u2019"`]+)/.exec(text);
+      const paths = text.match(/[\w./\\-]+\.(?:o|obj|cpp|cc|cxx|c)\b/g) || [];
+      const frame = pickUserFrame(paths, context && context.cwd);
+
+      let location;
+      if (referenced && frame) location = referenced[1] + ' in ' + frame;
+      else if (referenced) location = referenced[1];
+      else if (frame) location = frame;
+      else return null;
+
+      return {
+        headline,
+        location,
+        hiddenCount: lines.length,
+      };
+    },
+  };
+
   return {
-    ALL: [cxxTemplate],
+    ALL: [cxxTemplate, cxxLinker],
     cxxTemplate,
+    cxxLinker,
     parseLocation,
     isVendorPath,
     pickUserFrame,
