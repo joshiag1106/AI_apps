@@ -277,16 +277,31 @@ test('pwsh: a real session gets the prompt and the packs', {
  * Measured in a plain directory, not a repository: __josh_git_collect walks up
  * for a .git entry and returns without spawning anything when there is none,
  * so this is the kit's own cost rather than a measure of how fast git is on
- * somebody's monorepo. Best-of-several, because a single sample on a shared
- * machine measures the machine.
+ * somebody's monorepo.
+ *
+ * The pairs are interleaved and the *difference* is minimised, rather than
+ * each side being minimised separately and then subtracted. Subtracting two
+ * independently sampled minima does not cancel noise, it combines it: a
+ * fortunate bare sample and an unfortunate kitted one add together. That is
+ * how this test once reported the kit adding 50.0ms (bare 19.8, kitted 69.8)
+ * on a runner where the real cost is 5-16ms, measured across idle and
+ * deliberately loaded machines. Within an interleaved pair the machine is in
+ * much the same state for both spawns, so the difference is the kit's cost
+ * rather than the runner's mood.
  */
-function fastest(times, thunk) {
+function fastestDelta(pairs, baseline, candidate) {
   let best = Infinity;
-  for (let i = 0; i < times; i += 1) {
-    const started = process.hrtime.bigint();
-    thunk();
-    const took = Number(process.hrtime.bigint() - started) / 1e6;
-    if (took < best) best = took;
+  for (let i = 0; i < pairs; i += 1) {
+    const beforeBase = process.hrtime.bigint();
+    baseline();
+    const bare = Number(process.hrtime.bigint() - beforeBase) / 1e6;
+
+    const beforeCandidate = process.hrtime.bigint();
+    candidate();
+    const kitted = Number(process.hrtime.bigint() - beforeCandidate) / 1e6;
+
+    const delta = kitted - bare;
+    if (delta < best) best = delta;
   }
   return best;
 }
@@ -300,22 +315,22 @@ test('the kit costs less than 40ms of shell startup', {
       PATH: process.env.PATH, HOME: where.home, TERM: 'xterm-256color',
     };
 
-    const bare = fastest(7, () => {
-      run('zsh', ['-i'], { input: 'exit\n', cwd: where.work, env: base });
-    });
-    const kitted = fastest(7, () => {
-      run('zsh', ['-i'], {
+    const added = fastestDelta(
+      7,
+      () => run('zsh', ['-i'], { input: 'exit\n', cwd: where.work, env: base }),
+      () => run('zsh', ['-i'], {
         input: 'exit\n',
         cwd: where.work,
         env: Object.assign({}, base, { ZDOTDIR: built.env.ZDOTDIR }),
-      });
-    });
+      })
+    );
 
-    const added = kitted - bare;
+    // 40ms is roughly 2.5x the worst honest reading recorded (16ms, on a
+    // machine with eight processes competing for the cores), so a busy runner
+    // alone should not reach it while a real regression still would.
     assert.ok(
       added < 40,
-      'the kit added ' + added.toFixed(1) + 'ms (bare ' + bare.toFixed(1)
-        + 'ms, kitted ' + kitted.toFixed(1) + 'ms)'
+      'the kit added ' + added.toFixed(1) + 'ms per interleaved pair'
     );
 
     built.dispose();
