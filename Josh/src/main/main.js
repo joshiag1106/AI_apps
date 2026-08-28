@@ -14,6 +14,7 @@ const { app, nativeTheme, shell, dialog, session } = require('electron');
 const { PtyManager } = require('./pty-manager');
 const { resolveWinBinDir } = require('./shell-resolver');
 const { Settings } = require('./settings');
+const RecallStore = require('./recall-store.js');
 const { applySessionPolicy, hardenWebContents } = require('./security');
 const windowManager = require('./window-manager');
 const { registerIpc } = require('./ipc');
@@ -23,6 +24,18 @@ const { installMenu } = require('./menu');
 app.enableSandbox();
 
 const settings = new Settings();
+
+/**
+ * The Recall store, built once for the process and injected into the PTY
+ * manager, which must stay free of Electron. Loading is best-effort: a store
+ * Josh cannot read is an empty history, never a failure to start.
+ */
+const recallStore = new RecallStore.RecallStore({
+  file: path.join(path.dirname(settings.filePath), 'recall.jsonl'),
+  maxEntries: settings.values.recallMaxEntries,
+  excludePatterns: settings.values.recallExcludePatterns,
+});
+recallStore.load();
 let ptyManager = null;
 
 // Bundled fallback tools (Windows sed/awk). Resolved once here, where
@@ -51,6 +64,9 @@ function createPtyManager() {
     onExit: (windowId, sessionId, info) =>
       sendToWindow(windowId, 'pty:exit', { sessionId, ...info }),
     onCwd: (windowId, sessionId, cwd) => sendToWindow(windowId, 'pty:cwd', { sessionId, cwd }),
+    onSuggestion: (windowId, sessionId, text) =>
+      sendToWindow(windowId, 'recall:suggestion', { sessionId, text }),
+    recallStore: recallStore,
     binDir: BUNDLED_BIN_DIR,
   });
 }

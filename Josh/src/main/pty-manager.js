@@ -17,11 +17,17 @@
  */
 
 const os = require('node:os');
+const fs = require('node:fs');
 const { randomUUID } = require('node:crypto');
 const nodePty = require('@lydell/node-pty');
 const { LIMITS, assertDimensions, assertWriteData, sanitizeTitle } = require('./validate');
 const { resolveShell, sanitizeEnv } = require('./shell-resolver');
 const shellIntegration = require('./shell-integration');
+const Parser = require('./semantic-parser.js');
+const RecallStore = require('./recall-store.js');
+const InputTracker = require('./input-tracker.js');
+const RecallRank = require('./recall-rank.js');
+const { sanitizeSuggestion } = require('./validate.js');
 
 const FLUSH_INTERVAL_MS = 8; // ~120fps; below human perception, far above per-chunk IPC
 const FLUSH_THRESHOLD_BYTES = 64 * 1024;
@@ -43,12 +49,16 @@ class PtyManager {
    *   fallback tools (Windows sed/awk). Injected rather than resolved here so
    *   this module stays free of Electron imports.
    */
-  constructor({ onData, onExit, onCwd, binDir = null } = {}) {
+  constructor({ onData, onExit, onCwd, onSuggestion, recallStore = null, binDir = null } = {}) {
     this.sessions = new Map(); // sessionId -> record
     this.byWindow = new Map(); // windowId  -> Set<sessionId>
     this.onData = onData || (() => {});
     this.onExit = onExit || (() => {});
     this.onCwd = onCwd || (() => {});
+    this.onSuggestion = onSuggestion || (() => {});
+    // Injected rather than constructed here, for the same reason binDir is:
+    // this module stays free of Electron and of app.getPath.
+    this.recallStore = recallStore;
     this.binDir = binDir;
   }
 
@@ -92,6 +102,12 @@ class PtyManager {
     // A broken kit must never cost someone their terminal. Anything that goes
     // wrong here leaves the session spawning exactly as it did before the kit
     // existed, and says nothing to the user about it.
+    // A fresh nonce per session. Output that cannot present it is ignored, so
+    // `cat`-ing a file full of crafted sequences achieves nothing.
+    const recallWanted = settings.recall === true
+      && shellIntegration.recallSnippet(shellIntegration.dialectFor(resolved.file), 'a'.repeat(32)) !== '';
+    const nonce = recallWanted ? Parser.makeNonce() : null;
+
     let integration = null;
     try {
       integration = shellIntegration.build({
@@ -101,6 +117,7 @@ class PtyManager {
         env,
         home: env.HOME || env.USERPROFILE || '',
         tmpdir: os.tmpdir(),
+        recall: nonce,
       });
     } catch {
       integration = null;
@@ -140,6 +157,21 @@ class PtyManager {
       writeBudget: WRITE_RATE_LIMIT_BYTES_PER_SEC,
       budgetResetAt: Date.now() + 1000,
       exited: false,
+      // null means Recall is off for this session. Where integration cannot be
+      // established Josh disables it rather than guessing prompt boundaries
+      // from raw output, which is the inference that produces confidently
+      // wrong suggestions.
+      recall: nonce ? {
+        nonce,
+        // Captured at spawn, like every other per-session setting here: a
+        // change applies to new sessions, never to a shell already running.
+        inlineSuggest: settings.recallInlineSuggest === true,
+        state: Parser.createSession(nonce),
+        tracker: InputTracker.create(),
+        pending: null,        // the C event awaiting its D
+        fingerprint: [],      // cached per cwd, so there is no fs call per command
+        fingerprintFor: null, // the cwd that fingerprint was computed for
+      } : null,
     };
 
     pty.onData((chunk) => this._enqueue(record, chunk));
@@ -174,11 +206,102 @@ class PtyManager {
       }
     }
 
+    // Same shape as the OSC 7 guard above: a cheap substring test before any
+    // regex, because this runs on every output chunk.
+    if (record.recall && chunk.indexOf(Parser.HINT) !== -1) {
+      for (const event of Parser.scan(record.recall.state, chunk)) {
+        this._onRecallEvent(record, event);
+      }
+    }
+
     if (record.bufferedBytes >= FLUSH_THRESHOLD_BYTES) {
       this._flush(record);
     } else if (!record.flushTimer) {
       record.flushTimer = setTimeout(() => this._flush(record), FLUSH_INTERVAL_MS);
     }
+  }
+
+  /**
+   * One authenticated prompt event.
+   *
+   * `A` needs nothing beyond the transition the parser already made; the
+   * work is at `B` (a fresh input point), `C` (a command starting) and `D`
+   * (its outcome, which is the only moment worth recording).
+   */
+  _onRecallEvent(record, event) {
+    const recall = record.recall;
+    if (!recall) return;
+
+    if (event.type === 'B') {
+      recall.tracker.reset();
+      // Clear whatever was showing: the line the suggestion belonged to is gone.
+      this.onSuggestion(record.windowId, record.id, '');
+      return;
+    }
+
+    if (event.type === 'C') {
+      recall.pending = { cmd: event.cmd, startedAt: Date.now() };
+      this.onSuggestion(record.windowId, record.id, '');
+      return;
+    }
+
+    if (event.type === 'D') {
+      const pending = recall.pending;
+      recall.pending = null;
+      if (!pending || !pending.cmd || !this.recallStore) return;
+      this._refreshFingerprint(record);
+      this.recallStore.record({
+        cmd: pending.cmd,
+        cwd: record.cwd,
+        fp: recall.fingerprint,
+        exit: event.exit,
+        ms: Date.now() - pending.startedAt,
+        ts: Math.floor(Date.now() / 1000),
+      });
+    }
+  }
+
+  /** Read the directory listing only when the working directory has changed. */
+  _refreshFingerprint(record) {
+    const recall = record.recall;
+    if (!recall || recall.fingerprintFor === record.cwd) return;
+    let names = [];
+    try {
+      names = fs.readdirSync(record.cwd);
+    } catch {
+      names = [];
+    }
+    recall.fingerprint = RecallStore.fingerprintFor(names);
+    recall.fingerprintFor = record.cwd;
+  }
+
+  /**
+   * Offer a completion for the line being typed, or say nothing.
+   *
+   * Silence is the default and covers every uncertainty: a line Josh cannot
+   * model, a phase where a suggestion would be nonsense, the feature switched
+   * off. A wrong suggestion is worse than no suggestion.
+   */
+  _suggest(record) {
+    const recall = record.recall;
+    if (!recall || !this.recallStore) return;
+    if (!recall.inlineSuggest) return;
+    if (recall.state.phase !== 'input') return;
+
+    const prefix = recall.tracker.line();
+    if (prefix === null) return;
+
+    this._refreshFingerprint(record);
+    const text = RecallRank.best(this.recallStore.candidates(), {
+      prefix,
+      cwd: record.cwd,
+      fingerprint: recall.fingerprint,
+      now: Math.floor(Date.now() / 1000),
+    });
+
+    // Suggestion text comes from previously executed commands, so it crosses
+    // to the renderer as data: control characters stripped, length clamped.
+    this.onSuggestion(record.windowId, record.id, sanitizeSuggestion(text || ''));
   }
 
   _flush(record) {
@@ -197,6 +320,14 @@ class PtyManager {
     const record = this.resolveOwned(windowId, sessionId);
     if (!record || record.exited) return false;
     assertWriteData(data);
+
+    // Everything the renderer asks to write passes through the tracker, which
+    // models the typed line only as far as certainty goes and gives up on
+    // anything it cannot model. A suggestion is recomputed per keystroke.
+    if (record.recall) {
+      record.recall.tracker.consume(data);
+      this._suggest(record);
+    }
 
     // Token bucket: a compromised renderer cannot spin writes to burn CPU or
     // memory, while a normal large paste still goes through untouched.
