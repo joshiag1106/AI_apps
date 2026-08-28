@@ -16,6 +16,7 @@ const LIMITS = Object.freeze({
   MIN_COLS: 1,
   MIN_ROWS: 1,
   MAX_TITLE: 512,
+  MAX_SUGGESTION: 512,
   MAX_CWD: 4096,
   MAX_SESSIONS_PER_WINDOW: 50,
   MAX_URL: 2048,
@@ -68,11 +69,27 @@ function assertDimensions(cols, rows) {
   return { cols, rows };
 }
 
+/**
+ * C0 controls and DEL. Hoisted so the two sanitisers below cannot drift apart:
+ * both exist because text reaching the UI came from outside Josh's control.
+ */
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
+
 /** Titles come from the shell via OSC sequences — strip control chars, then clamp. */
 function sanitizeTitle(value) {
   if (typeof value !== 'string') return '';
-  // eslint-disable-next-line no-control-regex
-  return value.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, LIMITS.MAX_TITLE);
+  return value.replace(CONTROL_CHARS, '').slice(0, LIMITS.MAX_TITLE);
+}
+
+/**
+ * Suggestion text derives from previously executed commands, so it is data,
+ * not something safe to hand a renderer verbatim. A historical command
+ * carrying an escape sequence must not be able to paint the UI.
+ */
+function sanitizeSuggestion(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(CONTROL_CHARS, '').slice(0, LIMITS.MAX_SUGGESTION);
 }
 
 /**
@@ -125,6 +142,7 @@ module.exports = {
   assertWriteData,
   assertDimensions,
   sanitizeTitle,
+  sanitizeSuggestion,
   assertCwd,
   assertGlyphMode,
   isSafeExternalUrl,

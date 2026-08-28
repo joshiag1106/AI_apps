@@ -41,6 +41,7 @@ const EVENT_CHANNELS = new Set([
   'menu:action',
   'theme:changed',
   'settings:changed',
+  'recall:suggestion',
 ]);
 
 /**
