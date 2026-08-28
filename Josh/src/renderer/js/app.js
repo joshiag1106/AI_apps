@@ -388,6 +388,12 @@
 
   // ---- Find bar ------------------------------------------------------------
 
+  /** Show the untouched original of the most recent condensed diagnostic. */
+  function expandLastDiagnostic() {
+    const pane = activePane();
+    if (pane && pane.expandLastDiagnostic) pane.expandLastDiagnostic();
+  }
+
   function openFind() {
     el('findbar').hidden = false;
     const input = el('find-input');
@@ -566,6 +572,7 @@
       { label: 'Trace: Reset', run: commands['trace:reset'] },
       { label: 'Close Pane', run: commands['pane:close'] },
       { label: 'Find in Terminal', hint: accel('F'), run: openFind },
+      { label: 'Expand Last Diagnostic', hint: 'Alt+Enter', run: expandLastDiagnostic },
       { label: 'Clear Terminal', hint: accel('K'), run: commands['edit:clear'] },
       { label: 'Zoom In', run: commands['zoom:in'] },
       { label: 'Zoom Out', run: commands['zoom:out'] },
@@ -598,6 +605,16 @@
   // ---- Wiring --------------------------------------------------------------
 
   function wireEvents() {
+    // Alt+Enter expands the last condensed diagnostic. It is bound here rather
+    // than in the pane so it works whichever pane has focus, and it is guarded
+    // so it never steals the combination from a program running in the shell.
+    document.addEventListener('keydown', (event) => {
+      if (event.altKey && event.key === 'Enter' && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        expandLastDiagnostic();
+      }
+    });
+
     api.on('pty:data', (payload) => {
       const pane = panesBySession.get(payload.sessionId);
       if (pane) pane.write(payload.data);

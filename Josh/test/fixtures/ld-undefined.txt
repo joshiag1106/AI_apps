@@ -1,0 +1,5 @@
+^DUndefined symbols for architecture x86_64:
+  "Widget::push(int)", referenced from:
+      _main in link-4e9acc.o
+ld: symbol(s) not found for architecture x86_64
+clang++: [0;1;31merror: [0m[1mlinker command failed with exit code 1 (use -v to see invocation)[0m
