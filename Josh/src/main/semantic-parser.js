@@ -80,4 +80,93 @@ function parseSequence(text, nonce) {
   return { type, cmd: null, exit: Number(code) };
 }
 
-module.exports = { HINT, SEQUENCE, MAX_COMMAND, makeNonce, parseSequence };
+/**
+ * The most a partial sequence may occupy while waiting for its terminator.
+ *
+ * Without this, output containing the hint but never terminating -- which
+ * hostile output can produce deliberately -- would grow the carry buffer
+ * forever. Dropping the carry loses at most one marker, costing one unrecorded
+ * command; retaining it unboundedly costs the process.
+ */
+const MAX_CARRY = 8192;
+
+const NEXT = {
+  idle:    { A: 'prompt' },
+  prompt:  { B: 'input' },
+  input:   { C: 'running' },
+  running: { D: 'idle' },
+};
+
+function createSession(nonce) {
+  return {
+    nonce: typeof nonce === 'string' && nonce ? nonce : null,
+    phase: 'idle',
+    carry: '',
+  };
+}
+
+/**
+ * Consume one output chunk, returning every authenticated event in order.
+ *
+ * Sequences are left in the stream the renderer receives: xterm.js ignores OSC
+ * codes it does not implement, and rewriting the stream risks corrupting
+ * multi-byte or split chunks for no benefit.
+ */
+/**
+ * The longest suffix of `text` that could be the beginning of a hint.
+ *
+ * The pipe, not the shell, decides where a read ends, so a marker is regularly
+ * cut in half -- often after the single escape byte. Discarding that fragment
+ * loses the marker entirely, and under small reads that means Recall records
+ * nothing at all while appearing to work.
+ */
+function hintTail(text) {
+  const max = Math.min(HINT.length - 1, text.length);
+  for (let n = max; n > 0; n--) {
+    if (HINT.startsWith(text.slice(text.length - n))) return text.slice(text.length - n);
+  }
+  return '';
+}
+
+function scan(state, chunk) {
+  if (!state || !state.nonce || typeof chunk !== 'string' || !chunk) return [];
+
+  // Cheap guard: one indexOf on every output chunk. When it misses, the chunk
+  // may still END mid-hint, so keep just that fragment rather than dropping it.
+  if (state.carry === '' && chunk.indexOf(HINT) === -1) {
+    state.carry = hintTail(chunk);
+    return [];
+  }
+
+  let text = state.carry + chunk;
+  const events = [];
+
+  for (;;) {
+    const start = text.indexOf(HINT);
+    if (start === -1) { text = hintTail(text); break; }
+
+    const match = SEQUENCE.exec(text.slice(start));
+    if (!match) {
+      // An unterminated sequence: keep it for the next chunk.
+      text = text.slice(start);
+      break;
+    }
+
+    const event = parseSequence(match[0], state.nonce);
+    if (event) {
+      const target = NEXT[state.phase] && NEXT[state.phase][event.type];
+      state.phase = target || 'idle';
+      if (target) events.push(event);
+    }
+
+    text = text.slice(start + match[0].length);
+  }
+
+  state.carry = text.length > MAX_CARRY ? '' : text;
+  return events;
+}
+
+module.exports = {
+  HINT, SEQUENCE, MAX_COMMAND, MAX_CARRY,
+  makeNonce, parseSequence, createSession, scan,
+};
