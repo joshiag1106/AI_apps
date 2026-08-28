@@ -41,7 +41,58 @@
     return { lines: lines, rest: buffer.slice(start) };
   }
 
+  /**
+   * SGR is `ESC [ <params> m`. Params are digits and semicolons only; the
+   * private-marker forms (`?`, `>`, `<`, `=`) are not SGR even when they end
+   * in `m`, so they are excluded deliberately.
+   */
+  const SGR = /\x1b\[[0-9;]*m/g;
+
+  /** Any escape introducer at all, to detect what SGR removal left behind. */
+  const ANY_ESC = /\x1b/;
+
+  /** `ESC[?1049h` and the two legacy spellings, capturing the final letter. */
+  const SCREEN_MODE = /\x1b\[\?(1049|1047|47)(h|l)/g;
+
+  /** Remove SGR colour sequences, leaving the text they decorated. */
+  function stripSgr(line) {
+    return line.replace(SGR, '');
+  }
+
+  /**
+   * A line is safe to buffer only if every escape in it is SGR colour.
+   *
+   * Diagnostics colour their text; they never move the cursor, erase, or set
+   * a title. Anything that does is a program drawing a UI, and holding its
+   * output back for 16ms would corrupt what the user sees. Fails open.
+   */
+  function isSafeLine(line) {
+    return !ANY_ESC.test(stripSgr(line));
+  }
+
+  /**
+   * Track alternate-screen entry and exit across a raw chunk.
+   *
+   * Inside the alternate screen there is no line assembly at all - vim, htop
+   * and less own the display, and this feature must be invisible to them.
+   * The last transition in the chunk wins, since a program can enter and
+   * leave within a single read.
+   */
+  function scanScreenMode(chunk, isAlternate) {
+    let state = isAlternate;
+    SCREEN_MODE.lastIndex = 0;
+    let match = SCREEN_MODE.exec(chunk);
+    while (match) {
+      state = match[2] === 'h';
+      match = SCREEN_MODE.exec(chunk);
+    }
+    return state;
+  }
+
   return {
     splitLines,
+    stripSgr,
+    isSafeLine,
+    scanScreenMode,
   };
 });
