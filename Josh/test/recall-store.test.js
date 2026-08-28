@@ -32,9 +32,16 @@ test('records survive a reload from disk', () => {
 
 test('THE FILE IS 0600', () => {
   // The store is a shell history. Its mode is part of the threat model.
+  //
+  // Windows has no Unix mode bits -- statSync reports 0666 for any writable
+  // file -- so the assertion is POSIX-only, matching how settings.test.js
+  // already guards the same property. On Windows the file inherits the user
+  // profile directory's ACL instead.
   const file = tmpFile();
   new Store.RecallStore({ file }).record(entry());
-  assert.strictEqual(fs.statSync(file).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') {
+    assert.strictEqual(fs.statSync(file).mode & 0o777, 0o600);
+  }
 });
 
 test('A REDACTED COMMAND NEVER REACHES DISK', () => {
