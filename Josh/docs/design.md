@@ -207,6 +207,14 @@ event channel and no invoke channel.
 secret, so it has no filesystem access and can be reviewed and tested with the
 disk nowhere near it. The spec placed it inside the store; this does not.
 
+**Recall is opt-in, and that is a decision not an oversight.** The Shell Kit
+defaults off because silently replacing someone's prompt on a version upgrade
+would be hostile. Silently beginning to record their command history is the
+more invasive of the two, not the less: a prompt change is cosmetic, instantly
+visible and trivially undone, and a shell history on disk is none of those. The
+store being `0600` and redacted bounds the harm; it does not substitute for
+being asked. The spec specified on-by-default and this disagrees with it.
+
 **The nonce is the whole threat model.** A sequence that cannot present it is
 ignored entirely -- not logged, not partially applied. Untrusted *execution*
 remains out of scope; see SECURITY.md.

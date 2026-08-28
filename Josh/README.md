@@ -35,9 +35,9 @@ as they do in Terminal.app or Windows Terminal.
   three: the error, the frame in *your* code, and a count of what was hidden.
   The original is one keystroke away and is never discarded. See
   [Diagnostic condensing](#diagnostic-condensing)
-- **Recall** — Josh learns which commands actually worked, and where, then
-  suggests one inline as you type. Local, redacted before it is written, and
-  authenticated so hostile output cannot forge it. See [Recall](#recall)
+- **Recall** — opt-in. Josh learns which commands actually worked, and where,
+  then suggests one inline as you type. Local, redacted before it is written,
+  and authenticated so hostile output cannot forge it. See [Recall](#recall)
 - **No network access at all** — see [Security](#security)
 
 ## Install
@@ -162,7 +162,7 @@ Settings live in a JSON file you can edit directly. Open it from the menu
 | `traceStdin` | `""` | The input your Trace program can read. Capped at 8 KiB |
 | `condenseDiagnostics` | `true` | Condense long compiler and linker errors inline |
 | `condenseDiagnosticsMinLines` | `20` | Leave shorter diagnostics alone; they are already readable |
-| `recall` | `true` | Learn from finished commands, and mark prompts semantically |
+| `recall` | `false` | Learn from finished commands, and mark prompts semantically |
 | `recallInlineSuggest` | `true` | Ghost-text suggestion while you type |
 | `recallExcludePatterns` | `[]` | Extra regexes; matching commands are never recorded |
 | `recallMaxEntries` | `50000` | The store is compacted beyond this |
@@ -355,8 +355,17 @@ matchers are designed but not built.
 
 ## Recall
 
-Josh watches which commands finish, where they ran, and what they returned,
-then offers the one you probably want next as dim text after the cursor.
+**Recall is off until you ask for it.** Recording a shell history is a
+genuinely sensitive act, and Josh will not start doing it because you upgraded.
+Turn it on with:
+
+```json
+{ "recall": true }
+```
+
+Josh then watches which commands finish, where they ran, and what they
+returned, and offers the one you probably want next as dim text after the
+cursor.
 **Right Arrow** or **End** accepts it, **Esc** dismisses it, and **Tab is
 untouched** — it belongs to your shell's own completion.
 
@@ -398,8 +407,9 @@ session rather than guessing prompt boundaries from raw output.
 
 **Not included.** fish and cmd.exe. The fish hooks are written and tested, but
 Josh's shell detection does not yet recognise fish, so they never run — see
-[docs/design.md](docs/design.md). Turn the whole feature off with
-`"recall": false`.
+[docs/design.md](docs/design.md). Turn the whole feature back off with
+`"recall": false`; `recallInlineSuggest` controls the ghost text alone, and is
+on once Recall is.
 
 ## Security
 
