@@ -718,3 +718,13 @@ body[data-platform="win32"] #titlebar {
 .diagnostic-close {
   align-self: flex-end;
 }
+
+/* Inline suggestion. Dim enough to read as text that has not been entered,
+   and never able to intercept a click. */
+.suggestion-ghost {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.42;
+  white-space: pre;
+  font: inherit;
+}

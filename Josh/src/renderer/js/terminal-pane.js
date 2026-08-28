@@ -30,6 +30,16 @@
         document: document,
         onCopy: (text) => api.clipboard.write(text).catch(function () {}),
       });
+      // Ghost text for what Recall thinks you are about to type. Accepting
+      // writes through the existing pty:write path, so no new capability is
+      // involved.
+      this.suggestion = new window.Suggestion.Suggestion({
+        document: document,
+        onAccept: (text) => {
+          if (this.sessionId) api.pty.write(this.sessionId, text).catch(function () {});
+        },
+      });
+
       this.condenser = new window.Diagnostics.Condenser({
         emit: (text) => { if (!this.disposed && this.term) this.term.write(text); },
         onCondensed: (record) => this.overlay.remember(record),
@@ -128,6 +138,22 @@
 
       this.term.onBell(() => this._bell());
 
+      // Right Arrow / End accept the ghost text, Esc dismisses it. Tab is
+      // untouched: it belongs to the shell's own completion. Returning false
+      // stops xterm forwarding the key to the shell.
+      this.term.attachCustomKeyEventHandler((event) => {
+        if (event.type !== 'keydown' || !this.suggestion || !this.suggestion.text()) return true;
+        if (window.Suggestion.ACCEPT_KEYS.includes(event.key)) {
+          this.suggestion.accept();
+          return false;
+        }
+        if (event.key === 'Escape') {
+          this.suggestion.dismiss();
+          return false;
+        }
+        return true;
+      });
+
       // One observer per pane handles every source of size change — window
       // resize, split drag, tab switch — so there is a single resize path.
       this._observer = new ResizeObserver(() => this.fit());
@@ -206,6 +232,11 @@
       this.condenser.write(data);
     }
 
+    /** Offer, or clear, the inline suggestion for this pane. */
+    showSuggestion(text) {
+      if (this.suggestion) this.suggestion.show(text);
+    }
+
     /** Show the original bytes of the most recent condensed diagnostic. */
     expandLastDiagnostic() {
       return this.overlay ? this.overlay.openLast() : false;
@@ -261,6 +292,7 @@
       if (this.disposed) return;
       // Released before `disposed` is set, so anything the condenser is still
       // holding reaches the terminal rather than being emitted into a no-op.
+      if (this.suggestion) this.suggestion.dispose();
       if (this.condenser) this.condenser.dispose();
       if (this.overlay) this.overlay.dispose();
       this.disposed = true;

@@ -187,9 +187,44 @@ The whole feature is renderer-side -- no IPC channel, no main-process change.
 The renderer already holds this data; processing it there grants no capability
 it did not have.
 
+## Recall
+
+Five modules in the main process and one in the renderer. Main already sees
+both PTY output and every write the renderer requests, so the renderer never
+has to *ask* for a suggestion -- main pushes one. That is why Recall adds one
+event channel and no invoke channel.
+
+| File | Responsibility |
+| --- | --- |
+| `semantic-parser.js` | OSC 133 grammar, nonce rejection, the per-session state machine |
+| `input-tracker.js` | The partially typed line, or an honest refusal to guess |
+| `recall-redact.js` | The one question asked before anything reaches disk |
+| `recall-store.js` | Append-only JSONL, `0600`, in-memory index, compaction |
+| `recall-rank.js` | Pure scoring: locality, outcome, recency, frequency, repair pairs |
+| `suggestion.js` | Ghost text after the cursor, in the renderer |
+
+**Redaction is a separate module on purpose.** It is where a mistake leaks a
+secret, so it has no filesystem access and can be reviewed and tested with the
+disk nowhere near it. The spec placed it inside the store; this does not.
+
+**The nonce is the whole threat model.** A sequence that cannot present it is
+ignored entirely -- not logged, not partially applied. Untrusted *execution*
+remains out of scope; see SECURITY.md.
+
+**bash needs its DEBUG trap installed last.** The trap fires on every command,
+including the remaining lines of the snippet installing it, so an earlier trap
+records Josh's own setup as the user's first command. It is installed after
+everything else and suppressed until the first prompt clears it. This was found
+by running the snippet in a real bash, not by reading it.
+
+**fish is written but unreachable.** `recallSnippet` produces correct fish
+hooks and they are tested, but `dialectFor` recognises only zsh, bash and pwsh,
+so `build()` never reaches them. Making fish work means teaching Josh to
+produce a Recall-only session for a shell the Shell Kit has no builder for.
+
 ## Testing
 
-856 tests, no test-framework dependency (`node:test`).
+985 tests, no test-framework dependency (`node:test`).
 
 - `validate.test.js` — the trust boundary; each case names the hostile input it rejects
 - `split-tree.test.js` — layout algebra, including a 12-deep split/collapse cycle
@@ -199,6 +234,10 @@ it did not have.
 - `smoke.test.js` — boots the real Electron binary, spawns a real shell, asserts a
   command's output round-trips. This is the one that proves the native binding
   loads under Electron's ABI
+- `recall-*.test.js`, `semantic-parser*.test.js`, `input-tracker.test.js`,
+  `suggestion.test.js` — Recall. `recall-hooks-e2e.test.js` sources the generated
+  hooks in a real zsh and bash and feeds their output back through the parser,
+  which is the only way to know the shell and the parser agree
 - `diagnostics-*.test.js`, `diagnostic-*.test.js`, `demangle.test.js` — condensing.
   The gate is `diagnostics-e2e.test.js`, which replays real captured compiler and
   terminal output through the condenser in randomly sized chunks and asserts the

@@ -40,6 +40,38 @@ assumes this is hostile input.
 - **Your operating system's own security boundaries.** The app runs with your
   user's privileges and does not attempt to escalate or restrict them.
 
+## Recall, and what its nonce does not defend
+
+Semantic prompt marking makes attacker-controlled output more dangerous in an
+interesting way: output able to forge prompt state could make Josh record
+fabricated history, or offer an attacker's command at the moment a user is
+most likely to accept it.
+
+Josh mints a random nonce per session and ignores any OSC 133 sequence not
+carrying it, so `cat`-ing a file full of crafted sequences achieves nothing.
+
+**Stated plainly: the nonce does not defend against untrusted execution.** Any
+program you actually run inherits the shell's environment and can therefore
+read the nonce and forge sequences. That is not specific to Josh — a process
+running in your shell can already read your files, your environment and the
+effects of your keystrokes, and no terminal emulator can prevent it. The nonce
+defends against untrusted *output*, which is the realistic and stated threat.
+
+Two further mitigations bound what a leak can contain:
+
+- The store is written `0600`, and redaction runs **before** any write, so a
+  command carrying a token, password, API key or long high-entropy literal is
+  dropped entirely rather than truncated. Redaction lives in its own module
+  with no filesystem access, so it can be reviewed in isolation.
+- Suggestion text derives from previously executed commands, so it is treated
+  as data: control characters are stripped and the length clamped in the main
+  process before it crosses to the renderer, exactly as OSC-supplied titles
+  already are.
+
+Recall adds **one event channel** and **no invoke channel**. The renderer never
+asks for a suggestion; the main process, which already sees both PTY output and
+every write the renderer requests, pushes one.
+
 ## Supply chain
 
 The application has seven runtime dependencies: six xterm.js packages and one

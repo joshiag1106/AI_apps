@@ -57,6 +57,14 @@ const DEFAULTS = Object.freeze({
   shellKitGitUntracked: true,
   shellKitGitSkip: [],
   shellKitSafeRemove: false,
+
+  // Recall. On by default: the store is local, 0600 and redacted before any
+  // write, and a terminal that cannot learn from what you already ran is the
+  // status quo this feature exists to change.
+  recall: true,
+  recallInlineSuggest: true,
+  recallExcludePatterns: [],
+  recallMaxEntries: 50000,
 });
 
 /** A prompt theme name is an identifier, never a path. */
@@ -74,6 +82,7 @@ const NUMERIC_RANGES = Object.freeze({
   letterSpacing: [-5, 10],
   scrollback: [100, 200000],
   condenseDiagnosticsMinLines: [1, 10000],
+  recallMaxEntries: [100, 1000000],
 });
 
 function clamp(value, range) {
@@ -131,6 +140,15 @@ function coerce(raw) {
       }
       continue;
     }
+    if (key === 'recallExcludePatterns') {
+      if (Array.isArray(value)) {
+        out.recallExcludePatterns = value
+          .filter((pattern) => typeof pattern === 'string' && pattern.length > 0)
+          .map((pattern) => pattern.slice(0, 512))
+          .slice(0, 64);
+      }
+      continue;
+    }
     if (key === 'shellKitGitSkip') {
       if (Array.isArray(value)) {
         out.shellKitGitSkip = value
@@ -163,6 +181,7 @@ function coerce(raw) {
   out.scrollback = Math.round(out.scrollback);
   out.fontSize = Math.round(out.fontSize);
   out.condenseDiagnosticsMinLines = Math.round(out.condenseDiagnosticsMinLines);
+  out.recallMaxEntries = Math.round(out.recallMaxEntries);
   return out;
 }
 
