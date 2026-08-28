@@ -137,3 +137,29 @@ test('the session limit is a real number the manager can enforce', () => {
   assert.ok(Number.isInteger(v.LIMITS.MAX_SESSIONS_PER_WINDOW));
   assert.ok(v.LIMITS.MAX_SESSIONS_PER_WINDOW > 0);
 });
+
+test('the glyph mode is exactly two values, and undefined is not one of them', () => {
+  assert.strictEqual(v.assertGlyphMode('rich'), 'rich');
+  assert.strictEqual(v.assertGlyphMode('plain'), 'plain');
+});
+
+test('a near-miss glyph mode is rejected, not quietly rounded to one of them', () => {
+  const rejected = [
+    undefined, null, '', 'Rich', 'PLAIN', 'richx', ' rich', 'rich ',
+    'powerline', 'auto', 0, 1, true, false, ['rich'], { mode: 'rich' },
+  ];
+  for (const value of rejected) {
+    assert.throws(
+      () => v.assertGlyphMode(value),
+      v.ValidationError,
+      'accepted ' + JSON.stringify(value)
+    );
+  }
+});
+
+test('the glyph mode never reaches shell script as anything but the two words', () => {
+  // It is baked into generated script, so "rich" and "anything at all" are
+  // not the same thing.
+  assert.throws(() => v.assertGlyphMode('rich; rm -rf /'), v.ValidationError);
+  assert.throws(() => v.assertGlyphMode("plain'"), v.ValidationError);
+});

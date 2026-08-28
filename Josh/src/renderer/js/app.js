@@ -31,6 +31,7 @@
   const panesBySession = new Map();
   let tabStrip = null;
   let palette = null;
+  let kitPreview = null;
 
   // ---- Tab and pane lookup -------------------------------------------------
 
@@ -39,6 +40,12 @@
   function activePane() {
     const tab = activeTab();
     return tab ? tab.panes.get(tab.activePaneId) || null : null;
+  }
+
+  /** Run an action only when the focused pane is a Trace pane. */
+  function withTracePane(action) {
+    const pane = activePane();
+    if (pane && pane.kind === 'trace') action(pane);
   }
 
   // ---- Layout --------------------------------------------------------------
@@ -164,10 +171,26 @@
     return tab;
   }
 
-  async function addPane(tab, cwd) {
+  async function addPane(tab, cwd, kind) {
     state.paneSequence += 1;
+    const id = 'p' + state.paneSequence;
+
+    if (kind === 'trace') {
+      // No session: a Trace pane runs its own simulator and must never be
+      // handed a shell.
+      const tracePane = window.TracePane.createTracePane({
+        id: id,
+        settings: state.settings,
+        theme: state.theme,
+        onFocus: (paneId) => focusPane(tab, paneId),
+      });
+      tab.panes.set(tracePane.id, tracePane);
+      tab.element.appendChild(tracePane.element);
+      return tracePane;
+    }
+
     const pane = new window.TerminalPane({
-      id: 'p' + state.paneSequence,
+      id: id,
       settings: state.settings,
       theme: state.theme,
       onTitle: (paneId, title) => onPaneTitle(tab, paneId, title),
@@ -253,14 +276,14 @@
 
   // ---- Splits --------------------------------------------------------------
 
-  async function splitActive(direction) {
+  async function splitActive(direction, kind) {
     const tab = activeTab();
     if (!tab) return;
     const target = tab.activePaneId;
     const source = tab.panes.get(target);
     const cwd = source ? source.cwd : null;
 
-    const pane = await addPane(tab, cwd);
+    const pane = await addPane(tab, cwd, kind);
     tab.tree = SplitTree.splitLeaf(tab.tree, target, pane.id, direction);
     tab.activePaneId = pane.id;
     renderTab(tab);
@@ -398,26 +421,33 @@
     'tab:prev': () => cycleTab(-1),
     'split:right': () => splitActive('row').catch(reportFailure),
     'split:down': () => splitActive('column').catch(reportFailure),
+    'trace:new': () => splitActive('row', 'trace').catch(reportFailure),
+    'trace:run': () => withTracePane((pane) => pane.run()),
+    'trace:step': () => withTracePane((pane) => pane.step()),
+    'trace:stepBack': () => withTracePane((pane) => pane.stepBack()),
+    'trace:reset': () => withTracePane((pane) => pane.reset()),
     'pane:close': closeActivePane,
     'edit:copy': () => {
       const pane = activePane();
       if (!pane) return;
+      if (!pane.getSelection) return;
       const selection = pane.getSelection();
       if (selection) api.clipboard.write(selection).catch(function () {});
     },
     'edit:paste': async () => {
       const pane = activePane();
       if (!pane) return;
+      if (!pane.paste) return;
       const text = await api.clipboard.read().catch(() => '');
       pane.paste(text);
     },
     'edit:selectAll': () => {
       const pane = activePane();
-      if (pane) pane.selectAll();
+      if (pane && pane.selectAll) pane.selectAll();
     },
     'edit:clear': () => {
       const pane = activePane();
-      if (pane) pane.clear();
+      if (pane && pane.clear) pane.clear();
     },
     'find:open': openFind,
     'palette:open': openPalette,
@@ -436,7 +466,91 @@
   function reportFailure(error) {
     const pane = activePane();
     const message = error && error.message ? error.message : 'command failed';
-    if (pane) pane.write('\r\n\x1b[31mjosh: ' + message + '\x1b[0m\r\n');
+    if (pane && pane.write) pane.write('\r\n\x1b[31mjosh: ' + message + '\x1b[0m\r\n');
+  }
+
+  // ---- Shell Kit -----------------------------------------------------------
+
+  /**
+   * Every kit change applies to new tabs and panes only.
+   *
+   * Josh never writes into a live PTY. The shell may not be at a prompt, and
+   * without OSC 133 marking there is no way to know: if the pane is inside
+   * vim, injected keystrokes go into the file. So the hint says so rather than
+   * leaving the user to discover it.
+   */
+  const NEW_PANES_ONLY = 'applies to new tabs and panes';
+
+  function kitGlyphMode() {
+    if (!window.KitGlyphs) return 'plain';
+    return window.KitGlyphs.resolveGlyphs(
+      state.settings,
+      window.KitGlyphs.measureWithCanvas(state.settings.fontFamily, state.settings.fontSize)
+    );
+  }
+
+  function openKitPreview() {
+    if (!kitPreview || !window.KitPreview) return;
+    const pane = activePane();
+    kitPreview.open(window.KitPreview.previewModel({
+      cwd: (pane && pane.cwd) || '',
+      home: (state.info && state.info.home) || '',
+      ui: state.theme ? state.theme.ui : null,
+      xterm: state.theme ? state.theme.xterm : null,
+      glyphs: kitGlyphMode(),
+      selected: state.settings.shellKitPrompt,
+    }));
+  }
+
+  /** The source line for the exported kit, for a shell of the given path. */
+  function kitSourceLine(shellPath) {
+    const base = String(shellPath || '').split(/[\\/]/).pop().toLowerCase().replace(/\.exe$/, '');
+    if (base === 'pwsh') return '. ~/.config/josh/shell-kit/init.ps1';
+    if (base === 'bash') return 'source ~/.config/josh/shell-kit/init.bash';
+    return 'source ~/.config/josh/shell-kit/init.zsh';
+  }
+
+  function shellKitEntries() {
+    const on = state.settings.shellKit === true;
+    const chosen = Array.isArray(state.settings.shellKitPacks) ? state.settings.shellKitPacks : [];
+
+    const entries = [
+      {
+        label: 'Shell Kit: ' + (on ? 'on' : 'off'),
+        hint: NEW_PANES_ONLY,
+        run: () => patchSettings({ shellKit: !on }),
+      },
+      {
+        label: 'Prompt Theme...',
+        hint: state.settings.shellKitPrompt,
+        run: openKitPreview,
+      },
+    ];
+
+    const packNames = window.KitPacks ? window.KitPacks.packNames() : [];
+    for (const name of packNames) {
+      const enabled = chosen.includes(name);
+      entries.push({
+        label: 'Pack: ' + name + ' (' + (enabled ? 'on' : 'off') + ')',
+        hint: NEW_PANES_ONLY,
+        run: () => patchSettings({
+          shellKitPacks: enabled
+            ? chosen.filter((item) => item !== name)
+            : chosen.concat([name]),
+        }),
+      });
+    }
+
+    const pane = activePane();
+    entries.push({
+      label: 'Copy Shell Kit source line',
+      hint: 'for another terminal',
+      run: () => {
+        api.clipboard.write(kitSourceLine(pane && pane.shell)).catch(function () {});
+      },
+    });
+
+    return entries;
   }
 
   function openPalette() {
@@ -445,6 +559,11 @@
       { label: 'Close Tab', hint: accel('W'), run: commands['tab:close'] },
       { label: 'Split Right', hint: accel('D'), run: commands['split:right'] },
       { label: 'Split Down', run: commands['split:down'] },
+      { label: 'New Trace Pane', run: commands['trace:new'] },
+      { label: 'Trace: Run', run: commands['trace:run'] },
+      { label: 'Trace: Step', run: commands['trace:step'] },
+      { label: 'Trace: Step Back', run: commands['trace:stepBack'] },
+      { label: 'Trace: Reset', run: commands['trace:reset'] },
       { label: 'Close Pane', run: commands['pane:close'] },
       { label: 'Find in Terminal', hint: accel('F'), run: openFind },
       { label: 'Clear Terminal', hint: accel('K'), run: commands['edit:clear'] },
@@ -465,6 +584,8 @@
         run: () => patchSettings({ theme: name }),
       });
     }
+
+    for (const entry of shellKitEntries()) entries.push(entry);
 
     palette.open(entries);
   }
@@ -561,6 +682,15 @@
       onSelect: activateTab,
       onClose: closeTab,
     });
+    if (window.KitPreview) {
+      kitPreview = new window.KitPreview.KitPreviewPanel({
+        backdrop: el('kit-preview-backdrop'),
+        list: el('kit-preview-list'),
+        note: el('kit-preview-note'),
+        onChoose: (name) => patchSettings({ shellKitPrompt: name }),
+      });
+    }
+
     palette = new window.CommandPalette({
       backdrop: el('palette-backdrop'),
       input: el('palette-input'),

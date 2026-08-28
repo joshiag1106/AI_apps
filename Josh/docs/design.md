@@ -48,7 +48,7 @@ source**, which reintroduces every toolchain dependency listed above.
 |  settings       schema-coerced, 0600  |   +---------^---------------+
 +---------------+-----------------------+             |
                 +---- PRELOAD: contextBridge ---------+
-                      15 channels, fixed allowlist
+                      16 channels, fixed allowlist
 ```
 
 The renderer never touches Node, the filesystem, or a shell path. It can only
@@ -120,6 +120,39 @@ During a divider drag, flex ratios are set directly on the DOM for smoothness;
 the tree is updated once on release, which is also when panes re-measure and the
 PTYs are told their new size.
 
+## Trace
+
+A second kind of pane, running a C interpreter over a simulated machine. Four
+decisions are worth recording.
+
+**A pane type, not a modal panel.** `split-tree.js` already manages geometry
+and `app.js` already holds pane objects in a map, so a Trace pane is simply a
+pane with a different `kind`. Splitting, dragging, focusing and closing came
+free, and the geometry tree still knows nothing about what a pane contains.
+
+**The shadow map does two jobs.** Every live object records its address, size,
+type and per-byte initialisation. That structure is what the diagram draws
+*and* what makes undefined behaviour detectable: raw bytes cannot tell you an
+address is one past the end of an array, but the shadow map can. Dead objects
+are kept rather than deleted, which is the only reason a use-after-free can be
+told apart from a wild pointer, and why the allocator never reuses a freed
+block.
+
+**Generators for stepping.** `execute` yields at each statement boundary, and
+completions ride the generator's return value, so `break` inside an `if` inside
+a `while` needs no bookkeeping. Expression evaluation is a generator too --
+not because expressions pause, but because one can contain a call, and a call
+must be steppable or the stack stays invisible.
+
+**Journal backwards, replay forwards.** Writes are journalled with their
+previous values, so Step Back is instant. A generator cannot be rewound, but
+execution is deterministic, so stepping forward after a rewind restarts and
+replays to the same point -- paid once, on the first forward step.
+
+The whole feature is renderer-side: no IPC channel, no main-process change, no
+filesystem, no subprocess, no `eval`. A Trace pane owns no PTY, so nothing typed
+into it can reach a shell.
+
 ## Testing
 
 77 tests, no test-framework dependency (`node:test`).
@@ -139,3 +172,66 @@ Installers are built natively per platform by `.github/workflows/build.yml` —
 macOS, Windows and Linux runners each build their own artifacts, because
 cross-building desktop installers is unreliable. Tagging `v*` publishes them to
 a GitHub release.
+
+## The Shell Kit
+
+Four decisions worth the explanation.
+
+### A per-session temp directory, not a dotfile edit
+
+Every shell framework in this category installs by writing into `~/.zshrc`. That
+is what makes them hard to remove, hard to reason about, and impossible to ship
+in an application that also promises not to touch your files.
+
+Josh generates its script into a `0700` directory with an unpredictable name
+under the OS temp directory, points the shell at it for that session only, and
+deletes it on exit. The generated files source the user's own configuration
+first, so the user's setup always wins and Josh only appends.
+
+For zsh this means generating **all four** startup files, not just `.zshrc`.
+`ZDOTDIR` redirects every one of them, so forwarding only `.zshrc` silently
+loses `.zshenv` and `.zprofile` — which on macOS is where `PATH` usually comes
+from. `.zshrc` then exports `ZDOTDIR` back to its real value, which is what
+stops every nested zsh re-running the integration, and why no `.zlogin` is
+generated: by the time zsh looks for one, it finds the user's.
+
+### One theme definition, three dialects
+
+A theme is data — an ordered list of segments naming semantic colour slots. One
+module resolves those slots to colours and glyphs; another turns the result into
+zsh, bash or PowerShell script; the preview panel calls the same resolution. So
+a theme cannot look one way in the preview and another in the terminal.
+
+The part that actually breaks prompts is escape-sequence bracketing. A colour
+sequence not marked as non-printing is counted as visible width, and then every
+wrapped command line corrupts, history recall redraws over itself, and `Ctrl+A`
+lands in the wrong column. zsh needs `%{ %}`, bash needs `\[ \]`, and PowerShell
+needs neither because PSReadLine measures VT itself. It is the most common
+defect in this whole category of software and it is invisible until a line is
+long enough to wrap, so the emitters are their own module and the tests run the
+generated script through real shells and check that nothing outside a marker
+carries an escape byte.
+
+### Glyph detection, which only a GUI terminal can do
+
+Whether to draw powerline separators depends on whether the user's font has
+them. A shell framework runs inside a terminal and can only guess from
+environment variables. Josh owns the window, so it measures: the advance width
+of U+E0B0 against a plane-16 private-use code point no font defines. Equal
+widths mean both fell back to the same missing-glyph box.
+
+Anything that goes wrong yields the plain set. A missing glyph renders as an
+empty box on every single prompt, which is worse than no glyph at all.
+
+### Packs that never clobber
+
+Before defining any name, the generated script checks `command -v`, which
+resolves aliases, functions, builtins, keywords and binaries on `PATH` alike.
+A name that already answers is skipped. This is what stops a two-letter alias
+shadowing a real program — the specific complaint that `gs` shadows Ghostscript
+— and it costs no process, `command -v` being a builtin.
+
+Alias names are derived mechanically from each tool's own help output rather
+than curated: the tool's initial, then the subcommand's initials, extended
+until free. The derivation runs at load time and a test replays it, so the
+shipped names cannot drift from the rule that documents them.
