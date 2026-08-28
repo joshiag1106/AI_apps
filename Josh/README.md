@@ -416,7 +416,7 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-854 tests. Ninety-six cover the IPC validators and channel contract, the
+856 tests. Ninety-six cover the IPC validators and channel contract, the
 split-pane tree, settings coercion, shell resolution, palette filtering and the
 checksum verification for the bundled Windows tools, plus an end-to-end test
 that boots Electron, spawns a real shell and asserts the output round-trips.
@@ -425,7 +425,7 @@ renderer and themes, glyph detection, settings and preview, plus an end-to-end
 test that runs the generated script in a real zsh, bash and pwsh. Three hundred
 and ninety-seven cover Trace: its lexer, parser, memory model, diagnostics,
 evaluator and library, and a corpus of seventy-six whole programs run end to
-end. The last ninety-six cover diagnostic condensing: the line splitter, the
+end. The last ninety-eight cover diagnostic condensing: the line splitter, the
 escape guards, the state machine, both C++ matchers, the demangler and the
 overlay, plus an end-to-end suite that replays real captured compiler output
 through the condenser in randomly sized chunks.

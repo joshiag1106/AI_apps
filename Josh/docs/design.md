@@ -189,7 +189,7 @@ it did not have.
 
 ## Testing
 
-854 tests, no test-framework dependency (`node:test`).
+856 tests, no test-framework dependency (`node:test`).
 
 - `validate.test.js` — the trust boundary; each case names the hostile input it rejects
 - `split-tree.test.js` — layout algebra, including a 12-deep split/collapse cycle

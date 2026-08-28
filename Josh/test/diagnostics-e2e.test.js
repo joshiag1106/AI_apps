@@ -137,3 +137,41 @@ test('FUZZING: randomly sized chunks are stable across many trials', () => {
       'unstable on trial ' + trial);
   }
 });
+
+test('the modules load as browser globals, not only as CommonJS', () => {
+  // Every other test require()s these files. The app loads them as plain
+  // <script> tags onto window, which is a different branch of the UMD wrapper
+  // and the one that actually ships. A wrong global name would crash the
+  // renderer at startup while every test still passed.
+  const vm = require('node:vm');
+  const sandbox = { self: null, window: null };
+  sandbox.self = sandbox;
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+
+  // Loaded in the order index.html lists them; matchers depends on demangle.
+  const order = ['demangle.js', 'diagnostics.js', 'diagnostic-matchers.js', 'diagnostic-overlay.js'];
+  const dir = path.join(__dirname, '..', 'src', 'renderer', 'js');
+  for (const file of order) {
+    vm.runInContext(fs.readFileSync(path.join(dir, file), 'utf8'), sandbox, { filename: file });
+  }
+
+  // The exact expressions terminal-pane.js evaluates.
+  assert.strictEqual(typeof sandbox.Diagnostics.Condenser, 'function');
+  assert.strictEqual(typeof sandbox.DiagnosticOverlay.DiagnosticOverlay, 'function');
+  assert.ok(Array.isArray(sandbox.DiagnosticMatchers.ALL));
+  assert.strictEqual(sandbox.DiagnosticMatchers.ALL.length, 2);
+  assert.strictEqual(typeof sandbox.Demangle.demangle, 'function');
+});
+
+test('index.html loads the four modules before the pane that constructs them', () => {
+  const html = fs.readFileSync(
+    path.join(__dirname, '..', 'src', 'renderer', 'index.html'), 'utf8'
+  );
+  const at = (name) => html.indexOf('js/' + name);
+  const pane = at('terminal-pane.js');
+  for (const file of ['demangle.js', 'diagnostics.js', 'diagnostic-matchers.js', 'diagnostic-overlay.js']) {
+    assert.ok(at(file) !== -1, file + ' must be loaded');
+    assert.ok(at(file) < pane, file + ' must load before terminal-pane.js');
+  }
+});
