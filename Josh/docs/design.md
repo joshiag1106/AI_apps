@@ -153,9 +153,43 @@ The whole feature is renderer-side: no IPC channel, no main-process change, no
 filesystem, no subprocess, no `eval`. A Trace pane owns no PTY, so nothing typed
 into it can reach a shell.
 
+## Diagnostic condensing
+
+Four renderer-side modules and one hook, where `terminal-pane.js`'s `write()`
+used to call `this.term.write(data)` directly.
+
+| File | Responsibility |
+| --- | --- |
+| `diagnostics.js` | Line assembly, escape and alternate-screen guards, the streaming state machine |
+| `diagnostic-matchers.js` | Matcher registry, vendor-path judgement, the two C++ matchers |
+| `demangle.js` | An Itanium ABI subset that returns the input unchanged on any failure |
+| `diagnostic-overlay.js` | The expand UI and a bounded store of the 50 most recent originals |
+
+**Buffering, not retraction.** Written lines can be erased with cursor-up only
+while they are still on screen; a 200-line error has already scrolled into
+scrollback, which ANSI cannot reach. Deciding before writing is the only
+correct option, so complete lines are held for 16ms -- on top of the 8ms
+batching `pty-manager.js` already performs -- and released either by that timer
+or by a matcher claiming them.
+
+**Only complete lines are held, but partial ones are held too.** The naive rule
+"pass partial lines straight through" breaks the feature rather than the
+prompt: the OS decides where a read ends, so under small reads nearly every
+diagnostic straddles a boundary. Partials are held on the same timer and carry
+a `committed` offset, so a partial already on screen is never written twice and
+can no longer open a block.
+
+**Adding a language is a matcher, not a change here.** A grammar, a vendor-path
+rule and fixtures. Rust is excluded by design: its diagnostics are already
+better than this produces.
+
+The whole feature is renderer-side -- no IPC channel, no main-process change.
+The renderer already holds this data; processing it there grants no capability
+it did not have.
+
 ## Testing
 
-77 tests, no test-framework dependency (`node:test`).
+854 tests, no test-framework dependency (`node:test`).
 
 - `validate.test.js` — the trust boundary; each case names the hostile input it rejects
 - `split-tree.test.js` — layout algebra, including a 12-deep split/collapse cycle
@@ -165,6 +199,12 @@ into it can reach a shell.
 - `smoke.test.js` — boots the real Electron binary, spawns a real shell, asserts a
   command's output round-trips. This is the one that proves the native binding
   loads under Electron's ABI
+- `diagnostics-*.test.js`, `diagnostic-*.test.js`, `demangle.test.js` — condensing.
+  The gate is `diagnostics-e2e.test.js`, which replays real captured compiler and
+  terminal output through the condenser in randomly sized chunks and asserts the
+  bytes come out unchanged when nothing is condensed. Fixture provenance is
+  recorded in `test/fixtures/README.md`; they carry `-text` in `.gitattributes`
+  because git normalising a line ending would change what they represent
 
 ## Distribution
 

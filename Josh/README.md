@@ -31,6 +31,10 @@ as they do in Terminal.app or Windows Terminal.
 - **Trace** — a second kind of pane that runs a C program one step at a time and
   draws the memory: stack frames, variables, heap blocks, and pointers as arrows.
   Needs no compiler. See [Trace](#trace)
+- **Diagnostic condensing** — a template error hundreds of lines long becomes
+  three: the error, the frame in *your* code, and a count of what was hidden.
+  The original is one keystroke away and is never discarded. See
+  [Diagnostic condensing](#diagnostic-condensing)
 - **No network access at all** — see [Security](#security)
 
 ## Install
@@ -153,6 +157,8 @@ Settings live in a JSON file you can edit directly. Open it from the menu
 | `bell` | `false` | On a terminal bell, flash the pane and bounce the Dock / flash the taskbar. Visual, not audible |
 | `traceProgram` | `""` | The program in your Trace pane, so it survives a restart. Capped at 64 KiB |
 | `traceStdin` | `""` | The input your Trace program can read. Capped at 8 KiB |
+| `condenseDiagnostics` | `true` | Condense long compiler and linker errors inline |
+| `condenseDiagnosticsMinLines` | `20` | Leave shorter diagnostics alone; they are already readable |
 | `shellKit` | `false` | Master switch for the Shell Kit |
 | `shellKitPrompt` | `"classic"` | Prompt theme: `plain`, `classic`, `rail`, `stack` or `context` |
 | `shellKitPacks` | `["git","core"]` | Enabled alias packs: `git`, `core`, `dev`, `systems` |
@@ -296,6 +302,50 @@ already happened, and *Step* then carries on forwards from there.
 memory, 200 stack frames, and 5,000,000 steps — the last of which is how an
 endless loop announces itself.
 
+## Diagnostic condensing
+
+A C++ template error is hundreds of lines of instantiation stack around one
+mistake. Josh renders the terminal, so Josh can condense it as it streams:
+
+```
+error: invalid operands to binary expression ('const P' and 'const P')
+  your code: deep.cpp:6:8
+  ↳ 28 lines hidden — ⌥↵ to expand
+```
+
+The `your code:` line is the product. It is the first frame that is not a
+toolchain path, preferring paths under the working directory. When no such
+frame exists — an error genuinely inside a library — nothing is condensed,
+because a summary that cannot point at your code is not worth the
+transformation.
+
+**Nothing is ever lost.** `⌥↵`, or **Expand Last Diagnostic** in the palette,
+shows the untouched original with a copy button. The last 50 originals per pane
+are kept.
+
+**It works inside `make`, `cmake` and over `ssh`,** because it reads the output
+rather than wrapping the command. No build command changes.
+
+**It refuses to guess.** Cursor movement, the alternate screen, a block over
+500 lines or 200ms — each falls back to the original bytes. `vim`, `htop`,
+`less` and `tmux` are untouched: inside the alternate screen there is no line
+assembly at all. An unterminated prompt like `Enter your name: ` appears on the
+same 16ms timer as everything else, so it never waits for a newline that is not
+coming.
+
+Both C++ toolchains are handled. Symbols are demangled by a pure-JS subset of
+the Itanium ABI, so GNU `ld`'s mangled `undefined reference to` becomes
+readable; Apple's `ld`, which demangles for you, is understood in its own
+different phrasing. Anything the demangler cannot parse is shown mangled, which
+is exactly what you see today.
+
+Turn it off with `"condenseDiagnostics": false`.
+
+**Not included.** Rust, deliberately — its diagnostics are already condensed,
+coloured and carry inline suggestions, and condensing them would degrade output
+better than anything this produces. TypeScript, Java, Python, Node and Go
+matchers are designed but not built.
+
 ## Security
 
 A terminal displays fully attacker-controlled output — `cat` a hostile file and
@@ -366,16 +416,19 @@ xvfb-run --auto-servernum npm test
 npm test
 ```
 
-758 tests. Ninety-six cover the IPC validators and channel contract, the
+854 tests. Ninety-six cover the IPC validators and channel contract, the
 split-pane tree, settings coercion, shell resolution, palette filtering and the
 checksum verification for the bundled Windows tools, plus an end-to-end test
 that boots Electron, spawns a real shell and asserts the output round-trips.
 Two hundred and sixty-five cover the Shell Kit: its emitter, alias packs, prompt
 renderer and themes, glyph detection, settings and preview, plus an end-to-end
-test that runs the generated script in a real zsh, bash and pwsh. The remaining
-three hundred and ninety-seven cover Trace: its lexer, parser, memory model,
-diagnostics, evaluator and library, and a corpus of seventy-six whole programs
-run end to end.
+test that runs the generated script in a real zsh, bash and pwsh. Three hundred
+and ninety-seven cover Trace: its lexer, parser, memory model, diagnostics,
+evaluator and library, and a corpus of seventy-six whole programs run end to
+end. The last ninety-six cover diagnostic condensing: the line splitter, the
+escape guards, the state machine, both C++ matchers, the demangler and the
+overlay, plus an end-to-end suite that replays real captured compiler output
+through the condenser in randomly sized chunks.
 
 Architecture notes are in [docs/design.md](docs/design.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the layout and conventions.
