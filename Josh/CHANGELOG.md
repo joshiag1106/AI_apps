@@ -8,6 +8,14 @@ version links to its release, where the installers live.
 
 ## [Unreleased]
 
+### Changed
+
+- **The Windows build no longer downloads anything.** The busybox build behind
+  the `sed`/`awk` fallback is committed rather than fetched from
+  frippery.org, after a release build timed out against that host. It stays
+  pinned by SHA256, and the pin is now checked on every platform by `npm test`
+  instead of only during a Windows build.
+
 ### Added
 
 - **A release now fails if the changelog does not mention it.** 1.0.5 was

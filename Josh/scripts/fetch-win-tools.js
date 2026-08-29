@@ -2,14 +2,23 @@
 'use strict';
 
 /**
- * Fetches a pinned, checksum-verified copy of busybox-w32 for the Windows
- * sed/awk fallback. See docs/superpowers/specs/2026-08-24-windows-sed-awk-design.md.
+ * Verifies the committed busybox-w32 build and writes the sed/awk applet
+ * copies for the Windows fallback. See
+ * docs/superpowers/specs/2026-08-24-windows-sed-awk-design.md.
  *
  * Wired as `predist:win`, so npm runs it before `npm run dist:win` and only
  * before that script — `dist:mac` and `dist:linux` never touch it.
  *
- * Skips the download when a vendored copy already on disk matches the pinned
- * checksum, so repeated local builds do not re-fetch. Dependency-free and runs
+ * **It does not download.** busybox.exe is committed under vendor/win/,
+ * because a release must not depend on a third-party host being reachable:
+ * one build timed out against frippery.org partway through a release.
+ * Fetching as a fallback would put that dependency back exactly when
+ * something has already gone wrong, so a missing or mismatched binary fails
+ * with instructions instead.
+ *
+ * To move to a newer upstream build, re-pin SOURCE_URL and EXPECTED_SHA256
+ * against the published SHA256SUM, then run `npm run vendor:busybox` to
+ * refresh the committed copy and commit the result. Dependency-free and runs
  * on plain Node, like the other scripts in this directory.
  */
 
@@ -69,22 +78,15 @@ function writeApplets(busyboxPath) {
   process.stdout.write('  ok    sed.exe and awk.exe written\n');
 }
 
-async function main() {
-  const busyboxPath = path.join(VENDOR_DIR, 'busybox.exe');
-
-  if (fs.existsSync(busyboxPath) && verifyChecksum(fs.readFileSync(busyboxPath), EXPECTED_SHA256)) {
-    process.stdout.write('  ok    busybox.exe already vendored, checksum matches\n');
-    writeApplets(busyboxPath);
-    return;
-  }
-
+/** Refresh the committed copy from upstream. Opt-in, never part of a build. */
+async function refresh(busyboxPath) {
   process.stdout.write('  ..    downloading ' + SOURCE_URL + '\n');
   const buffer = await download(SOURCE_URL);
 
   if (!verifyChecksum(buffer, EXPECTED_SHA256)) {
     process.stderr.write(
       '  FAIL  downloaded busybox.exe does not match the pinned SHA256.\n' +
-        '        Refusing to package an unverified binary. If upstream shipped\n' +
+        '        Refusing to write an unverified binary. If upstream shipped\n' +
         '        a new build, re-pin SOURCE_URL and EXPECTED_SHA256 by hand\n' +
         '        against https://frippery.org/files/busybox/SHA256SUM.\n'
     );
@@ -93,7 +95,37 @@ async function main() {
 
   fs.mkdirSync(VENDOR_DIR, { recursive: true });
   fs.writeFileSync(busyboxPath, buffer);
-  process.stdout.write('  ok    busybox.exe downloaded and verified\n');
+  process.stdout.write('  ok    busybox.exe refreshed and verified — commit it\n');
+}
+
+async function main() {
+  const busyboxPath = path.join(VENDOR_DIR, 'busybox.exe');
+
+  if (process.argv.includes('--refresh')) {
+    await refresh(busyboxPath);
+    writeApplets(busyboxPath);
+    return;
+  }
+
+  if (!fs.existsSync(busyboxPath)) {
+    process.stderr.write(
+      '  FAIL  vendor/win/busybox.exe is missing.\n' +
+        '        It is committed, not downloaded. Restore it from git, or run\n' +
+        '        `npm run vendor:busybox` to fetch the pinned build again.\n'
+    );
+    process.exit(1);
+  }
+
+  if (!verifyChecksum(fs.readFileSync(busyboxPath), EXPECTED_SHA256)) {
+    process.stderr.write(
+      '  FAIL  vendor/win/busybox.exe does not match the pinned SHA256.\n' +
+        '        Refusing to package an unverified binary. Restore it from git,\n' +
+        '        or re-pin and run `npm run vendor:busybox`.\n'
+    );
+    process.exit(1);
+  }
+
+  process.stdout.write('  ok    busybox.exe committed, checksum matches\n');
   writeApplets(busyboxPath);
 }
 

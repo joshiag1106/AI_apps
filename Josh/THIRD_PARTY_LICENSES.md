@@ -23,8 +23,14 @@ linked into, or statically combined with, Josh's own code.
 
 **Source.** <https://github.com/rmyorston/busybox-w32>, a Windows port of
 BusyBox (<https://busybox.net>). The exact build Josh packages is pinned by URL
-and SHA256 in `scripts/fetch-win-tools.js`, and that pin is what the Windows
-build verifies before packaging anything.
+and SHA256 in `scripts/fetch-win-tools.js`.
+
+The binary itself is committed at `vendor/win/busybox.exe` rather than fetched
+during the build, so a release does not depend on a third-party host being
+reachable. Committing it moves the risk rather than removing it -- an opaque
+blob is only trustworthy while something checks it -- so `npm test` asserts on
+every platform that the committed bytes still match the pin, and the Windows
+build refuses to package anything that does not.
 
 **Modifications.** None. The binary is used exactly as published upstream; the
 build only copies it under the names `sed.exe` and `awk.exe`.

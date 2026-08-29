@@ -31,7 +31,8 @@
     "dist:mac": "electron-builder --mac",
     "predist:win": "node scripts/fetch-win-tools.js",
     "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "vendor:busybox": "node scripts/fetch-win-tools.js --refresh"
   },
   "dependencies": {
     "@lydell/node-pty": "1.2.0-beta.15",
