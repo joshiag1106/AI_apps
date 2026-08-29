@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Josh uses [semantic versioning](https://semver.org/spec/v2.0.0.html). Each
 version links to its release, where the installers live.
 
+## [Unreleased]
+
+### Added
+
+- **A release now fails if the changelog does not mention it.** 1.0.5 was
+  folded out of `[Unreleased]` by hand and nothing made that a step, so the
+  next release could have shipped with a stale or empty section while every
+  test passed. Enforced on tag builds and dry runs only, since `master`
+  between releases legitimately carries an `[Unreleased]` heading.
+
 ## [1.0.5] — 2026-08-29
 
 ### Added
