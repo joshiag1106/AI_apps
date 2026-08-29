@@ -89,6 +89,23 @@ function glyphsFor(settings, detected) {
   return detected === 'rich' ? 'rich' : 'plain';
 }
 
+/**
+ * The one seam where the two features are combined, and the one place that
+ * decides which of them owns the prompt.
+ *
+ * The Shell Kit owns it. Recall must never bring a prompt along with it: its
+ * own default is off precisely because recording a history is invasive, and
+ * arriving with a replaced prompt as well would be the surprise the Shell Kit
+ * default already refuses. So the kit is emitted for the kit, the markers for
+ * Recall, and a session that wants only one gets only one.
+ */
+function composeScript(context, dialect) {
+  const kit = context.settings.shellKit === true ? emitOptions(context, dialect) : '';
+  const markers = context.recall ? recallSnippet(dialect, context.recall) : '';
+  if (kit === '' || markers === '') return kit + markers;
+  return kit + '\n' + markers;
+}
+
 /** Every builder emits through this, so the three cannot drift apart. */
 function emitOptions(context, dialect) {
   return KitEmit.emit(context.theme, context.packs, dialect, {
@@ -252,7 +269,7 @@ const BUILDERS = {
     const realZdotdir = context.env.ZDOTDIR || context.home;
     const kitPath = path.join(context.dir, 'josh-kit.zsh');
 
-    const script = emitOptions(context, 'zsh');
+    const script = composeScript(context, 'zsh');
     if (script === '') return null;
 
     const files = zshFiles(realZdotdir, kitPath);
@@ -271,7 +288,7 @@ const BUILDERS = {
   bash(context) {
     const kitPath = path.join(context.dir, 'josh-kit.bash');
 
-    const script = emitOptions(context, 'bash');
+    const script = composeScript(context, 'bash');
     if (script === '') return null;
 
     fs.writeFileSync(kitPath, bashPreamble() + script, { mode: FILE_MODE });
@@ -290,7 +307,7 @@ const BUILDERS = {
   pwsh(context) {
     const kitPath = path.join(context.dir, 'josh-kit.ps1');
 
-    const script = emitOptions(context, 'pwsh');
+    const script = composeScript(context, 'pwsh');
     if (script === '') return null;
 
     fs.writeFileSync(kitPath, script, { mode: FILE_MODE });
@@ -367,6 +384,7 @@ function build({
       glyphs: glyphsFor(settings, glyphs),
       theme: themeFor(settings),
       packs: packsFor(settings),
+      recall,
       ui: colours.ui,
       xterm: colours.xterm,
     });
@@ -458,7 +476,7 @@ function recallSnippet(dialect, nonce) {
   if (dialect === 'bash') {
     return [
       posixEncoder,
-      '__josh_prompt() {',
+      '__josh_recall_prompt() {',
       '  local __josh_exit=$?',
       `  printf '\\033]133;D;nonce=${nonce};%d\\033\\\\' "$__josh_exit"`,
       `  printf '\\033]133;A;nonce=${nonce}\\033\\\\'`,
@@ -474,8 +492,8 @@ function recallSnippet(dialect, nonce) {
       `  printf '\\033]133;C;nonce=${nonce};cmd=%s\\033\\\\' "$(__josh_enc "$BASH_COMMAND")"`,
       '}',
       'case ";$PROMPT_COMMAND;" in',
-      '  *";__josh_prompt;"*) ;;',
-      '  *) PROMPT_COMMAND="__josh_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;',
+      '  *";__josh_recall_prompt;"*) ;;',
+      '  *) PROMPT_COMMAND="__josh_recall_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;',
       'esac',
       // Suppressed until the first prompt clears it, and the trap is installed
       // last: DEBUG fires on every command including the rest of this snippet,

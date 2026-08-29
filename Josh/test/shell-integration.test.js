@@ -688,3 +688,126 @@ test('a session with no home does not attempt an export', () => {
     return null;
   });
 });
+
+/* ------------------------------------------------------------ recall seam */
+
+/*
+ * Recall and the Shell Kit are two features sharing one builder, and the seam
+ * between them is where both went wrong: the nonce reached build() and stopped
+ * there, so no session ever emitted a marker, while the prompt rode along with
+ * Recall into shells whose owners had never asked for it.
+ *
+ * These assert the composition itself. The snippet's own behaviour is covered
+ * by recall-hooks-e2e.test.js, which pipes it into a real shell -- and which
+ * passed throughout, because it never went through build().
+ */
+
+const NONCE = 'a1b2c3d4e5f60718';
+
+/** The script a zsh session actually sources. */
+function zshKitScript(built) {
+  return fs.readFileSync(path.join(kitDir(built), 'josh-kit.zsh'), 'utf8');
+}
+
+test('Recall alone is reason enough to build a session', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      settings: { shellKit: false, recall: true },
+      recall: NONCE,
+    });
+    assert.notStrictEqual(built, null, 'Recall on its own must still build');
+  });
+});
+
+test('the kit a Recall session sources carries the markers it must emit', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      settings: { shellKit: false, recall: true },
+      recall: NONCE,
+    });
+    const script = zshKitScript(built);
+    assert.ok(
+      script.includes('__josh_precmd') && script.includes(']133;'),
+      'the sourced kit must install the hooks that emit the OSC 133 markers'
+    );
+    assert.ok(script.includes(NONCE), 'every sequence must carry this session nonce');
+  });
+});
+
+test('Recall on its own leaves the prompt exactly where it found it', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      settings: { shellKit: false, recall: true },
+      recall: NONCE,
+    });
+    const script = zshKitScript(built);
+    assert.ok(
+      !script.includes('__josh_prompt'),
+      'shellKit is off: turning on a history feature must not replace the prompt'
+    );
+  });
+});
+
+test('the Shell Kit still gets its prompt when it is the thing switched on', () => {
+  scratch((where) => {
+    const built = buildZsh(where, { settings: { shellKit: true, shellKitPacks: ['git'] } });
+    assert.ok(zshKitScript(built).includes('__josh_prompt'), 'the kit prompt must survive');
+  });
+});
+
+test('both switched on gives both, in one sourced script', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      settings: { shellKit: true, shellKitPacks: ['git'], recall: true },
+      recall: NONCE,
+    });
+    const script = zshKitScript(built);
+    assert.ok(script.includes('__josh_prompt'), 'the prompt is still wanted');
+    assert.ok(script.includes('__josh_precmd'), 'and so are the markers');
+  });
+});
+
+test('bash carries the markers into the file its bootstrap sources', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      shell: '/bin/bash',
+      settings: { shellKit: false, recall: true },
+      recall: NONCE,
+    });
+    assert.notStrictEqual(built, null, 'bash speaks Recall too');
+    const script = fs.readFileSync(built.env.JOSH_KIT_FILE, 'utf8');
+    assert.ok(script.includes(']133;'), 'bash must emit markers as well');
+    assert.ok(script.includes(NONCE), 'carrying this session nonce');
+    assert.ok(!script.includes('__josh_prompt'), 'and must not gain a prompt it never asked for');
+  });
+});
+
+test('a session with neither feature on is still built for no one', () => {
+  scratch((where) => {
+    const built = buildZsh(where, { settings: { shellKit: false, recall: false }, recall: null });
+    assert.strictEqual(built, null, 'nothing switched on must change nothing');
+  });
+});
+
+/** Every shell function a script defines, in the order it defines them. */
+function definedFunctions(script) {
+  return [...script.matchAll(/(?:^|\n)\s*(?:function\s+)?(__josh_\w+)\s*\(\)/g)].map((m) => m[1]);
+}
+
+/*
+ * The two halves are concatenated into one sourced file, so a name used by
+ * both is not a merge -- it is a silent replacement, and the loser is whichever
+ * half was emitted first. In bash both halves reached for __josh_prompt.
+ */
+test('the two features never define the same shell function twice', () => {
+  scratch((where) => {
+    const built = buildZsh(where, {
+      shell: '/bin/bash',
+      settings: { shellKit: true, shellKitPacks: ['git'], recall: true },
+      recall: NONCE,
+    });
+    const names = definedFunctions(fs.readFileSync(built.env.JOSH_KIT_FILE, 'utf8'));
+    const twice = names.filter((name, i) => names.indexOf(name) !== i);
+    assert.deepStrictEqual(twice, [], 'a redefinition silently replaces the first definition');
+  });
+});
