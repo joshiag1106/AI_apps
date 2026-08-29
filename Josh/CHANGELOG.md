@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Josh uses [semantic versioning](https://semver.org/spec/v2.0.0.html). Each
 version links to its release, where the installers live.
 
-## [Unreleased]
+## [1.0.5] — 2026-08-29
 
 ### Added
 
@@ -126,6 +126,7 @@ Initial release.
 Note that the macOS installers for this version and 1.0.1 shipped a native
 binary for the wrong architecture; see 1.0.2.
 
+[1.0.5]: https://github.com/joshiag1106/AI_apps/releases/tag/v1.0.5
 [1.0.4]: https://github.com/joshiag1106/AI_apps/releases/tag/v1.0.4
 [1.0.3]: https://github.com/joshiag1106/AI_apps/releases/tag/v1.0.3
 [1.0.2]: https://github.com/joshiag1106/AI_apps/compare/v1.0.1...v1.0.2
