@@ -79,3 +79,31 @@ test('REDACTION IS ALL OR NOTHING -- the answer is a boolean, never a string', (
   // command is both useless as a suggestion and dangerous on disk.
   assert.strictEqual(typeof Redact.shouldRedact('API_KEY=x ls', []), 'boolean');
 });
+
+/*
+ * A path is made of the same alphabet as base64, separators included, so the
+ * long-literal rule counted `/` as part of the token and dropped any command
+ * carrying a path of 40 characters or more. Silently, and entirely: a long
+ * path you would rather not retype is exactly what Recall exists to suggest.
+ *
+ * `keep('cd ../other-project')` above had the right idea and was too short to
+ * catch it. These are the lengths real paths reach.
+ */
+test('A LONG PATH IS KEPT -- it is the thing worth suggesting', () => {
+  keep('cd ~/Desktop/all/Cowork_Station/Output/AI_apps/Josh');
+  keep('node /Users/joshmachine/Desktop/all/Cowork_Station/build.js');
+  keep('cp report.pdf /Users/joshmachine/Documents/teaching/2026');
+  keep('ls /Users/j/.cache/pnpm/v3/files/0a/1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e');
+});
+
+test('a path stays kept when its own segments are mixed case and digits', () => {
+  // These score higher on any character-frequency measure than the hex and
+  // token secrets below do, so entropy cannot be what separates them.
+  keep('open /Users/joshmachine/Projects/pumba/MIS-2023_DivA/qp_2022-final_v3');
+  keep('cp /Volumes/Backup2TB/2024-25/Syndicate_A7/marks_x9_FINAL-v2.xlsx .');
+});
+
+test('a secret is still one unbroken token, and still dropped', () => {
+  drop('deploy --key dBvV8xKp2LmQ9wRt5YuI3oPaS6dFgH1jKlZxCvBn');
+  drop('git remote add o https://ghp_16C7e42F292c6912E7710c838347Ae178B4a@github.com/x');
+});
