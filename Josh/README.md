@@ -44,7 +44,8 @@ as they do in Terminal.app or Windows Terminal.
 
 ### Pre-built installers
 
-Download from the [Releases page](https://github.com/joshiag1106/AI_apps/releases):
+Download from the [Releases page](https://github.com/joshiag1106/AI_apps/releases)
+— what changed in each version is in [CHANGELOG.md](CHANGELOG.md):
 
 | Platform | File |
 | --- | --- |
