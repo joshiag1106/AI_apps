@@ -117,10 +117,46 @@ const LARGE_FILE = ('int x = 1; // a line' + NL).repeat(8000);
  */
 function measureBoth() {
   return {
-    small: perRunCpu(() => Editor.highlight(SMALL_FILE)),
-    large: perRunCpu(() => Editor.highlight(LARGE_FILE)),
+    small: medianBatchCpu(() => Editor.highlight(SMALL_FILE)),
+    large: medianBatchCpu(() => Editor.highlight(LARGE_FILE)),
   };
 }
+
+/** The middle value, which one outlier cannot move. */
+function medianOf(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+/**
+ * The median of several batches, rather than the mean of one.
+ *
+ * A fixed CPU budget buys very different sample counts either side: the small
+ * file fits 10-13 runs into it, the large file 2-4. Meaning the mean of those
+ * runs, the small measurement is smoothed and the large one is barely averaged
+ * at all, so a single perturbed run -- a collection, a frequency change, an
+ * artifact still billed as CPU -- lands with full weight on exactly the side
+ * with fewer samples.
+ *
+ * That asymmetry is what produced 2.51 on macos-15-intel against a highlighter
+ * nothing had changed, where the same commit measured small *faster* than a
+ * developer machine and large 2.7x slower. Not a slow runner: one perturbed
+ * side.
+ *
+ * Each batch still accumulates past the coarsest clock step, because that is
+ * the property the previous version was built to have and it is unrelated to
+ * this one. The median is taken across batches. Measured over ten trials, the
+ * spread falls from 0.67 to 0.31 while a deliberately quadratic highlighter
+ * still measures 3.80, so the threshold keeps the discrimination it had.
+ */
+function medianBatchCpu(thunk) {
+  const batches = [];
+  for (let i = 0; i < BATCHES; i += 1) batches.push(perRunCpu(thunk));
+  return medianOf(batches);
+}
+
+/** Odd, so the median is a measured value rather than an average of two. */
+const BATCHES = 5;
 
 /**
  * Milliseconds of CPU per run, measured over enough runs to outlast the clock.
@@ -150,8 +186,14 @@ function perRunCpu(thunk) {
   return elapsed / runs;
 }
 
-/** Comfortably more than a dozen clock steps, even on the coarsest of them. */
-const MIN_MEASURED_MS = 250;
+/**
+ * Comfortably more than a dozen clock steps, even on the coarsest of them.
+ *
+ * Lower than the 250 a single measurement used, because five batches are taken
+ * now rather than one: the run stays about as long while no batch gets close to
+ * the clock's granularity.
+ */
+const MIN_MEASURED_MS = 120;
 
 /** A stop, so a pathologically slow machine cannot spin here forever. */
 const MAX_RUNS = 500;
@@ -204,4 +246,25 @@ test('highlighting a large file finishes without pathological slowness', () => {
   Editor.highlight(SMALL_FILE);
   const elapsed = Number(process.hrtime.bigint() - started) / 1e6;
   assert.ok(elapsed < 3000, 'took ' + elapsed.toFixed(0) + 'ms');
+});
+
+/*
+ * The property the measurement above depends on, asserted without a clock:
+ * one perturbed batch must not carry the result. Timing it would make this
+ * test exactly as flaky as the one it exists to defend.
+ */
+test('ONE PERTURBED BATCH CANNOT CARRY THE MEASUREMENT', () => {
+  assert.strictEqual(medianOf([20, 21, 20, 22, 400]), 21, 'the outlier is ignored');
+  assert.strictEqual(medianOf([400, 20, 21, 20, 22]), 21, 'order does not matter');
+});
+
+test('a mean would have been carried by that same outlier', () => {
+  const values = [20, 21, 20, 22, 400];
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  assert.ok(mean > 96, 'the mean is dragged to ' + mean + ', which is the bug');
+  assert.ok(medianOf(values) < 25, 'the median is not');
+});
+
+test('an odd batch count keeps the median a measured value', () => {
+  assert.strictEqual(BATCHES % 2, 1);
 });

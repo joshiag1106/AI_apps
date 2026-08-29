@@ -8,6 +8,16 @@ version links to its release, where the installers live.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The highlighter complexity test no longer flakes on shared runners.** It
+  measured a mean over however many runs fitted a fixed CPU budget, which gave
+  the large file 2-4 samples against 10-13 for the small one -- so a single
+  perturbed run landed with full weight on exactly the side with less
+  smoothing. It now takes the median across five batches. Measured spread
+  falls from 0.67 to 0.31 while a deliberately quadratic highlighter still
+  measures 3.80, so the threshold keeps its discrimination.
+
 ### Changed
 
 - **The Windows build no longer downloads anything.** The busybox build behind
