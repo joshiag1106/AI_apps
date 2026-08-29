@@ -24,8 +24,23 @@ const PATTERNS = [
   /(?:^|\s)--?(?:password|passwd|token|api[-_]?key|secret|credential)(?:[=\s]|$)/i,
   // Authorization headers, however they are spelled.
   /\bauthorization\s*:\s*(?:bearer|basic|token)\b/i,
-  // A long high-entropy literal: 40+ chars of base64/hex alphabet in one run.
-  /\b[A-Za-z0-9+/_-]{40,}={0,2}\b/,
+  // A long opaque literal: 40+ chars of the base64/hex alphabet in one token.
+  //
+  // '/' is deliberately NOT in this class, though base64 uses it. A path is
+  // built from the same alphabet, so counting the separator as part of the
+  // token made every path of 40 characters a "secret" and dropped the command
+  // whole -- and a long path is precisely what this feature exists to suggest.
+  // Excluding it ends the token at each separator, so a path is judged by its
+  // segments, which are short words, while a secret remains one long run.
+  //
+  // Entropy cannot be what separates them: measured over real strings, a hex
+  // token scores 3.97 and a token 4.14, *below* ordinary paths at 4.1-5.0.
+  // Structure separates them; character frequency does not.
+  //
+  // The cost is a standard-base64 secret whose padding happens to split it
+  // into runs under 40. base64url -- what JWTs and most tokens use -- has no
+  // '/' at all, so it is unaffected.
+  /\b[A-Za-z0-9+_-]{40,}={0,2}\b/,
 ];
 
 /**
