@@ -8,6 +8,18 @@ version links to its release, where the installers live.
 
 ## [Unreleased]
 
+### Changed
+
+- **The highlighter CPU-time check is advisory and no longer fails a build.**
+  It had been rewritten three times, each rewrite fixing a real defect in the
+  measurement and then flaking again for a new reason, most recently failing a
+  release at 2.51 against a threshold of 2.5 on an unchanged highlighter. A
+  timing-derived number measures the machine as much as the code, and a shared
+  runner is not a constant. What still fails the build is the check beside it,
+  which counts spans rather than milliseconds and needs no threshold. The cost,
+  stated plainly: an algorithm that goes quadratic in time while its output
+  stays linear is now reported rather than caught.
+
 ### Fixed
 
 - **The highlighter complexity test no longer flakes on shared runners.** It

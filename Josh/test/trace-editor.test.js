@@ -219,23 +219,51 @@ test('highlighting produces output proportional to its input', () => {
   );
 });
 
-test('highlighting stays linear in CPU time', () => {
-  // Runs everywhere, including CI. The previous two versions measured wall
-  // clock and had to be skipped on shared runners to stop them failing, which
-  // meant the one check that actually catches a quadratic *algorithm* never
-  // ran where regressions arrive. Measuring CPU time buys that coverage back.
-  //
-  // See the note at the top of this file for where 2.5 comes from: above
-  // every honest reading recorded on this project, below every quadratic one.
+/**
+ * The advisory reading, as a line of text, or null when it is unremarkable.
+ *
+ * Separated from the test so the wording can be asserted without a clock.
+ */
+function advisoryLine(growth, small, large) {
+  if (!Number.isFinite(growth) || growth < ADVISORY_THRESHOLD) return null;
+  return (
+    'ADVISORY: CPU per line grew ' + growth.toFixed(2)
+    + 'x when the file quadrupled (' + small.toFixed(3)
+    + 'ms -> ' + large.toFixed(3)
+    + 'ms CPU per run). Linear is 1.0, quadratic is 4.0. '
+    + 'This does not fail the build; see the note above.'
+  );
+}
+
+/** Where a reading stops looking like measurement noise. */
+const ADVISORY_THRESHOLD = 2.5;
+
+/*
+ * Advisory, deliberately. It reports and never fails.
+ *
+ * This assertion has been rewritten three times -- wall clock, then a coarse
+ * clock, then the mean of an uneven sample -- and each rewrite fixed a real
+ * defect in the measurement and then flaked again for a new reason. The last
+ * failed a release build at 2.51 against a threshold of 2.5, on a highlighter
+ * nothing had changed.
+ *
+ * A timing-derived number measures the machine as much as the code, and on a
+ * shared runner the machine is not a constant. Gating a tag on it buys
+ * confidence that is not really there, and trains people to re-run failures
+ * without reading them -- which is how a genuine regression gets waved
+ * through.
+ *
+ * What still fails the build is the check above it, which counts spans rather
+ * than milliseconds: a highlighter that goes quadratic in *output* is caught
+ * deterministically, on every machine, with no threshold to calibrate. That is
+ * the property worth gating on. This one is the diagnostic you read when that
+ * one fires, or when something feels slow.
+ */
+test('highlighting stays linear in CPU time (advisory)', () => {
   const timing = measureBoth();
   const perLineGrowth = (timing.large / timing.small) / 4;
-
-  assert.ok(
-    perLineGrowth < 2.5,
-    'CPU per line grew ' + perLineGrowth.toFixed(2) + 'x when the file quadrupled '
-      + '(' + timing.small.toFixed(3) + 'ms -> ' + timing.large.toFixed(3) + 'ms CPU per run). '
-      + 'Linear is 1.0, quadratic is 4.0.'
-  );
+  const line = advisoryLine(perLineGrowth, timing.small, timing.large);
+  if (line) console.warn(line);
 });
 
 test('highlighting a large file finishes without pathological slowness', () => {
@@ -267,4 +295,33 @@ test('a mean would have been carried by that same outlier', () => {
 
 test('an odd batch count keeps the median a measured value', () => {
   assert.strictEqual(BATCHES % 2, 1);
+});
+
+/*
+ * The advisory reading is asserted as text, without a clock. Timing it here
+ * would rebuild the flake this test was made advisory to escape.
+ */
+test('an unremarkable reading says nothing at all', () => {
+  assert.strictEqual(advisoryLine(1.09, 20, 87), null);
+  assert.strictEqual(advisoryLine(2.49, 20, 199), null);
+});
+
+test('a reading at or past the threshold reports, with the numbers', () => {
+  const line = advisoryLine(2.51, 19.336, 194.319);
+  assert.match(line, /ADVISORY/);
+  assert.match(line, /2\.51x/, 'the growth is named');
+  assert.match(line, /19\.336ms -> 194\.319ms/, 'both measurements are shown');
+});
+
+test('THE ADVISORY LINE SAYS IT DOES NOT FAIL THE BUILD', () => {
+  // Otherwise a reader hunting a red build wastes time on a line that is only
+  // ever informational.
+  assert.match(advisoryLine(4.0, 20, 320), /does not fail the build/);
+});
+
+test('a measurement that came out as nonsense reports nothing', () => {
+  // A zero-length small measurement divides to Infinity or NaN. Reporting that
+  // would be noise, not a signal.
+  assert.strictEqual(advisoryLine(Infinity, 0, 100), null);
+  assert.strictEqual(advisoryLine(NaN, 0, 0), null);
 });
