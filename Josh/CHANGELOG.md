@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Josh uses [semantic versioning](https://semver.org/spec/v2.0.0.html). Each
 version links to its release, where the installers live.
 
+## [Unreleased]
+
+### Added
+
+- **Keyboard shortcuts for line height** (`Cmd`/`Ctrl` + `Alt` + `=` / `-` / `0`) and
+  **theme cycling** (`Cmd`/`Ctrl` + `Alt` + `]` / `[`). Letter spacing has palette
+  entries rather than a binding.
+
+### Fixed
+
+- **Increasing the font size did nothing.** `Cmd`/`Ctrl` + `+` was documented in
+  the shortcut table and never fired, on any platform, because the accelerator
+  bound the literal `+` character. Zoom out and reset were unaffected, so the
+  feature looked half-broken rather than broken. It is now bound to `=`, the key
+  the shortcut is actually pressed on. There is deliberately no second binding
+  for the shifted `+`: a hidden alias was tried and did not fire, and a
+  documented shortcut that does nothing is the bug being fixed.
+- **"Actual Size" ignored a configured font size**, resetting to a literal 14
+  written in the renderer rather than the schema default. All three reset
+  commands now read the same shared defaults the settings schema uses.
+
 ## [1.0.4] — 2026-08-29
 
 Four features, none of which were in 1.0.3.

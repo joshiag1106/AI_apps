@@ -15,13 +15,14 @@ const path = require('node:path');
 const os = require('node:os');
 
 const KitPacks = require('../shared/kit-packs.js');
+const Typography = require('../shared/typography.js');
 
 const DEFAULTS = Object.freeze({
   fontFamily:
     'JetBrains Mono, Fira Code, SF Mono, Menlo, Consolas, DejaVu Sans Mono, monospace',
-  fontSize: 14,
-  lineHeight: 1.2,
-  letterSpacing: 0,
+  fontSize: Typography.DEFAULTS.fontSize,
+  lineHeight: Typography.DEFAULTS.lineHeight,
+  letterSpacing: Typography.DEFAULTS.letterSpacing,
   cursorStyle: 'bar',
   cursorBlink: true,
   theme: 'auto',
@@ -83,9 +84,9 @@ const ENUMS = Object.freeze({
 });
 
 const NUMERIC_RANGES = Object.freeze({
-  fontSize: [6, 72],
-  lineHeight: [0.8, 3],
-  letterSpacing: [-5, 10],
+  fontSize: Typography.RANGES.fontSize,
+  lineHeight: Typography.RANGES.lineHeight,
+  letterSpacing: Typography.RANGES.letterSpacing,
   scrollback: [100, 200000],
   condenseDiagnosticsMinLines: [1, 10000],
   recallMaxEntries: [100, 1000000],
