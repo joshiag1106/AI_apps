@@ -126,7 +126,7 @@ test('bash: installs its prompt hook without discarding the user’s', {
   const run = withSnippet(
     'bash', 'echo "PC=$PROMPT_COMMAND"; trap -p DEBUG', 'bash', ['--norc', '-c']
   );
-  assert.match(run.stdout, /PC=.*__josh_prompt/);
+  assert.match(run.stdout, /PC=.*__josh_recall_prompt/);
   assert.match(run.stdout, /__josh_debug/, 'the DEBUG trap must be installed');
 });
 
@@ -139,5 +139,5 @@ test('bash: a user PROMPT_COMMAND set before Josh is preserved', {
     'PROMPT_COMMAND="echo mine"\n' + snippet + '\necho "PC=$PROMPT_COMMAND"'],
   { encoding: 'utf8' });
   assert.match(run.stdout, /echo mine/, 'the user’s PROMPT_COMMAND must survive');
-  assert.match(run.stdout, /__josh_prompt/);
+  assert.match(run.stdout, /__josh_recall_prompt/);
 });
