@@ -94,9 +94,33 @@ jobs:
         if: runner.os != 'Linux'
         run: npm test
 
+  # A release whose changelog says nothing about it is wrong in a way no other
+  # job can see: the suite passes and every installer builds. 1.0.5 was folded
+  # out of [Unreleased] by hand, and nothing made that a step.
+  #
+  # Tag builds and dry runs only. `master` between releases legitimately carries
+  # an [Unreleased] section, and failing there would train people to ignore this.
+  #
+  # It gates dist rather than sitting beside it, so a tag missing its entry
+  # fails in seconds instead of after six installers have been built.
+  # The condition is on the step, not the job. A job that needs a *skipped*
+  # job is itself skipped, so gating the job would have stopped dist running
+  # on every pull request.
+  changelog:
+    name: changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: The version being released is documented
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.dry_run_release
+        run: node scripts/check-changelog.js
+
   dist:
     name: package (${{ matrix.artifact }})
-    needs: test
+    needs: [test, changelog]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
