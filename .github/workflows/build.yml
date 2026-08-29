@@ -176,8 +176,28 @@ jobs:
       # set in electron-builder.yml, because notarization declared in config
       # fails the build when no Apple credentials are present. Adding it only
       # for signed runs keeps the unsigned path byte-for-byte as it was.
+      # An absent secret expands to the empty string, which still *defines*
+      # the variable. electron-builder reads a defined CSC_LINK as a path to a
+      # certificate, resolves the empty value to the working directory, and
+      # fails with "not a file". Unsetting the whole group when there is
+      # nothing to sign with is what makes the unsigned path work.
+      #
+      # This never showed up in a pull request because electron-builder skips
+      # signing outright on PR builds ("Current build is a part of pull
+      # request, code signing will be skipped"), so CSC_LINK was never read.
+      # A tag is the first build that reads it, which is why v1.0.4 failed
+      # here and every PR before it passed. Run the dry run, not a tag, to
+      # exercise this path.
       - name: Build installer
-        run: npm run ${{ matrix.command }} -- --${{ matrix.arch }} --publish never ${{ steps.signing.outputs.enabled == 'true' && '--config.mac.notarize=true' || '' }}
+        run: |
+          if [ "${{ steps.signing.outputs.enabled }}" != "true" ]; then
+            unset CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
+          fi
+          npm run ${{ matrix.command }} -- --${{ matrix.arch }} --publish never ${{ steps.signing.outputs.enabled == 'true' && '--config.mac.notarize=true' || '' }}
+        # Explicit, because the default shell on the Windows runners is
+        # PowerShell, which has no `unset` and no `[`. bash ships on every
+        # GitHub runner, so one script serves all six.
+        shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ steps.signing.outputs.enabled == 'true' && 'true' || 'false' }}
           CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
