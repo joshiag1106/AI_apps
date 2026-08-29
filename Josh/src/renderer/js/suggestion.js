@@ -31,18 +31,71 @@
       this.value = '';
       this.dismissed = false;
       this.element = null;
+      // Where the ghost is drawn, and where the caller last said the cursor
+      // was. Both are null until the pane has a terminal to measure.
+      this.host = o.host || null;
+      this.position = null;
+      this.font = null;
     }
 
-    /** Offer a suggestion. Anything falsy or non-string clears instead. */
-    show(text) {
+    /**
+     * The terminal's font, which the ghost must share.
+     *
+     * It draws over a canvas the terminal rendered, so anything else is the
+     * wrong width per character: it would neither line up nor read as a
+     * continuation of the typed line. Inheriting is not enough -- the CSS
+     * ancestor here is the app chrome, whose font is a sans-serif.
+     */
+    setFont(font) {
+      this.font = font || null;
+      if (this.element) this._applyFont();
+    }
+
+    _applyFont() {
+      if (!this.element || !this.font) return;
+      this.element.style.fontFamily = this.font.family;
+      this.element.style.fontSize = this.font.size + 'px';
+      this.element.style.letterSpacing = this.font.letterSpacing + 'px';
+    }
+
+    /**
+     * The element to draw into: the terminal screen, whose own box is what
+     * the cursor coordinates are relative to. Set after the terminal opens,
+     * which is later than this object is constructed.
+     */
+    mount(host) {
+      this.host = host || null;
+    }
+
+    /**
+     * Offer a suggestion. Anything falsy or non-string clears instead.
+     *
+     * The position is the caller's: only the pane knows where the cursor is,
+     * and with the WebGL renderer there is no DOM cursor to hang this off.
+     */
+    show(text, position) {
       if (typeof text !== 'string' || text === '') {
         this.clear();
         return;
       }
+      if (position) this.position = position;
       // A new suggestion lifts a previous dismissal: Esc means "not now",
       // never "not again this session".
       this.dismissed = false;
       this.value = text;
+      this._render();
+    }
+
+    /**
+     * Move a ghost that is already showing, without offering a new one.
+     *
+     * The suggestion is known before the terminal has echoed the keystroke it
+     * follows, so the cursor is still a cell behind when show() runs. The pane
+     * calls this once the cursor has actually moved.
+     */
+    place(position) {
+      if (!position || this.value === '') return;
+      this.position = position;
       this._render();
     }
 
@@ -84,6 +137,16 @@
         this.element.className = 'suggestion-ghost';
       }
       this.element.textContent = this.value;
+      this._applyFont();
+      if (this.position) {
+        this.element.style.left = this.position.left + 'px';
+        this.element.style.top = this.position.top + 'px';
+      }
+      // The whole point, and what was missing: a span that is never appended
+      // renders nowhere, however correct its text.
+      if (this.host && this.element.parentNode !== this.host) {
+        this.host.appendChild(this.element);
+      }
     }
   }
 

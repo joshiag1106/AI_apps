@@ -92,6 +92,17 @@
 
       this.term.open(this.host);
 
+      // The ghost is drawn into the screen element, whose box is the one the
+      // cursor coordinates below are relative to. It only exists once the
+      // terminal has opened, which is why this is not done at construction.
+      if (this.suggestion && this.term.element) {
+        this.suggestion.mount(this.term.element.querySelector('.xterm-screen'));
+        this.suggestion.setFont(this._ghostFont());
+        // The suggestion is known before the terminal has echoed the keystroke
+        // it follows, so where the cursor will be is only settled here.
+        this.term.onCursorMove(() => this.suggestion.place(this._cursorPoint()));
+      }
+
       // Wide/emoji character widths. Proposed API, so failure is non-fatal.
       try {
         const unicode = new window.Unicode11Addon.Unicode11Addon();
@@ -234,7 +245,39 @@
 
     /** Offer, or clear, the inline suggestion for this pane. */
     showSuggestion(text) {
-      if (this.suggestion) this.suggestion.show(text);
+      if (this.suggestion) this.suggestion.show(text, this._cursorPoint());
+    }
+
+    /** The terminal font, so the ghost is the same width per character. */
+    _ghostFont() {
+      const s = this.settings || {};
+      return {
+        family: s.fontFamily,
+        size: s.fontSize,
+        letterSpacing: s.letterSpacing || 0,
+      };
+    }
+
+    /**
+     * Where the cursor is, in pixels within the screen element.
+     *
+     * The WebGL renderer draws the cursor into a canvas, so there is no DOM
+     * node for it. xterm does keep one element at the cursor -- the hidden
+     * textarea it needs there for IME -- so its box is the cursor box, exact
+     * and free of arithmetic.
+     *
+     * Deriving a cell width instead, by dividing the screen box by cols, is
+     * off by a fraction of a pixel per cell, and a prompt is long enough for
+     * that to accumulate into a visible error: it measured 16px adrift.
+     */
+    _cursorPoint() {
+      if (!this.term || !this.term.element) return null;
+      const screen = this.term.element.querySelector('.xterm-screen');
+      const cursor = this.term.element.querySelector('.xterm-helper-textarea');
+      if (!screen || !cursor) return null;
+      const box = screen.getBoundingClientRect();
+      const at = cursor.getBoundingClientRect();
+      return { left: at.left - box.left, top: at.top - box.top };
     }
 
     /** Show the original bytes of the most recent condensed diagnostic. */
@@ -274,6 +317,7 @@
       this.term.options.fontSize = settings.fontSize;
       this.term.options.lineHeight = settings.lineHeight;
       this.term.options.letterSpacing = settings.letterSpacing;
+      if (this.suggestion) this.suggestion.setFont(this._ghostFont());
       this.term.options.cursorStyle = settings.cursorStyle;
       this.term.options.cursorBlink = settings.cursorBlink;
       this.term.options.scrollback = settings.scrollback;
