@@ -126,8 +126,17 @@ break the terminal.
 | Find | `Cmd+F` | `Ctrl+Shift+F` |
 | Command palette | `Cmd+Shift+P` | `Ctrl+Shift+P` |
 | Open settings file | `Cmd+,` | `Ctrl+,` |
-| Zoom in / out / reset | `Cmd +` / `Cmd -` / `Cmd 0` | `Ctrl +` / `Ctrl -` / `Ctrl 0` |
+| Font size in / out / reset | `Cmd =` / `Cmd -` / `Cmd 0` | `Ctrl =` / `Ctrl -` / `Ctrl 0` |
+| Line height taller / tighter / reset | `Cmd Alt =` / `Cmd Alt -` / `Cmd Alt 0` | `Ctrl Alt =` / `Ctrl Alt -` / `Ctrl Alt 0` |
+| Next / previous theme | `Cmd Alt ]` / `Cmd Alt [` | `Ctrl Alt ]` / `Ctrl Alt [` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
+
+Font size uses `=` rather than `+`, because an accelerator matches the character
+the key produces and `+` on the main row needs Shift. There is no second binding
+for the shifted `+`: hidden menu items do not register accelerators, so one was
+tried and dropped rather than documented and dead. **Letter spacing** has no
+shortcut -- the modifier space left over is not worth spending on a setting most
+people set once -- but it is in the command palette, along with everything above.
 
 ## Settings
 

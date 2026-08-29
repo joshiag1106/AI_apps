@@ -13,6 +13,7 @@
   const api = window.josh;
   const SplitTree = window.SplitTree;
   const Themes = window.Themes;
+  const Typography = window.Typography;
 
   const el = (id) => document.getElementById(id);
 
@@ -362,9 +363,37 @@
     }
   }
 
-  function zoom(delta) {
-    const size = Math.min(72, Math.max(6, state.settings.fontSize + delta));
-    patchSettings({ fontSize: size });
+  /**
+   * Move one typography setting by one step, in the direction given.
+   *
+   * The step size, the range and the fallback all come from the shared module,
+   * so a keystroke can never write a value the settings schema would refuse,
+   * and the reset below cannot drift from the schema default.
+   */
+  function step(key, direction) {
+    const value = Typography.adjust(
+      state.settings[key],
+      Typography.STEPS[key] * direction,
+      Typography.RANGES[key],
+      Typography.DEFAULTS[key]
+    );
+    patchSettings({ [key]: value });
+  }
+
+  function reset(key) {
+    patchSettings({ [key]: Typography.DEFAULTS[key] });
+  }
+
+  /**
+   * Step through the themes by name.
+   *
+   * The setting may be 'auto', which is not one of the names; cycleTheme lands
+   * on the first name in that case rather than nothing. Cycling deliberately
+   * writes a concrete name, which is what leaving 'auto' means.
+   */
+  function shiftTheme(direction) {
+    const name = Typography.cycleTheme(Themes.NAMES, state.settings.theme, direction);
+    if (name) patchSettings({ theme: name });
   }
 
   // ---- Status bar ----------------------------------------------------------
@@ -457,9 +486,17 @@
     },
     'find:open': openFind,
     'palette:open': openPalette,
-    'zoom:in': () => zoom(1),
-    'zoom:out': () => zoom(-1),
-    'zoom:reset': () => patchSettings({ fontSize: 14 }),
+    'zoom:in': () => step('fontSize', 1),
+    'zoom:out': () => step('fontSize', -1),
+    'zoom:reset': () => reset('fontSize'),
+    'lineHeight:in': () => step('lineHeight', 1),
+    'lineHeight:out': () => step('lineHeight', -1),
+    'lineHeight:reset': () => reset('lineHeight'),
+    'letterSpacing:in': () => step('letterSpacing', 1),
+    'letterSpacing:out': () => step('letterSpacing', -1),
+    'letterSpacing:reset': () => reset('letterSpacing'),
+    'theme:next': () => shiftTheme(1),
+    'theme:prev': () => shiftTheme(-1),
   };
 
   function cycleTab(delta) {
@@ -577,6 +614,16 @@
       { label: 'Zoom In', run: commands['zoom:in'] },
       { label: 'Zoom Out', run: commands['zoom:out'] },
       { label: 'Reset Zoom', run: commands['zoom:reset'] },
+      { label: 'Taller Lines', run: commands['lineHeight:in'] },
+      { label: 'Tighter Lines', run: commands['lineHeight:out'] },
+      { label: 'Default Line Height', run: commands['lineHeight:reset'] },
+      // No accelerator: the modifier space left after font size and line
+      // height is not worth spending on a setting most people set once.
+      { label: 'Wider Letter Spacing', run: commands['letterSpacing:in'] },
+      { label: 'Tighter Letter Spacing', run: commands['letterSpacing:out'] },
+      { label: 'Default Letter Spacing', run: commands['letterSpacing:reset'] },
+      { label: 'Next Theme', run: commands['theme:next'] },
+      { label: 'Previous Theme', run: commands['theme:prev'] },
       {
         label: 'Toggle Copy on Select (' + (state.settings.copyOnSelect ? 'on' : 'off') + ')',
         run: () => patchSettings({ copyOnSelect: !state.settings.copyOnSelect }),
