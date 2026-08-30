@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+# SQLite and its sidecars. The WAL holds recently written rows, so committing it
+# publishes whatever was last written — including account emails and password hashes.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
