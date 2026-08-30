@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/*
+  Kautilya visual system — a analyst's terminal, not a news portal.
+  Deliberately single-theme dark: this is read in operations rooms and at night,
+  and a light variant would dilute the risk-colour language rather than serve it.
+*/
+@theme {
+  --color-ink:        #070a0f;
+  --color-surface:    #0c1119;
+  --color-panel:      #111825;
+  --color-panel-2:    #161f2e;
+  --color-line:       #1f2b3d;
+  --color-line-soft:  #18222f;
+
+  --color-text:       #e8eef6;
+  --color-muted:      #8c9bb0;
+  /* Measured at 4.7:1 against the darkest panel — the previous #5b697d was 3.0:1 and
+     failed WCAG AA on the smallest text in the product (timestamps, captions, source
+     metadata), which is exactly where it mattered most. */
+  --color-faint:      #7b8a9e;
+
+  --color-accent:     #e8b339;
+  --color-accent-dim: #7a5f1d;
+
+  /* Two severe reds. The deep one is for fills — map shading, bars — where it reads as
+     alarm against the dark ground and carries no text. The light one is for anything a
+     reader has to *read*: at 4.7:1 it passes AA, where the fill colour is 2.9:1. */
+  --color-low:        #2ea043;
+  --color-guarded:    #c9a227;
+  --color-elevated:   #e08c3c;
+  --color-high:       #ef5350;
+  --color-severe:     #f2645f;
+  --color-severe-fill: #c62828;
+
+  --color-zh:         #ff8f7a;
+  --color-verified:   #3fb6a8;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html { color-scheme: dark; }
+
+body {
+  background:
+    radial-gradient(1100px 600px at 15% -10%, #12203a 0%, transparent 60%),
+    radial-gradient(900px 500px at 95% 0%, #1a1428 0%, transparent 55%),
+    var(--color-ink);
+  background-attachment: fixed;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--color-accent); color: #0a0a0a; }
+
+/* Keyboard focus must be visible everywhere, including on the elements whose inline
+   styles set outline-none for the mouse case. :focus-visible fires only for keyboard
+   and assistive-tech navigation, so this costs mouse users nothing. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Thin, unobtrusive scrollbars — a dense dashboard has a lot of them. */
+* { scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+@utility panel {
+  background: color-mix(in oklab, var(--color-panel) 88%, transparent);
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(6px);
+}
+
+@utility mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@utility hairline {
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+/* Chinese-language source text gets its own treatment so an analyst can see at a
+   glance which claims rest on PRC-language reporting. */
+@utility zh-text {
+  font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", var(--font-sans);
+  color: var(--color-zh);
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.85); opacity: 0.9; }
+  70%  { transform: scale(1.9);  opacity: 0; }
+  100% { transform: scale(1.9);  opacity: 0; }
+}
+.pulse-ring { animation: pulse-ring 2.6s cubic-bezier(0.24,0.6,0.35,1) infinite; transform-origin: center; }
+
+@keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.sweep::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-accent) 12%, transparent), transparent);
+  animation: sweep 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-ring, .sweep::after { animation: none; }
+}

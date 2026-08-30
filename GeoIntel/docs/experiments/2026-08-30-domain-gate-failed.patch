@@ -1,0 +1,139 @@
+diff --git a/lib/analyze/score.ts b/lib/analyze/score.ts
+index 430719c..8453263 100644
+--- a/lib/analyze/score.ts
++++ b/lib/analyze/score.ts
+@@ -5,6 +5,8 @@ export interface ScoreResult {
+   escalation: number;      // -100..100
+   framing: number;
+   domain: Domain;
++  /** False when `domain` is the fallback rather than a matched classification. */
++  domainEvidenced: boolean;
+   matchedTerms: string[];
+   glossed: string[];
+   ladderRung: number | null;
+@@ -18,7 +20,17 @@ function hasTerm(term: string, lower: string, raw: string): boolean {
+   return LATIN.test(term) ? lower.includes(term.toLowerCase()) : raw.includes(term);
+ }
+ 
+-function classifyDomain(lower: string, raw: string, lexDomains: Domain[]): Domain {
++/**
++ * Best-guess domain, plus whether anything actually supported the guess.
++ *
++ * An empty tally still returns a label — 'Diplomatic' — because every article needs a
++ * domain to sit under. That fallback is why 59% of the corpus carries that one label.
++ * It is a reasonable default for display and a poor one to reason from, so the caller
++ * is told which it got rather than being left to assume the label means something.
++ */
++function classifyDomain(
++  lower: string, raw: string, lexDomains: Domain[],
++): { domain: Domain; evidenced: boolean } {
+   const tally = new Map<Domain, number>();
+   for (const d of lexDomains) tally.set(d, (tally.get(d) ?? 0) + 2);
+   for (const [domain, hints] of Object.entries(DOMAIN_HINTS) as [Domain, string[]][]) {
+@@ -29,7 +41,18 @@ function classifyDomain(lower: string, raw: string, lexDomains: Domain[]): Domai
+   let best: Domain = 'Diplomatic';
+   let bestN = 0;
+   for (const [d, n] of tally) if (n > bestN) { best = d; bestN = n; }
+-  return best;
++  return { domain: best, evidenced: bestN > 0 };
++}
++
++/**
++ * Whether an article's domain label rests on a matched term or is the fallback.
++ *
++ * Clustering asks this before letting a domain mismatch veto a merge: two reports of one
++ * flood, one labelled Diplomatic by fallback and the other Military on an incidental
++ * word, are not evidence of two different events.
++ */
++export function domainIsEvidenced(title: string, snippet = ''): boolean {
++  return scoreText(title, snippet).domainEvidenced;
+ }
+ 
+ /**
+@@ -60,11 +83,14 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
+   const rung = highestRung(raw);
+   if (rung) score += rung.severity * 0.5;
+ 
++  const domainGuess = classifyDomain(lower, raw, lexDomains);
++
+   return {
+     // tanh-style squash keeps a long article from running away with the score.
+     escalation: Math.round(Math.max(-100, Math.min(100, score * 1.6))),
+     framing: gloss.framingScore,
+-    domain: classifyDomain(lower, raw, lexDomains),
++    domain: domainGuess.domain,
++    domainEvidenced: domainGuess.evidenced,
+     matchedTerms: matched,
+     glossed: gloss.glossed,
+     ladderRung: rung?.rung ?? null,
+diff --git a/lib/verify/cluster.ts b/lib/verify/cluster.ts
+index 999c6d4..9a2d6e9 100644
+--- a/lib/verify/cluster.ts
++++ b/lib/verify/cluster.ts
+@@ -1,5 +1,6 @@
+ import type { Article, GeoEvent } from '@/lib/types';
+ import { scoreConfidence } from '@/lib/verify/confidence';
++import { domainIsEvidenced } from '@/lib/analyze/score';
+ 
+ const WINDOW_HOURS = 60;
+ const MIN_SHARED_TOKENS = 2;
+@@ -79,6 +80,13 @@ class UnionFind {
+  * and are textually close. Actor overlap is required rather than merely scored: a
+  * Ukraine story and an LAC story can share plenty of vocabulary.
+  *
++ * Domain disagreement only vetoes a merge when both labels were actually classified.
++ * The classifier falls back to 'Diplomatic' whenever nothing matches, so most of the
++ * corpus carries that label by default rather than by evidence; treating the fallback
++ * as fact split one Nepal-Tibet flood across Diplomatic and Military more than ten ways
++ * and blocked 3,299 otherwise-agreeing pairs. A guess should not outvote time, actors
++ * and text all agreeing.
++ *
+  * Chinese character bigrams are treated as weaker evidence than words. Two unrelated
+  * Chinese headlines that both mention 美国 and 国防部 share four bigrams and clear a
+  * word-tuned threshold easily — that is how a Taiwan arms sale once merged with a
+@@ -86,15 +94,24 @@ class UnionFind {
+  */
+ function related(
+   a: Article, b: Article, ta: Set<string>, tb: Set<string>,
+-  idf: (token: string) => number, idfMin: number,
++  idf: (token: string) => number, idfMin: number, domainA: boolean, domainB: boolean,
+ ): boolean {
+   if (Math.abs(Date.parse(a.publishedAt) - Date.parse(b.publishedAt)) > WINDOW_HOURS * 3600_000) return false;
+-  if (a.domain !== b.domain) return false;
++  // Two classified domains that disagree are real evidence of two different stories.
++  if (domainA && domainB && a.domain !== b.domain) return false;
+   if (!a.actors.some((x) => b.actors.includes(x))) return false;
+ 
++  // When the labels disagree only because one of them is the fallback, the mismatch is
++  // not evidence — but neither is it licence to merge on the weakest link available.
++  // Union-find is transitive, so one loose pair welds two clusters together: forgiving
++  // the mismatch on the permissive hotspot rule alone collapsed 40 countries of
++  // unrelated news into a single 601-article blob. A guess is forgiven only where the
++  // text itself carries the match.
++  const domainDisagrees = a.domain !== b.domain;
++
+   const shared = [...ta].filter((t) => tb.has(t));
+ 
+-  if (a.hotspots.length && b.hotspots.some((h) => a.hotspots.includes(h))) {
++  if (!domainDisagrees && a.hotspots.length && b.hotspots.some((h) => a.hotspots.includes(h))) {
+     // Same named flashpoint plus any textual overlap is enough.
+     return jaccard(ta, tb) >= 0.08;
+   }
+@@ -124,6 +141,8 @@ export function clusterArticles(articles: Article[]): GeoEvent[] {
+   if (n === 0) return [];
+ 
+   const toks = articles.map(tokens);
++  // Once per article: the pairwise loop below runs tens of thousands of times.
++  const domainEvidenced = articles.map((a) => domainIsEvidenced(a.title, a.snippet));
+   const index = new Map<string, number[]>();
+   for (let i = 0; i < n; i++) {
+     for (const t of toks[i]) {
+@@ -152,7 +171,7 @@ export function clusterArticles(articles: Article[]): GeoEvent[] {
+     for (const [j, shared] of counts) {
+       if (shared < MIN_SHARED_TOKENS) continue;
+       if (uf.find(i) === uf.find(j)) continue;
+-      if (related(articles[i], articles[j], toks[i], toks[j], idf, idfMin)) uf.union(i, j);
++      if (related(articles[i], articles[j], toks[i], toks[j], idf, idfMin, domainEvidenced[i], domainEvidenced[j])) uf.union(i, j);
+     }
+   }
+ 
