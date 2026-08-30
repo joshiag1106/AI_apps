@@ -1,6 +1,6 @@
 {
   "name": "kautilya",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3111",
@@ -15,9 +15,11 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
     "bcryptjs": "^3.0.2",
+    "cc-cedict": "^1.1.1",
     "d3-geo": "^3.1.1",
     "fast-xml-parser": "^5.2.5",
     "next": "15.5.4",
+    "pinyin-pro": "^3.29.3",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "server-only": "^0.0.1",

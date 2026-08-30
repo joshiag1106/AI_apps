@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { timeAgo } from '@/lib/format';
 import type { GeoEvent } from '@/lib/types';
@@ -11,7 +11,14 @@ import type { GeoEvent } from '@/lib/types';
  * Thumbnails only until the reader clicks: nothing is embedded, and no request reaches
  * a third-party player, until they ask for it. Playing uses youtube-nocookie.
  */
-export function VideoWall({ events }: { events: GeoEvent[] }) {
+export function VideoWall({ events, titles }: {
+  events: GeoEvent[];
+  /**
+   * Optional pre-rendered titles keyed by event id, so Chinese headlines can carry their
+   * romanisation without this client bundle having to include the pinyin dictionaries.
+   */
+  titles?: Record<string, ReactNode>;
+}) {
   const [playing, setPlaying] = useState<string | null>(null);
   if (!events.length) return null;
 
@@ -48,8 +55,8 @@ export function VideoWall({ events }: { events: GeoEvent[] }) {
           </div>
           <div className="p-3">
             <Link href={`/events/${e.id}`}
-              className="line-clamp-2 text-[12.5px] leading-snug text-text hover:text-[color:var(--color-accent)]">
-              {e.title}
+              className="text-[12.5px] leading-snug text-text hover:text-[color:var(--color-accent)]">
+              {titles?.[e.id] ?? e.title}
             </Link>
             <div className="mt-1.5 flex items-center gap-2 text-[10.5px] text-faint">
               <span>{e.domain}</span>

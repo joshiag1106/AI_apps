@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui';
 import { EventCard } from '@/components/EventCard';
+import { ChineseText } from '@/components/ChineseText';
+import { titleGloss } from '@/components/EventCard';
 import { Columns, BarList, Ribbon } from '@/components/charts';
 import { Paywall } from '@/components/Paywall';
 import { WatchToggle } from '@/components/Watchlist';
@@ -126,9 +128,12 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
                       <Link key={e.id} href={`/events/${e.id}`} className="block rounded border border-[color:var(--color-line-soft)] p-2 hover:border-[color:var(--color-accent-dim)]">
                         <div className="flex items-center gap-2">
                           <Badge tone="var(--color-zh)">rung {e.ladderRung}</Badge>
-                          <span className="zh-text text-[13px]">{e.ladderZh}</span>
+                          <ChineseText text={e.ladderZh!} english={e.ladderEn} size="small"
+                            accent clamp={false} className="text-[13px]" />
                         </div>
-                        <div className="mt-1 text-[11px] leading-snug text-muted line-clamp-2">{e.title}</div>
+                        <div className="mt-1 text-[11px] leading-snug text-muted">
+                          <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss size="small" />
+                        </div>
                       </Link>
                     );
                   })}

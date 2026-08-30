@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui';
 import { WorldMap } from '@/components/WorldMap';
 import { EventCard, EventRow } from '@/components/EventCard';
+import { ChineseText, zhTitleMap } from '@/components/ChineseText';
+import { titleGloss } from '@/components/EventCard';
 import { Sparkline, Ribbon, BarList } from '@/components/charts';
 import { worldShapes, project } from '@/lib/map';
 import {
@@ -146,10 +148,13 @@ export default async function Home() {
                 <Link key={e.id} href={`/events/${e.id}`} className="block px-3.5 py-2.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
                   <div className="flex items-center gap-2">
                     <Badge tone="var(--color-zh)">rung {e.ladderRung}</Badge>
-                    <span className="zh-text text-[13px]">{e.ladderZh}</span>
+                    <ChineseText text={e.ladderZh!} size="small" accent clamp={false}
+                      className="text-[13px]" />
                     <span className="ml-auto text-[10px] text-faint">{timeAgo(e.lastSeen)}</span>
                   </div>
-                  <div className="mt-1 text-[11.5px] leading-snug text-muted line-clamp-2">{e.ladderEn} — {e.title}</div>
+                  <div className="mt-1 text-[11.5px] leading-snug text-muted">
+                    {e.ladderEn} — <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss />
+                  </div>
                 </Link>
               ))}
             </Panel>
@@ -180,7 +185,10 @@ export default async function Home() {
           <SectionTitle kicker="From official broadcaster channels — nothing loads until you press play">
             On camera
           </SectionTitle>
-          <VideoWall events={videoEvents(events, 6)} />
+          {(() => {
+            const vids = videoEvents(events, 6);
+            return <VideoWall events={vids} titles={zhTitleMap(vids, titleGloss)} />;
+          })()}
         </section>
       )}
 

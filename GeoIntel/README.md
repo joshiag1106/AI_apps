@@ -59,6 +59,7 @@ No API keys are required. The engine is fully deterministic and runs without any
 | `npm run ingest -- --health` | Check every configured feed for real content. |
 | `npm run stats` | Corpus quality report: freshness, cluster sizes, confidence distribution, ladder hits. |
 | `npx tsx scripts/cluster-gates.ts` | What each clustering gate costs. Run before changing a threshold. |
+| `KAUTILYA_AUTO_INGEST=1 npm run dev` | Refresh the corpus in the background every 30 minutes. |
 | `npm test` | 61 unit tests over the analytical core. |
 | `npm run build` | Production build. |
 
@@ -188,6 +189,37 @@ covered by tests (`tests/security.test.ts`).
 
 Not done: no penetration test, no formal screen-reader pass, no rate limiting on the
 export or analysis endpoints beyond the usage quota.
+
+## Asking it questions
+
+`/ask` answers from the scored corpus rather than generating an answer. It resolves the
+states, flashpoints, domains, ladder rungs, time windows and source languages named in a
+question — 中国 and भारत included — and returns the matching events with their evidence.
+
+It shows how it read your question. That is not decoration: pattern matching misreads
+things, and without the reading an empty result looks the same whether nothing happened or
+nothing was understood.
+
+Signals that are facts are treated differently from signals that are guesses. States,
+time, language and ladder rung filter hard. `domain` does not — it is a keyword tally that
+falls back to `Diplomatic` for most of the corpus, so it narrows only when that leaves
+something and says so when it stands down.
+
+## Staying current
+
+The corpus refreshes in one of three ways: `npm run ingest` by hand, the `/api/cron`
+endpoint driven by an external scheduler, or the in-process loop enabled with
+`KAUTILYA_AUTO_INGEST=1`.
+
+Any open page keeps itself current regardless of which. It polls `/api/pulse` for the
+corpus version once a minute and re-renders in place when that moves — no reload, no
+socket, scroll position preserved. The header shows whether it is watching, because a page
+that silently rewrites itself hides the one thing an analyst needs to know: how old the
+reporting in front of them is.
+
+The refresh interval has a **15-minute floor that cannot be overridden**, and auto-refresh
+is off unless explicitly enabled. Each cycle fetches 73 real publisher and aggregator
+feeds; that is other people's infrastructure.
 
 ## Limitations — read these
 

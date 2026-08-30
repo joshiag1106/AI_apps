@@ -21,9 +21,9 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 86 passing (`npm test`) |
+| Tests | 147 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | ~1,320 events from ~2,380 reports; median article age 5.7 days |
+| Corpus at last run | ~1,325 events from ~2,400 reports; median article age under a week |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -72,14 +72,40 @@ or start a fresh history — the database is rebuildable, so nothing of value is
 
 ## Where to go next, in the order I would do it
 
-1. **Run the LLM layer once with a real key** and see whether the framing output is worth
-   what it costs. It is still the only unproven part of the product.
+1. **Run the LLM layer once with a real key.** Still the only unproven part of the
+   product, and now two features are waiting on it: event-page framing analysis, and the
+   sentence translations that would supersede the dictionary gloss under every Chinese
+   headline. `/ask` would also gain grounded prose over its deterministic results.
 2. **Give clustering a cohesion rule** — see the section below. This is the live lead on
    corroboration and the most interesting problem left in the codebase.
 3. **Legal review before charging anyone.** Publisher and aggregator terms of service
    govern commercial redistribution of this material.
 4. Account-bound watchlists (they are device-local today) and email alerts on a
    ladder-rung jump would be the next genuinely useful features.
+
+## Added 2026-08-30, after the freshness work
+
+- **Pinyin and English under every Chinese headline.** Romanisation is deterministic;
+  English resolves best-available — LLM sentence translation, then a CC-CEDICT word gloss,
+  then the curated lexicon. The gloss is labelled `Glossed:` because it has no grammar and
+  is not a translation. CC-CEDICT is CC BY-SA 4.0; attribution is on `/methodology` and
+  belongs in the legal review before charging anyone.
+- **`/ask`.** Questions answered from the corpus deterministically, with the reading of the
+  question shown alongside the answer. Signals that are facts (states, time, language,
+  ladder rung) filter hard; `domain` only narrows when that leaves something, because it is
+  a guess that defaults to `Diplomatic` for most of the corpus.
+- **Live tracking.** Open pages poll `/api/pulse` and re-render in place. The background
+  ingest loop is off unless `KAUTILYA_AUTO_INGEST=1`, defaults to 30 minutes, and has a
+  15-minute floor that cannot be overridden — every cycle hits 73 real publisher feeds.
+
+Two things left on the bench, both raised and not yet done:
+
+- **Bundled webfonts.** The app loads none, so Chinese rendering depends on the viewer's
+  OS. Fine on macOS via PingFang SC; degrades on Windows and can be wrong on Linux. The
+  plan was `next/font/google` self-hosting Noto Sans SC (202 unicode-range subsets, ~100-200KB
+  per page, not the full 2.4MB) plus a `postinstall` that reports what was bundled.
+- **Tooltips are invisible on touch.** The dense one-line rows carry pinyin in a `title`
+  attribute, which never appears on iPad or iPhone.
 
 ## The clustering lead — read this before touching `lib/verify/cluster.ts`
 
