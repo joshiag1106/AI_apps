@@ -12,6 +12,8 @@ import { ZH_GLOSSARY } from '@/data/glossary.zh';
 import { FramingAnalysis } from '@/components/FramingAnalysis';
 import { VideoWall } from '@/components/VideoWall';
 import { cachedAnalysis } from '@/lib/llm/analyse';
+import { ChineseText, zhTitleMap } from '@/components/ChineseText';
+import { titleGloss } from '@/components/EventCard';
 import { llmEnabled } from '@/lib/llm/client';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +37,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const esc = escalationLabel(event.escalation);
   // Render an already-computed analysis without an API call; otherwise offer the button.
   const priorAnalysis = llmEnabled() ? cachedAnalysis(event, articles) : null;
+  /**
+   * A real sentence translation for one headline, if the LLM layer has already produced
+   * one and cached it. Absent a key — or before any analysis has been run — this is null
+   * everywhere and the keyword gloss carries the English on its own.
+   */
+  const translationFor = (original: string): string | null =>
+    priorAnalysis?.headline_translations.find((t) => t.original === original)?.english ?? null;
 
   // Glossary terms actually present across this event's Chinese-language reporting.
   const glossHits = [...new Set(articles.flatMap((a) => a.glossed))]
@@ -52,12 +61,17 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
           {event.hotspots.map((h) => <Badge key={h} tone="var(--color-accent)">{h.toUpperCase()}</Badge>)}
           <span className="ml-1 text-[11px] text-faint">{timeAgo(event.lastSeen)}</span>
         </div>
-        <h1 className="mt-2 max-w-4xl text-2xl font-semibold leading-snug tracking-tight">{event.title}</h1>
+        <h1 className="mt-2 max-w-4xl text-2xl font-semibold leading-snug tracking-tight">
+          <ChineseText text={event.title} clamp={false}
+            english={translationFor(event.title) ?? titleGloss(event.title)}
+            englishIsGloss={!translationFor(event.title)} />
+        </h1>
         {event.summary && <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-muted">{event.summary}</p>}
 
         {event.videoId ? (
           <div className="mt-4 max-w-2xl">
-            <VideoWall events={[event]} />
+            <VideoWall events={[event]}
+              titles={zhTitleMap([event], (t) => translationFor(t) ?? titleGloss(t))} />
           </div>
         ) : event.imageUrl ? (
           <figure className="mt-4 max-w-2xl">
@@ -127,14 +141,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <span className="mono-num ml-auto text-[10.5px] text-faint">{fmtDate(a.publishedAt)}</span>
                       </div>
                       <a href={a.url} target="_blank" rel="noopener noreferrer"
-                        className={`block text-[13px] leading-snug hover:underline ${a.language === 'zh' ? 'zh-text' : 'text-text'}`}>
-                        {a.title}
+                        className={`block text-[13px] leading-snug hover:underline ${a.language === 'zh' ? '' : 'text-text'}`}>
+                        <ChineseText text={a.title} clamp={false} accent={a.language === 'zh'}
+                          english={translationFor(a.title) ?? titleGloss(a.title) ?? a.titleEn}
+                          englishIsGloss={!translationFor(a.title)} />
                       </a>
-                      {a.titleEn && (
-                        <div className="mt-1 text-[11.5px] italic leading-snug text-muted">
-                          Glossed: {a.titleEn}
-                        </div>
-                      )}
                     </article>
                   ))}
                 </div>
@@ -153,7 +164,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 {glossHits.map((t) => (
                   <div key={t.zh} className="rounded-md border border-[color:var(--color-line-soft)] p-2.5">
                     <div className="flex items-baseline gap-2">
-                      <span className="zh-text text-[15px]">{t.zh}</span>
+                      <span className="text-[15px]">
+                        <ChineseText text={t.zh} size="small" accent clamp={false} />
+                      </span>
                       <span className="text-[12px] text-text">{t.en}</span>
                       <Badge tone={t.category === 'framing' ? 'var(--color-elevated)' : 'var(--color-faint)'}>{t.category}</Badge>
                     </div>

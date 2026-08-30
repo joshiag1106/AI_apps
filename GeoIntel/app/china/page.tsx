@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Panel, SectionTitle, Stat, Badge, Empty, Trend } from '@/components/ui';
 import { EventCard, EventRow, ConfidenceChip } from '@/components/EventCard';
+import { ChineseText } from '@/components/ChineseText';
+import { titleGloss } from '@/components/EventCard';
 import { Radar, BarList, Ribbon, Sparkline } from '@/components/charts';
 import { Mandala } from '@/components/Mandala';
 import { corpus, ladderAlerts, chineseStream, eventsFor, countryName, languageStats, articlesIn } from '@/lib/queries';
@@ -72,8 +74,10 @@ export default async function ChinaPage() {
                 return (
                   <div key={r.rung} className="flex items-center gap-2.5">
                     <span className="mono-num w-5 text-right text-[10px] text-faint">{r.rung}</span>
-                    <span className="zh-text w-[10.5rem] flex-none text-[12.5px]"
-                      style={{ opacity: hit ? 1 : 0.35 }}>{r.zh}</span>
+                    <span className="w-[10.5rem] flex-none text-[12.5px]"
+                      style={{ opacity: hit ? 1 : 0.35 }}>
+                      <ChineseText text={r.zh} size="small" accent clamp={false} />
+                    </span>
                     <span className="hidden flex-1 truncate text-[11px] text-muted sm:block"
                       style={{ opacity: hit ? 1 : 0.4 }}>{r.en}</span>
                     <div className="relative h-3.5 w-24 flex-none overflow-hidden rounded-sm bg-[color:var(--color-line-soft)]">
@@ -103,7 +107,9 @@ export default async function ChinaPage() {
               <div className="space-y-1.5">
                 {topTerms.map((t) => (
                   <div key={t.en} className="flex items-center gap-2.5">
-                    <span className="zh-text w-24 flex-none text-[13px]">{t.zh}</span>
+                    <span className="w-32 flex-none text-[13px]">
+                      <ChineseText text={t.zh} size="small" accent clamp={false} />
+                    </span>
                     <span className="flex-1 truncate text-[11.5px] text-muted">{t.en}</span>
                     {t.cat === 'framing' && <Badge tone="var(--color-elevated)">framing</Badge>}
                     <div className="relative h-3 w-20 flex-none overflow-hidden rounded-sm bg-[color:var(--color-line-soft)]">
@@ -137,11 +143,14 @@ export default async function ChinaPage() {
                 className="panel block p-3.5 transition-colors hover:border-[color:var(--color-accent-dim)]">
                 <div className="flex items-center gap-2">
                   <Badge tone="var(--color-zh)" solid>rung {e.ladderRung}</Badge>
-                  <span className="zh-text text-[14px]">{e.ladderZh}</span>
+                  <ChineseText text={e.ladderZh!} size="small" accent clamp={false}
+                    className="text-[14px]" />
                   <span className="ml-auto text-[10px] text-faint">{timeAgo(e.lastSeen)}</span>
                 </div>
                 <div className="mt-1 text-[11px] text-muted">{e.ladderEn}</div>
-                <h3 className="mt-2 text-[12.5px] leading-snug text-text line-clamp-2">{e.title}</h3>
+                <h3 className="mt-2 text-[12.5px] leading-snug text-text">
+                  <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss />
+                </h3>
                 <div className="mt-2 flex items-center gap-2">
                   <ConfidenceChip value={e.confidence} />
                   <span className="text-[10.5px] text-faint">{e.actors.slice(0, 3).map(countryName).join(' · ')}</span>

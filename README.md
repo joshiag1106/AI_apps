@@ -41,7 +41,13 @@ which it does not claim to determine.
 
 The Chinese-language layer is the point: a glossary and a detector for the PRC's
 official escalation ladder, so a rung-8 "strong protest" is read as the formal
-signal it is rather than as ordinary adjectives.
+signal it is rather than as ordinary adjectives. Every Chinese headline carries its
+romanisation and an English gloss, so the sourcing is readable without Chinese.
+
+Ask it a question at `/ask` and it answers from the scored corpus rather than
+generating an answer — and shows how it read the question, so a wrong answer can be
+told apart from a thin corpus. Open pages track the corpus live and update
+themselves in place when new reporting lands.
 
 ```bash
 cd GeoIntel && npm install && npm run ingest && npm run dev

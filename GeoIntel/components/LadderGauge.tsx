@@ -1,4 +1,5 @@
 import { ESCALATION_LADDER } from '@/data/glossary.zh';
+import { ChineseText, chineseTitle } from '@/components/ChineseText';
 
 /**
  * The PRC official escalation ladder, with the detected rung marked.
@@ -16,7 +17,9 @@ export function LadderGauge({ rung, compact = false }: { rung: number; compact?:
       <div className="text-[10px] uppercase tracking-[0.16em] text-faint">PRC official escalation ladder</div>
       {hit && (
         <div className="mt-2 flex items-baseline gap-2.5">
-          <span className="zh-text text-xl">{hit.zh}</span>
+          <span className="text-xl">
+            <ChineseText text={hit.zh} accent clamp={false} />
+          </span>
           <span className="text-[13px] text-text">{hit.en}</span>
           <span className="mono-num ml-auto text-[11px] text-faint">rung {hit.rung}/13</span>
         </div>
@@ -37,7 +40,8 @@ export function LadderGauge({ rung, compact = false }: { rung: number; compact?:
                     background: active ? 'var(--color-zh)' : below ? 'color-mix(in oklab, var(--color-zh) 22%, transparent)' : 'var(--color-line)',
                   }} />
                 <span className={`absolute inset-y-0 left-1.5 flex items-center text-[10px] ${active ? 'text-[#0a0d13] font-semibold' : 'text-muted'}`}>
-                  <span className="zh-text" style={active ? { color: '#0a0d13' } : undefined}>{r.zh}</span>
+                  <span className="zh-text" title={chineseTitle(r.zh, r.en)}
+                    style={active ? { color: '#0a0d13' } : undefined}>{r.zh}</span>
                   <span className="ml-1.5 opacity-70">{r.en}</span>
                 </span>
               </div>

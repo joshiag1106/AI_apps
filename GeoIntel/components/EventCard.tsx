@@ -2,7 +2,25 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui';
 import { timeAgo, confidenceBand, escalationLabel, FLAG_LABEL } from '@/lib/format';
 import { countryName } from '@/lib/queries';
+import { ChineseText, chineseTitle } from '@/components/ChineseText';
+import { glossHeadline } from '@/lib/analyze/score';
+import { dictionaryGloss } from '@/lib/lang/dictionary';
+import { hasChinese } from '@/lib/lang/pinyin';
 import type { GeoEvent } from '@/lib/types';
+
+/**
+ * English for a Chinese headline, best source first. Computed rather than stored, because
+ * it is derived from the title and costs nothing to recompute on render.
+ *
+ * The general dictionary leads because it is the only source with full coverage: the
+ * curated security lexicon knows 严正交涉 and 国防部 but no ordinary news vocabulary, and
+ * on the corpus it left 234 of 473 Chinese events with no English line at all. The lexicon
+ * stays behind it as a backstop for the rare string the dictionary cannot resolve.
+ */
+export function titleGloss(title: string): string | null {
+  if (!hasChinese(title)) return null;
+  return dictionaryGloss(title) ?? glossHeadline(title, 'zh');
+}
 
 export function ConfidenceChip({ value }: { value: number }) {
   const band = confidenceBand(value);
@@ -44,8 +62,8 @@ export function EventCard({ event, compact = false }: { event: GeoEvent; compact
             ))}
           </div>
 
-          <h3 className="text-[13.5px] leading-snug text-text group-hover:text-[color:var(--color-accent)] line-clamp-2">
-            {event.title}
+          <h3 className="text-[13.5px] leading-snug text-text group-hover:text-[color:var(--color-accent)]">
+            <ChineseText text={event.title} english={titleGloss(event.title)} englishIsGloss />
           </h3>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-faint">
@@ -70,7 +88,10 @@ export function EventRow({ event }: { event: GeoEvent }) {
       <span className="h-1.5 w-1.5 flex-none rounded-full" style={{ background: esc.color }}
         title={`${esc.label} escalation`} aria-hidden />
       <span className="sr-only">{esc.label} escalation.</span>
-      <span className="min-w-0 flex-1 truncate text-[12.5px] text-text group-hover:text-[color:var(--color-accent)]">{event.title}</span>
+      {/* One line by design, so the romanisation and meaning ride on hover instead of
+          stacking and tripling the row height. */}
+      <span className="min-w-0 flex-1 truncate text-[12.5px] text-text group-hover:text-[color:var(--color-accent)]"
+        title={chineseTitle(event.title, titleGloss(event.title))}>{event.title}</span>
       {event.languages.includes('zh') && <span className="zh-text text-[10px] flex-none">中</span>}
       <ConfidenceChip value={event.confidence} />
       <time dateTime={event.lastSeen}

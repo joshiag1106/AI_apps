@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Panel, SectionTitle, Badge } from '@/components/ui';
+import { ChineseText } from '@/components/ChineseText';
 import { ESCALATION_LADDER } from '@/data/glossary.zh';
 import { SOURCES } from '@/data/sources';
 import { BEATS, LOCALES, DIRECT_FEEDS } from '@/data/feeds';
@@ -95,6 +96,18 @@ export default function MethodologyPage() {
         has taken a sovereignty position in the act of naming.
       </P>
       <P>
+        Every Chinese headline on the site also carries its romanisation and a word-by-word English
+        gloss, so a reader without Chinese can still say a name aloud and get the gist. Pinyin is
+        generated deterministically; the gloss is a dictionary lookup, not a translation, and is
+        labelled <em>Glossed</em> wherever it appears. It has no grammar and will read as a list of
+        senses rather than as prose. Where an event has been analysed by the optional language model,
+        a real sentence translation replaces it. Dictionary data is{' '}
+        <a href="https://www.mdbg.net/chinese/dictionary?page=cc-cedict" target="_blank"
+          rel="noopener noreferrer" className="underline hover:text-muted">CC-CEDICT</a>, used under{' '}
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank"
+          rel="noopener noreferrer" className="underline hover:text-muted">CC BY-SA 4.0</a>.
+      </P>
+      <P>
         Separately, text is matched against the PRC official escalation ladder — {ESCALATION_LADDER.length} set-piece
         formulae that Beijing moves along deliberately. Matching is longest-first because the formulae
         nest: rung 4 contains rung 3 as a substring, and matching the shorter form would systematically
@@ -105,7 +118,9 @@ export default function MethodologyPage() {
           {ESCALATION_LADDER.map((r) => (
             <div key={r.rung} className="flex items-baseline gap-3 text-[12px]">
               <span className="mono-num w-5 text-right text-faint">{r.rung}</span>
-              <span className="zh-text w-40 flex-none">{r.zh}</span>
+              <span className="w-40 flex-none">
+                <ChineseText text={r.zh} size="small" accent clamp={false} />
+              </span>
               <span className="w-52 flex-none text-muted">{r.en}</span>
               <span className="mono-num text-[10.5px] text-faint">sev {r.severity}</span>
             </div>

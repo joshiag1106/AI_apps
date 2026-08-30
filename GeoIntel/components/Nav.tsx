@@ -3,9 +3,12 @@ import { COUNTRIES } from '@/data/countries';
 import { CountrySearch } from '@/components/CountrySearch';
 import { quotaState } from '@/lib/quota';
 import { currentUser } from '@/lib/auth';
+import { LivePulse } from '@/components/LivePulse';
+import { getMeta } from '@/lib/db';
 
 const LINKS = [
   { href: '/', label: 'Threat Board' },
+  { href: '/ask', label: 'Ask' },
   { href: '/india', label: 'India Focus' },
   { href: '/china', label: 'China Watch' },
   { href: '/events', label: 'Events' },
@@ -35,6 +38,7 @@ export async function Nav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
+          <LivePulse initialVersion={getMeta('last_ingest') ?? 'never'} />
           <CountrySearch countries={searchList} className="w-44 sm:w-60" />
           {quota.unlimited ? (
             <span className="hidden rounded border border-[color:var(--color-accent-dim)] px-2 py-1 text-[10px] uppercase tracking-wider text-[color:var(--color-accent)] sm:inline">Pro</span>
