@@ -206,6 +206,21 @@ time, language and ladder rung filter hard. `domain` does not — it is a keywor
 falls back to `Diplomatic` for most of the corpus, so it narrows only when that leaves
 something and says so when it stands down.
 
+## Ladder alerts
+
+A Desk Pro reader who has opted in on `/account` gets an email when a file on their
+watchlist moves **up** the PRC official escalation ladder — not when it stays where it is,
+because Beijing repeats a formula for weeks and an alert on every repetition is one you
+learn to ignore. One message per refresh however many files moved, each linking to the
+event that justifies it.
+
+Delivery is a plain HTTP call to Resend, the same shape as the Stripe integration: one
+key, no SDK. Without `RESEND_API_KEY` and `ALERTS_FROM` nothing is sent and the ingest logs
+what it would have delivered, so the pipeline is exercisable without mailing anyone.
+
+Alerts are off until a reader turns them on. Signing up for an account is not consent to
+be emailed.
+
 ## Staying current
 
 The corpus refreshes in one of three ways: `npm run ingest` by hand, the `/api/cron`
