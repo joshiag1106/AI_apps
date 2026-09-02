@@ -69,6 +69,40 @@ export function ChineseText({
 }
 
 /**
+ * Chinese for a dense one-line row, with the romanisation still reachable on touch.
+ *
+ * The `title` attribute those rows used appears on hover, and a touch screen has no hover:
+ * an iPad showed the Chinese and nothing else, losing the feature on the devices most
+ * likely to be reading away from a desk. The romanisation is therefore real text in the
+ * document — visible on a narrow viewport, where the horizontal scannability the tooltip
+ * was protecting has already gone, and screen-reader-only on a wide one, where the tooltip
+ * does the visible work.
+ *
+ * `sr-only` rather than `hidden` on the wide breakpoint is deliberate. A display:none
+ * romanisation would be invisible to assistive technology exactly where `title` is also
+ * unreliable for it, so this repairs that gap rather than moving it.
+ *
+ * Callers keep `title={chineseTitle(...)}` for the hover path on pointer devices.
+ */
+export function ChineseCompact({ text, english }: {
+  text: string;
+  english?: string | null;
+}) {
+  const py = toPinyin(text);
+  if (!py) return <>{text}</>;
+  const en = pickEnglish(english);
+  const responsive = 'not-sr-only sm:sr-only block text-[10px] italic text-faint';
+
+  return (
+    <>
+      <span lang="zh">{text}</span>
+      <span lang="zh-Latn" className={responsive}>{py}</span>
+      {en && <span lang="en" className={`${responsive} not-italic text-muted`}>{en}</span>}
+    </>
+  );
+}
+
+/**
  * The same information as a `title` attribute, for one-line contexts.
  *
  * Dense rows — the live feed, the ladder column of a table — are deliberately single

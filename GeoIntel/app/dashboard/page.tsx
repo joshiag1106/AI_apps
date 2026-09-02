@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui';
 import { EventRow } from '@/components/EventCard';
-import { chineseTitle } from '@/components/ChineseText';
+import { ChineseCompact, chineseTitle } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { WatchlistPanel } from '@/components/Watchlist';
 import { Sparkline, BarList, Ribbon, Radar } from '@/components/charts';
@@ -180,10 +180,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <Badge tone="var(--color-zh)">{e.ladderRung}</Badge>
               {/* Fixed-width column in a scannable table: romanisation rides on hover. */}
               <span className="zh-text w-32 flex-none text-[12px]"
-                title={chineseTitle(e.ladderZh!, e.ladderEn)}>{e.ladderZh}</span>
+                title={chineseTitle(e.ladderZh!, e.ladderEn)}>
+                <ChineseCompact text={e.ladderZh!} english={e.ladderEn} />
+              </span>
               <span className="hidden w-44 flex-none truncate text-[11px] text-muted sm:block">{e.ladderEn}</span>
               <span className="flex-1 truncate text-[11.5px] text-text"
-                title={chineseTitle(e.title, titleGloss(e.title))}>{e.title}</span>
+                title={chineseTitle(e.title, titleGloss(e.title))}>
+                <ChineseCompact text={e.title} english={titleGloss(e.title)} />
+              </span>
               <span className="mono-num w-14 flex-none text-right text-[10px] text-faint">{timeAgo(e.lastSeen)}</span>
             </Link>
           ))}

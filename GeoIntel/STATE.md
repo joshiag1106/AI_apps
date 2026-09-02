@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 156 passing (`npm test`) |
+| Tests | 162 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | ~2,020 events from ~3,380 reports; median article age under a week |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
@@ -100,8 +100,14 @@ or start a fresh history — the database is rebuildable, so nothing of value is
 
 Two things left on the bench, both raised and not yet done:
 
-- **Tooltips are invisible on touch.** The dense one-line rows carry pinyin in a `title`
-  attribute, which never appears on iPad or iPhone.
+Done 2026-09-02: **the touch gap is closed.** The dense one-line rows put their
+romanisation in the document rather than only in a `title`, visible below 640px and
+screen-reader-only above it, where the tooltip does the visible work. That repairs an
+accessibility gap at the same time — `title` is unreliable for assistive technology and
+unreachable by keyboard, so the text is now announced on every viewport. The ladder gauge
+is the exception: its label is an overlay on a 16px bar where a second line would break the
+geometry, and it already shows the English, so there the romanisation is announced but not
+drawn.
 
 Done 2026-09-02: **the Chinese typeface is bundled.** Noto Sans SC is self-hosted through
 `next/font`, so rendering no longer depends on the reader's OS and nothing is requested

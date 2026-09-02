@@ -1,5 +1,6 @@
 import { ESCALATION_LADDER } from '@/data/glossary.zh';
 import { ChineseText, chineseTitle } from '@/components/ChineseText';
+import { toPinyin } from '@/lib/lang/pinyin';
 
 /**
  * The PRC official escalation ladder, with the detected rung marked.
@@ -42,6 +43,12 @@ export function LadderGauge({ rung, compact = false }: { rung: number; compact?:
                 <span className={`absolute inset-y-0 left-1.5 flex items-center text-[10px] ${active ? 'text-[#0a0d13] font-semibold' : 'text-muted'}`}>
                   <span className="zh-text" title={chineseTitle(r.zh, r.en)}
                     style={active ? { color: '#0a0d13' } : undefined}>{r.zh}</span>
+                  {/* Unlike the table rows, this one cannot show the romanisation on a
+                      narrow viewport: the label is an overlay on a 16px bar and a second
+                      line would break its geometry. It is also the one place that loses
+                      least on touch, because the English is already beside the Chinese.
+                      So the romanisation is announced rather than drawn. */}
+                  <span className="sr-only" lang="zh-Latn">{toPinyin(r.zh)}</span>
                   <span className="ml-1.5 opacity-70">{r.en}</span>
                 </span>
               </div>
