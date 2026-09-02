@@ -1,88 +1,63 @@
-'use client';
-
-import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { currentUser } from '@/lib/auth';
+import { listWatch, isWatched, type WatchItem } from '@/lib/watchlist/store';
+import { toggleWatchAction, clearWatchAction, adoptWatchAction } from '@/lib/watchlist/actions';
+import { LocalWatchToggle, LocalWatchlistPanel, WatchlistAdopter } from '@/components/WatchlistClient';
 
-const KEY = 'kautilya.watchlist.v1';
+export type { WatchItem };
 
-export interface WatchItem { kind: 'country' | 'dyad'; id: string; label: string }
-
-function read(): WatchItem[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((x) => x?.kind && x?.id && x?.label) : [];
-  } catch {
-    // Private windows and blocked site data both throw here; an empty watchlist is fine.
-    return [];
-  }
-}
-
-function write(items: WatchItem[]) {
-  try { localStorage.setItem(KEY, JSON.stringify(items)); } catch { /* nothing to do */ }
-}
+/**
+ * Watchlists take one of two paths, decided by whether the reader has signed in.
+ *
+ * Signed in, the list lives on the server and follows them between machines. Signed out,
+ * it stays in their browser exactly as before — because the dashboard has always promised
+ * that list "is not tied to an account and does not leave the device", and quietly moving
+ * anonymous readers' pins onto the server would make that false. Signing in is the moment
+ * someone opts into the trade, so it is the moment the server may hold anything.
+ *
+ * The signed-in path needs no client JavaScript at all: it is forms and server actions.
+ */
 
 /** Pin/unpin control. Rendered on country and dyad pages. */
-export function WatchToggle({ item }: { item: WatchItem }) {
-  const [on, setOn] = useState(false);
-  const [ready, setReady] = useState(false);
+export async function WatchToggle({ item }: { item: WatchItem }) {
+  const user = await currentUser();
+  if (!user) return <LocalWatchToggle item={item} />;
 
-  useEffect(() => {
-    setOn(read().some((w) => w.kind === item.kind && w.id === item.id));
-    setReady(true);
-  }, [item.kind, item.id]);
-
-  const toggle = useCallback(() => {
-    const items = read();
-    const has = items.some((w) => w.kind === item.kind && w.id === item.id);
-    const next = has
-      ? items.filter((w) => !(w.kind === item.kind && w.id === item.id))
-      : [...items, item].slice(-24);
-    write(next);
-    setOn(!has);
-  }, [item]);
-
-  // Render nothing until localStorage has been read, so the button never flips on load.
-  if (!ready) return <span className="inline-block h-[26px] w-[92px]" aria-hidden />;
-
+  const on = isWatched(user.id, item.kind, item.id);
   return (
-    <button onClick={toggle}
-      aria-pressed={on}
-      className={`rounded-md border px-2.5 py-1 text-[11.5px] transition-colors ${
-        on
-          ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/12 text-[color:var(--color-accent)]'
-          : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
-      {on ? '★ Watching' : '☆ Watch'}
-    </button>
+    <form action={toggleWatchAction.bind(null, item, !on)}>
+      <button type="submit" aria-pressed={on}
+        className={`rounded-md border px-2.5 py-1 text-[11.5px] transition-colors ${
+          on
+            ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/12 text-[color:var(--color-accent)]'
+            : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
+        {on ? '★ Watching' : '☆ Watch'}
+      </button>
+    </form>
   );
 }
 
 /** The pinned panel on the dashboard. */
-export function WatchlistPanel() {
-  const [items, setItems] = useState<WatchItem[]>([]);
-  const [ready, setReady] = useState(false);
+export async function WatchlistPanel() {
+  const user = await currentUser();
+  if (!user) return <LocalWatchlistPanel />;
 
-  useEffect(() => { setItems(read()); setReady(true); }, []);
-
-  const remove = (it: WatchItem) => {
-    const next = read().filter((w) => !(w.kind === it.kind && w.id === it.id));
-    write(next);
-    setItems(next);
-  };
-
-  if (!ready) return null;
-
+  const items = listWatch(user.id);
   return (
     <div className="panel p-4">
+      {/* Runs once per signed-in page load and is a no-op with nothing to adopt. */}
+      <WatchlistAdopter adopt={adoptWatchAction} />
+
       <div className="flex items-end justify-between gap-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-faint">Pinned on this device</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-faint">Pinned to your account</div>
           <h2 className="mt-0.5 text-[15px] font-semibold tracking-tight">Watchlist</h2>
         </div>
         {items.length > 0 && (
-          <button onClick={() => { write([]); setItems([]); }}
-            className="text-[10.5px] text-faint hover:text-[color:var(--color-high)]">Clear all</button>
+          <form action={clearWatchAction}>
+            <button type="submit"
+              className="text-[10.5px] text-faint hover:text-[color:var(--color-high)]">Clear all</button>
+          </form>
         )}
       </div>
 
@@ -91,8 +66,8 @@ export function WatchlistPanel() {
           Nothing pinned yet. Open a{' '}
           <Link href="/country/IND" className="text-[color:var(--color-accent)] hover:underline">country</Link> or{' '}
           <Link href="/dyad/IND-CHN" className="text-[color:var(--color-accent)] hover:underline">relationship</Link>{' '}
-          and press Watch. The list is stored in this browser only — it is not tied to an account
-          and does not leave the device.
+          and press Watch. Pinned to your account, so the list follows you to any browser
+          you sign in from.
         </p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -103,8 +78,10 @@ export function WatchlistPanel() {
                 className="text-text hover:text-[color:var(--color-accent)]">
                 {it.label}
               </Link>
-              <button onClick={() => remove(it)} aria-label={`Unpin ${it.label}`}
-                className="rounded-full px-1 text-faint hover:text-[color:var(--color-high)]">×</button>
+              <form action={toggleWatchAction.bind(null, it, false)}>
+                <button type="submit" aria-label={`Unpin ${it.label}`}
+                  className="rounded-full px-1 text-faint hover:text-[color:var(--color-high)]">×</button>
+              </form>
             </span>
           ))}
         </div>

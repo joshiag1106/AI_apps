@@ -79,8 +79,9 @@ history.
    product, and now two features are waiting on it: event-page framing analysis, and the
    sentence translations that would supersede the dictionary gloss under every Chinese
    headline. `/ask` would also gain grounded prose over its deterministic results.
-2. **Account-bound watchlists** (device-local today) and email alerts on a ladder-rung
-   jump. The next genuinely useful features rather than the next repair.
+2. **Email alerts on a ladder-rung jump.** Watchlists are account-bound as of
+   2026-09-02, so there is now something to alert *about* — the remaining half of that
+   pair. Needs a delivery decision from Josh (SMTP, or a provider) before it can be built.
 3. **Legal review before charging anyone.** Publisher and aggregator terms of service
    govern commercial redistribution of this material.
 4. Account-bound watchlists (they are device-local today) and email alerts on a
