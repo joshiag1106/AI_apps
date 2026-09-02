@@ -211,6 +211,17 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
   setMeta('last_ingest', new Date().toISOString());
   log(`clustered into ${events.length} events`);
 
+  // Ladder alerts run here because this is the moment new events exist. Failure is
+  // contained: a mail provider being down must not fail the refresh that everything else
+  // on the site depends on.
+  try {
+    const { runAlerts } = await import('@/lib/alerts/run');
+    const r = await runAlerts(events, { log });
+    if (r.jumps) log(`alerts: ${r.jumps} jump(s), ${r.mailed} mailed, ${r.skipped} unconfigured, ${r.failed} failed`);
+  } catch (e) {
+    log(`alerts skipped: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   const byLanguage: Record<string, number> = {};
   for (const a of usable) byLanguage[a.language] = (byLanguage[a.language] ?? 0) + 1;
 

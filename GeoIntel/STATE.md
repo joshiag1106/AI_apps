@@ -79,9 +79,11 @@ history.
    product, and now two features are waiting on it: event-page framing analysis, and the
    sentence translations that would supersede the dictionary gloss under every Chinese
    headline. `/ask` would also gain grounded prose over its deterministic results.
-2. **Email alerts on a ladder-rung jump.** Watchlists are account-bound as of
-   2026-09-02, so there is now something to alert *about* — the remaining half of that
-   pair. Needs a delivery decision from Josh (SMTP, or a provider) before it can be built.
+2. **Send one real alert email.** The pipeline is built and tested but has never put a
+   message in an inbox: no `RESEND_API_KEY` existed, so every run logged what it would
+   have sent. Add a key, a verified sender in `ALERTS_FROM`, and `KAUTILYA_ORIGIN`, then
+   watch a file and let one fire. Until that happens the delivery half is unproven in
+   exactly the way the LLM layer is.
 3. **Legal review before charging anyone.** Publisher and aggregator terms of service
    govern commercial redistribution of this material.
 4. Account-bound watchlists (they are device-local today) and email alerts on a
