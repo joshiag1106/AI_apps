@@ -28,6 +28,42 @@ const IDF_FACTOR = 0.9;
 const IDF_CORPUS_FLOOR = 500;
 /** Bigrams are weak evidence individually, so agreement on them must be near-total. */
 const BIGRAM_MIN = 0.42;
+/**
+ * How much of a cluster a report must match before it can join it.
+ *
+ * This is what stops chaining. Matching a single member is not evidence of belonging to
+ * the group that member is in — A-B and B-C put A and C in one event even when they share
+ * nothing — and in a large corpus those links compound. At 3,336 articles the old rule
+ * produced a 393-article "event" holding 11.8% of all reporting across 41 of 65 tracked
+ * states, scored confidence 71, feeding every one of those countries' risk vectors.
+ *
+ * Expressed as a fraction rather than a count so joining gets harder as a cluster grows,
+ * which is exactly where chaining does its damage: one loose link into a large cluster is
+ * cheap, and matching half of it is not.
+ */
+const COHESION = 0.5;
+/**
+ * Members compared when testing cohesion against a large cluster.
+ *
+ * A sample, because testing every member of a 400-article cluster for every candidate is
+ * quadratic in the thing we are trying to keep small. Drawn evenly across the cluster
+ * rather than from its head, so an early-formed core cannot speak for the whole.
+ */
+const COHESION_SAMPLE = 24;
+/**
+ * How much of each other two clusters must match before they are merged.
+ *
+ * Assignment alone cannot reunite a story that seeded as two clusters, because an article
+ * only ever joins one — so the Nepal-Tibet flood came apart into twenty events. Merging
+ * fixes that without reopening chaining: a single related pair across two clusters is the
+ * very link that welded the 393-article blob, so a merge has to be justified by a share of
+ * all cross pairs rather than by the existence of one.
+ */
+const MERGE_COHESION = 0.5;
+/** Cross-cohesion is a product of two samples, so these stay small deliberately. */
+const MERGE_SAMPLE = 8;
+/** Merging can unlock further merges; bounded so a pathological corpus cannot spin. */
+const MERGE_ROUNDS = 4;
 
 const STOP = new Set([
   'the','a','an','and','or','but','of','in','on','at','to','for','with','by','from','as',
@@ -119,7 +155,12 @@ function related(
  * corpus is thousands of articles per run; this keeps it near-linear by only comparing
  * articles that already share uncommon tokens.
  */
-export function clusterArticles(articles: Article[]): GeoEvent[] {
+export function clusterArticles(
+  articles: Article[],
+  opts: { cohesion?: number } = {},
+): GeoEvent[] {
+  // Overridable so the threshold can be swept against the real corpus rather than guessed.
+  const cohesionMin = opts.cohesion ?? COHESION;
   const n = articles.length;
   if (n === 0) return [];
 
@@ -138,32 +179,106 @@ export function clusterArticles(articles: Article[]): GeoEvent[] {
   const idf = (token: string) => Math.log(scale / Math.max(1, index.get(token)?.length ?? 1));
   const idfMin = IDF_FACTOR * Math.log(scale);
 
-  const uf = new UnionFind(n);
+  const isRelated = (a: number, b: number) =>
+    related(articles[a], articles[b], toks[a], toks[b], idf, idfMin);
+
+  /** Evenly spread sample, so a cluster's founding members do not answer for all of it. */
+  function sampleOf(group: number[]): number[] {
+    if (group.length <= COHESION_SAMPLE) return group;
+    const step = group.length / COHESION_SAMPLE;
+    return Array.from({ length: COHESION_SAMPLE }, (_, k) => group[Math.floor(k * step)]);
+  }
+
+  // Incremental assignment rather than union-find. Union-find merges whole clusters on one
+  // related pair, which is the chaining this rule exists to stop; here a report is placed
+  // in the cluster it best matches, and two clusters are never welded by a single article.
+  const groups: number[][] = [];
+  const clusterOf = new Int32Array(n).fill(-1);
+  const pairKey = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`);
+  const nearMiss = new Set<string>();
+
   for (let i = 0; i < n; i++) {
     const counts = new Map<number, number>();
     for (const t of toks[i]) {
       const posting = index.get(t)!;
       if (posting.length > CAP) continue;
       for (const j of posting) {
-        if (j <= i) continue;
+        if (j >= i) continue;
         counts.set(j, (counts.get(j) ?? 0) + 1);
       }
     }
+
+    // Clusters worth testing: those holding at least one report this one is related to.
+    // Anything with no related member cannot clear a cohesion bar, so it is not tested.
+    const known = new Map<number, boolean>();
+    const candidates = new Set<number>();
     for (const [j, shared] of counts) {
       if (shared < MIN_SHARED_TOKENS) continue;
-      if (uf.find(i) === uf.find(j)) continue;
-      if (related(articles[i], articles[j], toks[i], toks[j], idf, idfMin)) uf.union(i, j);
+      const ok = isRelated(i, j);
+      known.set(j, ok);
+      if (ok) candidates.add(clusterOf[j]);
+    }
+
+    let bestCluster = -1;
+    let bestScore = 0;
+    for (const c of candidates) {
+      const sample = sampleOf(groups[c]);
+      let hits = 0;
+      for (const m of sample) {
+        const cached = known.get(m);
+        if (cached !== undefined ? cached : isRelated(i, m)) hits += 1;
+      }
+      const score = hits / sample.length;
+      if (score >= cohesionMin && score > bestScore) { bestScore = score; bestCluster = c; }
+    }
+
+    if (bestCluster >= 0) {
+      groups[bestCluster].push(i);
+      clusterOf[i] = bestCluster;
+    } else {
+      clusterOf[i] = groups.length;
+      groups.push([i]);
+    }
+
+    // Clusters this report was related to but did not join. These are the only pairs worth
+    // testing for a merge: two clusters with nothing relating them cannot clear the bar.
+    for (const c of candidates) {
+      if (c !== clusterOf[i]) nearMiss.add(pairKey(clusterOf[i], c));
     }
   }
 
-  const groups = new Map<number, Article[]>();
-  for (let i = 0; i < n; i++) {
-    const r = uf.find(i);
-    const g = groups.get(r);
-    if (g) g.push(articles[i]); else groups.set(r, [articles[i]]);
+  /** Share of cross pairs that are related — average linkage, sampled. */
+  function crossCohesion(a: number[], b: number[]): number {
+    const sa = sampleOf(a).slice(0, MERGE_SAMPLE);
+    const sb = sampleOf(b).slice(0, MERGE_SAMPLE);
+    let hits = 0;
+    for (const x of sa) for (const y of sb) if (isRelated(x, y)) hits += 1;
+    return hits / (sa.length * sb.length);
   }
 
-  return [...groups.values()]
+  // Union-find over clusters, not articles. The chaining risk it used to carry is gone,
+  // because what it now unions is a merge already justified across the whole of both.
+  const cf = new UnionFind(groups.length);
+  for (let round = 0; round < MERGE_ROUNDS; round++) {
+    let mergedAny = false;
+    for (const key of nearMiss) {
+      const [x, y] = key.split(':').map(Number);
+      const ra = cf.find(x), rb = cf.find(y);
+      if (ra === rb) continue;
+      if (crossCohesion(groups[ra], groups[rb]) < MERGE_COHESION) continue;
+      groups[ra] = groups[ra].concat(groups[rb]);
+      groups[rb] = [];
+      cf.union(ra, rb);
+      // union() may root the merged pair at either side; keep the members where they are.
+      if (cf.find(ra) !== ra) { groups[cf.find(ra)] = groups[ra]; groups[ra] = []; }
+      mergedAny = true;
+    }
+    if (!mergedAny) break;
+  }
+
+  return groups
+    .filter((g) => g.length > 0)
+    .map((g) => g.map((i) => articles[i]))
     .map(buildEvent)
     .sort((a, b) => Date.parse(b.lastSeen) - Date.parse(a.lastSeen));
 }

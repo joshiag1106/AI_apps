@@ -59,6 +59,7 @@ No API keys are required. The engine is fully deterministic and runs without any
 | `npm run ingest -- --health` | Check every configured feed for real content. |
 | `npm run stats` | Corpus quality report: freshness, cluster sizes, confidence distribution, ladder hits. |
 | `npx tsx scripts/cluster-gates.ts` | What each clustering gate costs. Run before changing a threshold. |
+| `npx tsx scripts/cluster-shape.ts` | Cluster sizes and the members behind the largest. Run after. |
 | `KAUTILYA_AUTO_INGEST=1 npm run dev` | Refresh the corpus in the background every 30 minutes. |
 | `npm test` | 61 unit tests over the analytical core. |
 | `npm run build` | Production build. |
@@ -242,12 +243,14 @@ feeds; that is other people's infrastructure.
    results back to 2003, and a corpus spread across decades cannot corroborate itself. The
    consequence is that this system cannot answer historical questions; it reports what is
    being said now.
-8. **Clustering is single-link and cannot be loosened casually.** Events are formed by
-   union-find over pairwise similarity, which is transitive: one loose link welds two
-   unrelated clusters together. The gates in `lib/verify/cluster.ts` hold the corpus below
-   that percolation threshold, and relaxing any of them in isolation collapses large parts
-   of the corpus into one blob — measured, not theorised. Run `npx tsx scripts/cluster-gates.ts`
-   before changing a threshold, and check the largest cluster afterwards.
+8. **A very large story divides by angle rather than sitting in one event.** Clustering
+   admits a report only where it matches a share of the cluster, so a disaster covered from
+   many directions separates — the dead and missing in one event, foreign nationals and
+   relief in another. Each is separately corroborated, which is the intent, but a reader
+   expecting one entry per incident will find several. Before changing any threshold in
+   `lib/verify/cluster.ts`, run `npx tsx scripts/cluster-gates.ts`, then check both failure
+   directions: the largest cluster (read its members, do not trust the size) and whether a
+   known-large story has shattered. `tests/cohesion.test.ts` guards both.
 
 Full detail, including the exact scoring weights, is at `/methodology` in the running app
 and in `docs/specs/2026-08-29-kautilya-design.md`.
