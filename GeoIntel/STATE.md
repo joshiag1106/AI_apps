@@ -56,19 +56,22 @@ every known limitation are on `/methodology` in the running app and in `README.m
 3. **No penetration test and no screen-reader pass.** The security and contrast work was
    audited and is covered by tests, but neither of those two exercises was done.
 
-## One piece of housekeeping left
+## History was scrubbed on 2026-09-02
 
-Commit `e3de7cc` contains a SQLite WAL blob holding the test account's email and bcrypt
-hash — `.gitignore` originally missed the `-wal`/`-shm` sidecars. Nothing was exposed:
-there is no remote and the repo has never been pushed. The sidecars are untracked now.
-**Before ever adding a remote**, either scrub it:
+The SQLite WAL and SHM sidecars were tracked before `.gitignore` covered them, and the
+blob in three of those commits held two bcrypt password hashes and two email addresses.
+Nothing was ever exposed — this repo has no remote and has never been pushed, and the copy
+published in the AI_apps monorepo has always been source-only for exactly this reason.
 
-```bash
-git filter-branch --index-filter \
-  'git rm --cached --ignore-unmatch kautilya.db-wal kautilya.db-shm' --prune-empty HEAD
-```
+It is gone now. `git filter-branch` removed `kautilya.db`, `-wal` and `-shm` from every
+commit, `refs/original` was deleted and the objects garbage-collected. Verified rather than
+assumed: no database object is reachable from any ref, and a scan of *every* remaining blob
+in the repository finds no bcrypt hash at all. HEAD's tree hash is unchanged, so no working
+content moved — only the history around it. `.git` went from roughly 13 MB to 400 KB.
 
-or start a fresh history — the database is rebuildable, so nothing of value is lost.
+Every commit hash before 2026-09-02 therefore differs from what earlier notes and commit
+messages refer to. The published monorepo is unaffected, because it never carried this
+history.
 
 ## Where to go next, in the order I would do it
 
