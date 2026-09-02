@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-08-30.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-02.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,9 +21,9 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 147 passing (`npm test`) |
+| Tests | 151 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | ~1,325 events from ~2,400 reports; median article age under a week |
+| Corpus at last run | ~2,020 events from ~3,380 reports; median article age under a week |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -76,8 +76,9 @@ or start a fresh history — the database is rebuildable, so nothing of value is
    product, and now two features are waiting on it: event-page framing analysis, and the
    sentence translations that would supersede the dictionary gloss under every Chinese
    headline. `/ask` would also gain grounded prose over its deterministic results.
-2. **Give clustering a cohesion rule** — see the section below. This is the live lead on
-   corroboration and the most interesting problem left in the codebase.
+2. **Bundle webfonts.** The app loads none, so Chinese rendering depends on the viewer's
+   OS — fine on macOS via PingFang SC, degraded on Windows, wrong on some Linux. Designed
+   but not built; see the bench items below.
 3. **Legal review before charging anyone.** Publisher and aggregator terms of service
    govern commercial redistribution of this material.
 4. Account-bound watchlists (they are device-local today) and email alerts on a
@@ -107,45 +108,40 @@ Two things left on the bench, both raised and not yet done:
 - **Tooltips are invisible on touch.** The dense one-line rows carry pinyin in a `title`
   attribute, which never appears on iPad or iPhone.
 
-## The clustering lead — read this before touching `lib/verify/cluster.ts`
+## Clustering — solved 2026-09-02, and how to keep it solved
 
-Corroboration was diagnosed properly on 2026-08-30 and the intake half was fixed. What
-remains is a real algorithmic problem, and the obvious fix for it is already known to fail.
+The corroboration story that ran through August ended here. Recap, because the shape of it
+matters more than the fix.
 
-**What was wrong and is now fixed.** Google News search ranks by relevance over all time,
-not recency, and the queries carried no date constraint — so `台海 军演` returned a corpus
-whose median item was 242 days old, every `Taiwan Strait PLA incursion` result was over a
-month old, and the corpus spanned 23 years back to 2003. Two reports only group into one
-event if they fall within 60 hours of each other, so that corpus could not corroborate
-itself: adding feeds had never moved the number because it added more archive. Intake is
-now pinned to seven days and storage to ninety. Corroboration depth went from a mean of
-1.43 articles/event to 2.00 in the steady-state band, largest cluster 49 → 117.
+**What was wrong.** Union-find merged clusters on a single related pair, so A-B and B-C put
+A and C in one event regardless. That is survivable in a small corpus. On 2026-09-02, with
+the corpus grown to 3,336 articles, it produced one event holding 393 articles — 11.8% of
+all reporting, spanning 41 of 65 tracked states, scored confidence 71 and feeding inflated
+escalation into all 41 countries' risk vectors. Nothing had regressed; the similarity graph
+had crossed its percolation threshold.
 
-**What is still wrong.** With time fixed, the binding constraint is the `domain` gate:
-3,299 pairs agree on time, actors and text and are rejected purely because their domain
-labels differ. That label is a keyword tally that silently falls back to `'Diplomatic'`
-when nothing matches, so 59% of the corpus carries it by default rather than by evidence —
-90% of those blocked pairs involve it, and one Nepal-Tibet flood was split across
-Diplomatic and Military more than ten ways.
+**Why no threshold fixed it.** Two attempts in August both failed and are kept in
+`docs/experiments/2026-08-30-domain-gate-failed.patch`. An algorithm with no notion of
+belonging to a group cannot be tuned into having one.
 
-**Why the obvious fix fails.** Forgiving the mismatch when either label is a fallback
-produced a single **601-article cluster** spanning 40 countries — Russia/Ukraine, a Kashmir
-film festival, Trump's trade wars and a Korean dating show in one event. Requiring strong
-textual evidence for those merges instead still gave 608. Both were reverted.
-`docs/experiments/2026-08-30-domain-gate-failed.patch` holds the second attempt; the first
-is the same patch minus the `!domainDisagrees &&` guard on the hotspot rule.
+**The fix.** Membership is decided against the cluster, not against a member: a report
+joins where it matches at least `COHESION` of an evenly-spread sample, so joining gets
+harder as a cluster grows. A second pass merges clusters on average linkage across sampled
+cross pairs, because assignment alone cannot reunite a story that seeded twice — without
+it the Nepal flood came apart into twenty events.
 
-The reason is structural: clustering is union-find over pairwise similarity, which is
-**single-link and transitive**, so one loose pair welds two clusters together. The domain
-gate was never a brake by design — it was holding average node degree below the percolation
-threshold. Any relaxation in isolation tips it over, so no threshold tweak will work.
+Largest event went 393 articles / 41 actors to 57 / 4, and it reads as one story. Multi-
+article events 14% to 20%. 3,336 articles cluster in 270ms.
 
-The fix has to be a **cohesion rule**: require a joining article to match the cluster it is
-joining — a centroid, or a minimum share of existing members — rather than any single member.
-That is a genuine redesign of `clusterArticles`, not a parameter change.
+**If you touch this, measure both directions.** Blobbing and fragmentation are opposite
+failures and a metric moving is not evidence: in August the mean articles/event *improved*
+to 2.02 while the output collapsed into a 601-item blob. Run
+`npx tsx scripts/cluster-gates.ts` for what each gate costs and `scripts/cluster-shape.ts` for
+what came out, **read the members of the largest cluster**, then check that a known-large
+real story has not shattered.
+`tests/cohesion.test.ts` holds both failure modes as regressions.
 
-**Measure before and after, always.** `npx tsx scripts/cluster-gates.ts` reports what each
-gate costs (`related()` short-circuits, so its own rejections tell you nothing). Then check
-the largest cluster: the mean articles/event *improved* to 2.02 while the output was
-collapsing into that 601-item blob, so the headline metric will lie to you. Read the
-members.
+One known property, deliberate rather than residual: a very large story divides by angle
+rather than staying in one event — the flood splits the dead and missing from foreign
+nationals and relief. Each piece is separately corroborated, which is more useful than one
+undifferentiated cluster.
