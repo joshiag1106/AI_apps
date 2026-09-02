@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 151 passing (`npm test`) |
+| Tests | 156 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | ~2,020 events from ~3,380 reports; median article age under a week |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
@@ -76,9 +76,8 @@ or start a fresh history — the database is rebuildable, so nothing of value is
    product, and now two features are waiting on it: event-page framing analysis, and the
    sentence translations that would supersede the dictionary gloss under every Chinese
    headline. `/ask` would also gain grounded prose over its deterministic results.
-2. **Bundle webfonts.** The app loads none, so Chinese rendering depends on the viewer's
-   OS — fine on macOS via PingFang SC, degraded on Windows, wrong on some Linux. Designed
-   but not built; see the bench items below.
+2. **Account-bound watchlists** (device-local today) and email alerts on a ladder-rung
+   jump. The next genuinely useful features rather than the next repair.
 3. **Legal review before charging anyone.** Publisher and aggregator terms of service
    govern commercial redistribution of this material.
 4. Account-bound watchlists (they are device-local today) and email alerts on a
@@ -101,12 +100,17 @@ or start a fresh history — the database is rebuildable, so nothing of value is
 
 Two things left on the bench, both raised and not yet done:
 
-- **Bundled webfonts.** The app loads none, so Chinese rendering depends on the viewer's
-  OS. Fine on macOS via PingFang SC; degrades on Windows and can be wrong on Linux. The
-  plan was `next/font/google` self-hosting Noto Sans SC (202 unicode-range subsets, ~100-200KB
-  per page, not the full 2.4MB) plus a `postinstall` that reports what was bundled.
 - **Tooltips are invisible on touch.** The dense one-line rows carry pinyin in a `title`
   attribute, which never appears on iPad or iPhone.
+
+Done 2026-09-02: **the Chinese typeface is bundled.** Noto Sans SC is self-hosted through
+`next/font`, so rendering no longer depends on the reader's OS and nothing is requested
+from Google at runtime. It is not free — measured at ~619 KB on the methodology page and
+~1.4 MB on a page dense with Chinese, cached after the first visit. Two weights ship
+because Chinese headings render semibold; dropping to one halves the payload at the cost
+of synthetic bold, which CJK tolerates badly. `npm run fonts` reports what is bundled and
+runs on postinstall, guarded with `|| true` so a production install without `tsx` cannot
+fail on it.
 
 ## Clustering — solved 2026-09-02, and how to keep it solved
 

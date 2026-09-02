@@ -1,6 +1,6 @@
 {
   "name": "kautilya",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3111",
@@ -10,7 +10,9 @@
     "seed": "tsx scripts/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "stats": "tsx scripts/stats.ts"
+    "stats": "tsx scripts/stats.ts",
+    "fonts": "tsx scripts/fonts.ts",
+    "postinstall": "tsx scripts/fonts.ts || true"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
