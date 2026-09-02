@@ -60,6 +60,7 @@ No API keys are required. The engine is fully deterministic and runs without any
 | `npm run stats` | Corpus quality report: freshness, cluster sizes, confidence distribution, ladder hits. |
 | `npx tsx scripts/cluster-gates.ts` | What each clustering gate costs. Run before changing a threshold. |
 | `npx tsx scripts/cluster-shape.ts` | Cluster sizes and the members behind the largest. Run after. |
+| `npm run llm:check` | Send one real analysis and report what it cost. Needs a key; charges nothing without one. |
 | `KAUTILYA_AUTO_INGEST=1 npm run dev` | Refresh the corpus in the background every 30 minutes. |
 | `npm test` | 61 unit tests over the analytical core. |
 | `npm run build` | Production build. |

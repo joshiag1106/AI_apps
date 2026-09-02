@@ -22,8 +22,16 @@ export function getLlm(): Anthropic {
   if (!llmEnabled()) {
     throw new Error('LLM layer is not configured. Set ANTHROPIC_API_KEY to enable it.');
   }
-  // Zero-arg constructor: the SDK resolves ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN,
-  // or a stored `ant auth login` profile, in that order.
-  _client ??= new Anthropic();
+  // Otherwise a zero-arg constructor: the SDK resolves ANTHROPIC_API_KEY,
+  // ANTHROPIC_AUTH_TOKEN, or a stored `ant auth login` profile, in that order.
+  //
+  // An identity-linked key additionally has to say which workspace it is acting in, and
+  // the API rejects the request outright without it. Sent as a default header so every
+  // call carries it; harmless when the key is not identity-linked and the variable is
+  // unset, which is why it is not required.
+  const workspace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+  _client ??= new Anthropic(
+    workspace ? { defaultHeaders: { 'anthropic-workspace-id': workspace } } : {},
+  );
   return _client;
 }
