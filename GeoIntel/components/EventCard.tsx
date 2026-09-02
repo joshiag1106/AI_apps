@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui';
 import { timeAgo, confidenceBand, escalationLabel, FLAG_LABEL } from '@/lib/format';
 import { countryName } from '@/lib/queries';
-import { ChineseText, chineseTitle } from '@/components/ChineseText';
+import { ChineseText, ChineseCompact, chineseTitle } from '@/components/ChineseText';
 import { glossHeadline } from '@/lib/analyze/score';
 import { dictionaryGloss } from '@/lib/lang/dictionary';
 import { hasChinese } from '@/lib/lang/pinyin';
@@ -91,7 +91,9 @@ export function EventRow({ event }: { event: GeoEvent }) {
       {/* One line by design, so the romanisation and meaning ride on hover instead of
           stacking and tripling the row height. */}
       <span className="min-w-0 flex-1 truncate text-[12.5px] text-text group-hover:text-[color:var(--color-accent)]"
-        title={chineseTitle(event.title, titleGloss(event.title))}>{event.title}</span>
+        title={chineseTitle(event.title, titleGloss(event.title))}>
+        <ChineseCompact text={event.title} english={titleGloss(event.title)} />
+      </span>
       {event.languages.includes('zh') && <span className="zh-text text-[10px] flex-none">中</span>}
       <ConfidenceChip value={event.confidence} />
       <time dateTime={event.lastSeen}
