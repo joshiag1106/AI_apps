@@ -36,7 +36,10 @@
   --color-zh:         #ff8f7a;
   --color-verified:   #3fb6a8;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  /* The bundled face sits ahead of the system names it replaces, and they stay behind it:
+     if the font ever fails to load the page falls back to today's behaviour rather than
+     to a face with no Han coverage. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, var(--font-zh), "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -90,7 +93,7 @@ body {
 /* Chinese-language source text gets its own treatment so an analyst can see at a
    glance which claims rest on PRC-language reporting. */
 @utility zh-text {
-  font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", var(--font-sans);
+  font-family: var(--font-zh), "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", var(--font-sans);
   color: var(--color-zh);
 }
 

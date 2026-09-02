@@ -237,13 +237,22 @@ feeds; that is other people's infrastructure.
    Only account-bound metering is real enforcement. This is stated in the product too.
 6. **Redistribution terms.** Publisher and aggregator terms of service govern commercial
    use of source material. Review them before charging subscribers.
-7. **The corpus is a rolling window, not an archive.** Aggregator queries ask for the last
+7. **The Chinese typeface is bundled, and it is not small.** Chinese rendering used to
+   depend on the reader's operating system — acceptable on macOS via PingFang SC, worse on
+   Windows, and on Linux frequently a fallback with the wrong regional glyph forms. Noto
+   Sans SC is now self-hosted, so every reader sees the same characters and nothing is
+   requested from a third party. The cost is real: split across ~200 unicode ranges a
+   reader fetches only what a page uses, measured at ~619 KB for the methodology tables and
+   ~1.4 MB for a page dense with Chinese headlines, cached after the first visit. Two
+   weights are bundled because Chinese headings render semibold; dropping to one would
+   halve it at the cost of synthetic bold, which CJK tolerates badly.
+8. **The corpus is a rolling window, not an archive.** Aggregator queries ask for the last
    seven days and stored articles are dropped after ninety, because Google News search
    ranks by relevance over all time rather than by recency — left unconstrained it returned
    results back to 2003, and a corpus spread across decades cannot corroborate itself. The
    consequence is that this system cannot answer historical questions; it reports what is
    being said now.
-8. **A very large story divides by angle rather than sitting in one event.** Clustering
+9. **A very large story divides by angle rather than sitting in one event.** Clustering
    admits a report only where it matches a share of the cluster, so a disaster covered from
    many directions separates — the dead and missing in one event, foreign nationals and
    relief in another. Each is separately corroborated, which is the intent, but a reader
