@@ -48,10 +48,7 @@ every known limitation are on `/methodology` in the running app and in `README.m
 
 ## Three things that are NOT verified — read before relying on them
 
-1. **The LLM layer has never made a live API call.** No `ANTHROPIC_API_KEY` existed in the
-   build environment. Its schema, cache and disabled paths are tested; the request itself
-   has never been sent. Exercise it once against a real key before trusting it.
-2. **The Dockerfile has never been built.** Docker was not installed. The standalone Node
+1. **The Dockerfile has never been built.**
    path in `README.md` *was* tested end to end and works.
 3. **No penetration test and no screen-reader pass.** The security and contrast work was
    audited and is covered by tests, but neither of those two exercises was done.
@@ -75,10 +72,10 @@ history.
 
 ## Where to go next, in the order I would do it
 
-1. **Run the LLM layer once with a real key.** Still the only unproven part of the
-   product, and now two features are waiting on it: event-page framing analysis, and the
-   sentence translations that would supersede the dictionary gloss under every Chinese
-   headline. `/ask` would also gain grounded prose over its deterministic results.
+1. **Legal review before charging anyone.** Publisher and aggregator terms of service
+   govern commercial redistribution of this material, and the CC-CEDICT dictionary carries
+   a CC BY-SA 4.0 obligation. This matters more now that Desk Pro has features attached to
+   it.
 2. **Send one real alert email.** The pipeline is built and tested but has never put a
    message in an inbox: no `RESEND_API_KEY` existed, so every run logged what it would
    have sent. Add a key, a verified sender in `ALERTS_FROM`, and `KAUTILYA_ORIGIN`, then

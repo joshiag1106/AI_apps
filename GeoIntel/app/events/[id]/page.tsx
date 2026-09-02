@@ -42,8 +42,33 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
    * one and cached it. Absent a key — or before any analysis has been run — this is null
    * everywhere and the keyword gloss carries the English on its own.
    */
-  const translationFor = (original: string): string | null =>
-    priorAnalysis?.headline_translations.find((t) => t.original === original)?.english ?? null;
+  /**
+   * Match a stored headline to the model's translation of it.
+   *
+   * Not an exact string comparison. The model echoes the headline back as `original`, and
+   * anything it normalises along the way — a collapsed space, a dropped full-width
+   * bracket, a trimmed outlet suffix — silently broke the match and dropped the row back
+   * to the dictionary gloss. That failed quietly and looked like the LLM had simply not
+   * translated that headline: on the first live run, 仁爱礁 rendered as
+   * "surname Zuo · beach · benevolence · reef" on the same page where the model had
+   * correctly written "Ren'ai Reef".
+   */
+  const normalise = (s: string) => s.replace(/\s+/g, '').replace(/[\u3000-\u303f\uff00-\uffef]/g, '');
+  const translationFor = (original: string): string | null => {
+    const list = priorAnalysis?.headline_translations ?? [];
+    const exact = list.find((t) => t.original === original);
+    if (exact) return exact.english;
+    const target = normalise(original);
+    if (!target) return null;
+    const loose = list.find((t) => {
+      const candidate = normalise(t.original);
+      // Either may be the truncation of the other, so containment both ways.
+      return candidate === target
+        || (candidate.length > 8 && target.length > 8
+            && (candidate.includes(target) || target.includes(candidate)));
+    });
+    return loose?.english ?? null;
+  };
 
   // Glossary terms actually present across this event's Chinese-language reporting.
   const glossHits = [...new Set(articles.flatMap((a) => a.glossed))]

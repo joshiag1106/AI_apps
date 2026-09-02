@@ -72,18 +72,34 @@ function writeCache(key: string, eventId: string, value: EventAnalysis) {
     .run(key, eventId, LLM_MODEL, JSON.stringify(value), new Date().toISOString());
 }
 
+/** What one call actually consumed, so the cost of the feature is observable. */
+export interface LlmUsage { input: number; output: number; cacheRead: number; cacheWrite: number }
+
 export interface AnalyseResult {
   analysis: EventAnalysis | null;
   cached: boolean;
   /** Set when the layer could not produce an analysis. Never thrown at the UI. */
   unavailable?: 'no_key' | 'refused' | 'error';
   detail?: string;
+  usage?: LlmUsage;
 }
 
 /**
  * Compare how sources frame one event. Cached by (model, event, article set), so a
  * second viewer of the same event costs nothing and the result stays stable.
  */
+/**
+ * Whether a model accepts the server-side fallback beta.
+ *
+ * Discovered the hard way on the first live call: the layer was written against Opus and
+ * sending `fallbacks` to Sonnet fails the entire request with a 400, so an untested
+ * parameter took down a feature that would otherwise have worked. The API is the authority
+ * here, not this list — anything unknown simply goes without.
+ */
+function supportsServerFallback(model: string): boolean {
+  return model.startsWith('claude-opus-');
+}
+
 export async function analyseEvent(event: GeoEvent, articles: Article[]): Promise<AnalyseResult> {
   if (!llmEnabled()) return { analysis: null, cached: false, unavailable: 'no_key' };
 
@@ -117,10 +133,14 @@ export async function analyseEvent(event: GeoEvent, articles: Article[]): Promis
       max_tokens: 16000,
       // Adaptive thinking: comparing framings across languages is genuinely non-trivial.
       thinking: { type: 'adaptive' },
-      // Server-side fallback so a policy decline is rescued inside the same call
-      // rather than surfacing to the reader as a dead panel.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
+      // Server-side fallback rescues a policy decline inside the same call rather than
+      // surfacing to the reader as a dead panel — but not every model accepts it, and the
+      // API rejects the whole request when it does not. Sent only where supported; where
+      // it is not, a decline still lands on the `refusal` branch below and is reported
+      // rather than crashing, which is the behaviour that actually matters.
+      ...(supportsServerFallback(LLM_MODEL)
+        ? { betas: ['server-side-fallback-2026-07-01' as const], fallbacks: 'default' as const }
+        : {}),
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userContent }],
       output_config: { format: zodOutputFormat(EventAnalysisSchema) },
@@ -136,7 +156,17 @@ export async function analyseEvent(event: GeoEvent, articles: Article[]): Promis
     }
 
     writeCache(key, event.id, res.parsed_output);
-    return { analysis: res.parsed_output, cached: false };
+    const u = res.usage as unknown as Record<string, number> | undefined;
+    return {
+      analysis: res.parsed_output,
+      cached: false,
+      usage: {
+        input: u?.input_tokens ?? 0,
+        output: u?.output_tokens ?? 0,
+        cacheRead: u?.cache_read_input_tokens ?? 0,
+        cacheWrite: u?.cache_creation_input_tokens ?? 0,
+      },
+    };
   } catch (e) {
     // The deterministic analysis on the page must survive an LLM failure untouched.
     console.error('[llm] analyseEvent failed', e);

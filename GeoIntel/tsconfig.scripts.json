@@ -1,0 +1,13 @@
+{
+  // Scripts run under tsx, outside Next's React Server Component build, where the
+  // `server-only` package deliberately throws on import. That guard is doing its job in
+  // the app and must stay — so it is stubbed here rather than removed there, exactly as
+  // vitest.config.ts already does for tests.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"],
+      "server-only": ["./tests/stubs/server-only.ts"]
+    }
+  }
+}
