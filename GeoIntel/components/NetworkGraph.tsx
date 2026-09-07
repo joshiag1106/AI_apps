@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { nodeHref, nodeLabel, personBox, type EgoView } from '@/lib/graph/ego';
+import { countryName } from '@/lib/queries';
 import { radialLayout } from '@/lib/graph/layout';
 import { edgeKey, isPersonNode } from '@/lib/graph/build';
 
@@ -101,7 +102,20 @@ export function NetworkGraph({ view, trail, topEvents }: {
           </>
         );
         return isFocus ? <g key={n.id}>{circle}</g> : (
-          <Link key={n.id} href={nodeHref(n.id, trail)}>{circle}</Link>
+          // The node's own name, spelled out. Without this the link's name is whatever the
+          // SVG <text> children concatenate to — "CHN68", a country code fused to a score
+          // with nothing to say which is which or that the number is a count of events.
+          // The <title> above is a tooltip and does not name the link.
+          <Link
+            key={n.id}
+            href={nodeHref(n.id, trail)}
+            // countryName, not the drawn label: the circle says CHN because three
+            // characters is what fits in it, and a reader hearing "C H N" is being handed
+            // the layout's constraint instead of the country. Mandala already says China.
+            aria-label={`${person ? label : countryName(n.id)}, ${person ? 'official' : 'state'}`
+              + (edge ? `, ${edge.events} shared event${edge.events === 1 ? '' : 's'}` : '')
+              + `. Open ${person ? 'their' : 'its'} network.`}
+          >{circle}</Link>
         );
       })}
     </svg>

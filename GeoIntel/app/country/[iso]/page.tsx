@@ -88,7 +88,7 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
             <Panel className="p-4">
               <SectionTitle kicker="Six-vector profile">Risk composition</SectionTitle>
               <div className="flex justify-center">
-                <Radar axes={VECTORS.map((v) => ({ label: v.slice(0, 4), value: risk.vectors[v] }))} />
+                <Radar axes={VECTORS.map((v) => ({ label: v, value: risk.vectors[v] }))} />
               </div>
               <div className="mt-3">
                 <BarList items={VECTORS.map((v) => ({ label: v, value: risk.vectors[v] }))} max={100} />

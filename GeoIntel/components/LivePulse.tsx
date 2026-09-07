@@ -61,20 +61,48 @@ export function LivePulse({ initialVersion }: { initialVersion: string }) {
 
   const justUpdated = updatedAt != null && Date.now() - updatedAt < 30_000;
 
+  // The visible word is terse because it sits in a crowded header. The announced sentence
+  // has room to say what actually happened, and it needs it: it arrives without the dot,
+  // the position or the layout that make one word enough to a reader who can see them.
+  const spoken = live
+    ? justUpdated
+      ? 'New reporting has landed and this page has just updated itself.'
+      : 'Live: watching for new reporting.'
+    : 'Offline: cannot reach the server, so the reporting below may be out of date.';
+
   return (
-    <span className="hidden items-center gap-1.5 text-[10.5px] text-faint sm:inline-flex"
-      title={live
-        ? 'Watching for corpus refreshes. The page updates itself when new reporting lands.'
-        : 'Cannot reach the server; the reporting below may be out of date.'}>
+    <>
+      {/*
+        The announcement — deliberately a separate element from the indicator.
+
+        router.refresh() replaces the server-rendered content underneath the reader. This
+        component exists because "a page that silently rewrites itself is unsettling and it
+        hides the thing an analyst most needs to know", per the note at the top of this
+        file. That was solved for a reader who can watch the dot change, and not at all for
+        one who cannot: they got new reporting with nothing to say anything had moved.
+
+        It is not simply role="status" on the indicator because the indicator is
+        `display:none` below 640px, which takes it out of the accessibility tree too.
+        Hiding a dot for want of header room is a layout decision and it should not also
+        decide whether the page tells you it changed. role="status" is polite, so it waits
+        for a pause rather than cutting across whatever is being read.
+      */}
+      <span role="status" className="sr-only">{spoken}</span>
       <span
         aria-hidden
-        className="h-1.5 w-1.5 rounded-full"
-        style={{
-          background: live ? 'var(--color-verified)' : 'var(--color-severe)',
-          boxShadow: justUpdated ? '0 0 0 3px color-mix(in srgb, var(--color-verified) 30%, transparent)' : undefined,
-        }}
-      />
-      {live ? (justUpdated ? 'Updated just now' : 'Live') : 'Offline'}
-    </span>
+        className="hidden items-center gap-1.5 text-[10.5px] text-faint sm:inline-flex"
+        title={live
+          ? 'Watching for corpus refreshes. The page updates itself when new reporting lands.'
+          : 'Cannot reach the server; the reporting below may be out of date.'}>
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{
+            background: live ? 'var(--color-verified)' : 'var(--color-severe)',
+            boxShadow: justUpdated ? '0 0 0 3px color-mix(in srgb, var(--color-verified) 30%, transparent)' : undefined,
+          }}
+        />
+        {live ? (justUpdated ? 'Updated just now' : 'Live') : 'Offline'}
+      </span>
+    </>
   );
 }

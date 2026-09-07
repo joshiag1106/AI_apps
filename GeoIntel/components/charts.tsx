@@ -5,8 +5,10 @@
 */
 
 export function Sparkline({
-  data, width = 220, height = 40, color = 'var(--color-accent)', fill = true,
-}: { data: number[]; width?: number; height?: number; color?: string; fill?: boolean }) {
+  data, width = 220, height = 40, color = 'var(--color-accent)', fill = true, label,
+}: { data: number[]; width?: number; height?: number; color?: string; fill?: boolean;
+  /** What the series measures. Only the accessible name uses it; nothing is drawn. */
+  label?: string }) {
   if (!data.length) return <svg width={width} height={height} aria-hidden />;
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
@@ -16,8 +18,15 @@ export function Sparkline({
   const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const area = `${line} L${width},${height} L0,${height} Z`;
   const gid = `sg-${Math.abs(data.reduce((a, b, i) => a + b * (i + 1), 0)) % 100000}`;
+  // "trend" named the chart type and said nothing about the data, which is the whole
+  // content of the mark. A reader who cannot see the line needs the shape of it: where it
+  // started, where it ended, and the extremes it passed through.
+  const first = data[0], last = data[data.length - 1];
+  const direction = last > first ? 'rising' : last < first ? 'falling' : 'flat';
+  const description = `${label ?? 'Trend'}: ${direction} over ${data.length} points, `
+    + `from ${first} to ${last}. Range ${min} to ${max}.`;
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="trend">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={description}>
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.28" />
@@ -77,8 +86,13 @@ export function Radar({ axes, size = 210 }: { axes: { label: string; value: numb
     return [cx + Math.cos(a) * R * frac, cy + Math.sin(a) * R * frac] as const;
   };
   const poly = axes.map((ax, i) => pt(i, Math.max(0.02, ax.value / 100)).join(',')).join(' ');
+  // The drawn label is clipped to four characters to fit the spokes; the announced one is
+  // not. Truncating lives HERE rather than at the caller for that reason — a caller that
+  // passed 'Mili' to make the drawing fit was also deciding what a screen reader hears.
+  const description = 'Risk vectors, each scored 0 to 100: '
+    + axes.map((ax) => `${ax.label} ${Math.round(ax.value)}`).join(', ') + '.';
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="risk vectors">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={description}>
       {[0.25, 0.5, 0.75, 1].map((f) => (
         <polygon key={f} points={axes.map((_, i) => pt(i, f).join(',')).join(' ')}
           fill="none" stroke="var(--color-line)" strokeWidth="1" />
@@ -94,7 +108,7 @@ export function Radar({ axes, size = 210 }: { axes: { label: string; value: numb
         return (
           <text key={ax.label} x={x} y={y} textAnchor="middle" dominantBaseline="central"
             fontSize="9" fill="var(--color-muted)" className="uppercase tracking-wider">
-            {ax.label}
+            {ax.label.slice(0, 4)}
           </text>
         );
       })}
@@ -130,8 +144,13 @@ export function Ribbon({ parts }: { parts: { label: string; value: number; color
 export function Columns({ data, height = 90, color = 'var(--color-high)' }: { data: { date: string; value: number }[]; height?: number; color?: string }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const w = 100 / data.length;
+  const peak = data.reduce((a, b) => (b.value > a.value ? b : a), data[0] ?? { date: '', value: 0 });
+  const description = data.length
+    ? `Daily tension, ${data.length} days ending ${data[data.length - 1].date}. `
+      + `Peak ${peak.value} on ${peak.date}; latest ${data[data.length - 1].value}.`
+    : 'Daily tension. No data in this window.';
   return (
-    <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full" style={{ height }} role="img" aria-label="90-day tension">
+    <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full" style={{ height }} role="img" aria-label={description}>
       {data.map((d, i) => {
         const h = (d.value / max) * (height - 2);
         return <rect key={d.date} x={i * w} y={height - h} width={w * 0.82} height={Math.max(0.6, h)}

@@ -131,6 +131,30 @@ body {
   border-radius: 3px;
 }
 
+/* The skip link (WCAG 2.4.1), off-screen until it is focused.
+
+   Written here rather than as `sr-only focus:not-sr-only` utilities because that pairing
+   silently failed: the focus variant lost to `sr-only`, leaving `clip-path: inset(50%)`
+   applied while focused. The link still worked — it was the first tab stop and it moved
+   focus to <main> — so every check short of reading the computed style passed. What it
+   did not do was become VISIBLE, which is the half a sighted keyboard user needs, and a
+   skip link nobody can see is a skip link nobody uses.
+
+   Moving it off-screen by position keeps it in the accessibility tree, unlike
+   display:none or visibility:hidden, both of which would remove it from the tab order
+   entirely and leave a link that cannot be reached at all. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+}
+
 /* Thin, unobtrusive scrollbars — a dense dashboard has a lot of them. */
 * { scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
 *::-webkit-scrollbar { width: 8px; height: 8px; }

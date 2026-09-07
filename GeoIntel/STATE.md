@@ -92,8 +92,12 @@ One thing review left open, needing a decision rather than a fix:
    "Where to go next".
 2. **The Dockerfile has never been built.** Docker was not installed. The standalone Node
    path in `README.md` *was* tested end to end and works.
-3. **No penetration test and no screen-reader pass.** The security and contrast work was
-   audited and is covered by tests, but neither of those two exercises was done.
+3. **No penetration test, and no screen reader has actually been run.** An accessibility
+   pass on 2026-09-07 audited the structure and fixed what it found (see below), but it
+   drove the accessibility TREE, not VoiceOver or NVDA. Those are not the same exercise: the
+   tree says a link has a name, and only a real screen reader tells you the name is read at
+   the wrong moment, or that the live region interrupts, or that the graph is exhausting to
+   tab through. Treat the a11y work as structural, not as validated with assistive tech.
 
 ## History was scrubbed on 2026-09-02
 
@@ -234,6 +238,51 @@ so Singapore's foreign minister may never be named however long it runs. Verifyi
 means leaving the corpus, which is a looser standard than the rest of this product holds, so
 the date is documented as uneven rather than implied to be uniform. `data/people.ts` carries
 the same note at the constant itself.
+
+## The accessibility pass (2026-09-07)
+
+Five commits. Structural, and audited against the accessibility tree in a real browser
+rather than by reading source — which is how each of these was found, and how one of my own
+fixes was caught being wrong.
+
+- **A skip link.** Every page opens with the wordmark, nine navigation links and a search
+  box, and a keyboard user walked all of them on every page (WCAG 2.4.1). `<main>` needed
+  `tabIndex={-1}` or focus stays in the navigation you just skipped.
+- **The page says it updated itself.** `LivePulse` calls `router.refresh()` and swaps the
+  content underneath the reader; that file's own note says a page rewriting itself silently
+  "hides the thing an analyst most needs to know", and it was solved only for people who
+  could watch the dot (WCAG 4.1.3). The announcement is a separate element because the dot
+  is `display:none` below 640px, and hiding it for want of header room should not decide
+  whether the page tells you it changed.
+- **Charts describe their data.** "trend", "risk vectors", "90-day tension" named the frame
+  and withheld the picture. `WorldMap.describeMap` was already the pattern to copy.
+- **Graph nodes have names.** The ego walk is real links, so it always worked with a
+  keyboard — but with no name set, the accessible name fell back to the SVG text children,
+  giving links called "CHN68". The `<title>` inside each node is a tooltip and does not name
+  a link, which is what made this look handled.
+- **`/person` had no h1.** It opened with `SectionTitle`, an h2. Swept all ten pages rather
+  than fixing the one that was noticed; the rest were already correct.
+
+**Two patterns worth carrying, because both cost time here.**
+
+*A drawing constraint must not reach the one channel that has no drawing.* The Radar's
+accessible name was built from labels the caller had clipped to four characters to fit the
+spokes, so a reader heard "Mili 76"; the graph said "CHN" for the same reason. Both are the
+same bug. The clip belongs in the component — the caller supplies meaning, the component
+decides how to fit it.
+
+*A grep for `aria-` measures the wrong thing.* It rated `NetworkMetrics`, `LadderGauge` and
+`ConfidenceMeter` as having zero accessibility work, when all three are the best examples in
+the codebase: they carry the information as real text, `<dl>/<dt>/<dd>` and `sr-only` pinyin
+tagged `lang="zh-Latn"`. Needing no ARIA is the goal, not the absence of effort.
+
+**Not yet audited:** `Paywall`, `VideoWall`, the `/ask` flow beyond its heading, focus
+management on the palette control, and measured colour contrast across the three palettes.
+
+**One trap for anyone verifying here: do not run `npm run build` while `next dev` is
+running.** They share `.next`, and the build leaves the dev server throwing
+`MODULE_NOT_FOUND` on chunks until it is restarted. It cost a false "the build is broken"
+and a false 500 on `/network/IND` in one session. Restart the dev server after any build.
 
 ## Where to go next, in the order I would do it
 

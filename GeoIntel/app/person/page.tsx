@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Panel, SectionTitle } from '@/components/ui';
+import { Panel } from '@/components/ui';
 import { corpus } from '@/lib/queries';
 import { personGraph } from '@/lib/graph/build';
 import { degree } from '@/lib/graph/metrics';
@@ -41,7 +41,14 @@ export default async function PeopleIndexPage() {
 
   return (
     <div className="max-w-4xl space-y-4">
-      <SectionTitle>People</SectionTitle>
+      {/* An h1, not the SectionTitle this used to open with. That renders an h2, so this
+          was the one page in the site whose headings began at level 2 and never had a
+          level 1 — a reader navigating by heading, which is how screen reader users skim,
+          found the page had no top. The eyebrow-plus-h1 pairing matches /events. */}
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">Roster</div>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">People</h1>
+      </div>
       <p className="max-w-3xl text-[12.5px] leading-relaxed text-muted">
         Senior officials the engine recognises by name, and the states each is named
         alongside. An edge is a reporting relationship — the two appeared in the same
