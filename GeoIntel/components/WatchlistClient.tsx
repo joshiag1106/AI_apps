@@ -61,7 +61,9 @@ export function LocalWatchToggle({ item }: { item: WatchItem }) {
         on
           ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/12 text-[color:var(--color-accent)]'
           : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
-      {on ? '★ Watching' : '☆ Watch'}
+      {/* aria-pressed already carries the state; the star is the same fact drawn twice,
+          so announcing it too gives "white star Watch" and no extra information. */}
+      <span aria-hidden>{on ? '★' : '☆'}</span> {on ? 'Watching' : 'Watch'}
     </button>
   );
 }

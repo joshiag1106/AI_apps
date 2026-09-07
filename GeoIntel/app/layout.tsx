@@ -67,8 +67,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="min-h-screen">
+        {/*
+          Bypass blocks (WCAG 2.4.1). Every page opens with the wordmark, nine navigation
+          links and a search box, and a keyboard or screen-reader user had to walk all of
+          them again on every single page before reaching anything they came for.
+
+          Off-screen until focused, so it costs the sighted layout nothing and appears the
+          moment it is tabbed to — the first tab stop on the page, deliberately. The
+          positioning is a .skip-link rule in globals.css rather than `sr-only
+          focus:not-sr-only`: that utility pairing left the clip applied while focused, so
+          the link worked and stayed invisible. See the note there.
+
+          `main` takes tabIndex={-1} because an href alone moves the browser's scroll
+          position but not always its focus; without it the reader is looking at the content
+          while the next Tab continues from the navigation they just skipped.
+        */}
+        <a
+          href="#main"
+          className="skip-link rounded border border-[color:var(--color-line)] bg-[color:var(--color-bg)] px-4 py-2 text-[13px] text-text"
+        >
+          Skip to main content
+        </a>
         <Nav />
-        <main className="mx-auto max-w-[1400px] px-4 py-6">
+        <main id="main" tabIndex={-1} className="mx-auto max-w-[1400px] px-4 py-6">
           {empty && <div className="mb-6"><EmptyCorpus /></div>}
           {children}
         </main>

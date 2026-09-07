@@ -57,7 +57,7 @@ export default async function IndiaPage() {
           <Panel className="p-4">
             <SectionTitle kicker="Six-vector profile">Risk composition</SectionTitle>
             <div className="flex flex-wrap items-center gap-6">
-              <Radar axes={VECTORS.map((v) => ({ label: v.slice(0, 4), value: risk.vectors[v] }))} />
+              <Radar axes={VECTORS.map((v) => ({ label: v, value: risk.vectors[v] }))} />
               <div className="min-w-[180px] flex-1">
                 <BarList items={VECTORS.map((v) => ({ label: v, value: risk.vectors[v] }))} max={100} />
               </div>

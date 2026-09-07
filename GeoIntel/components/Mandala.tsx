@@ -43,7 +43,13 @@ export function Mandala({ focus, nodes, size = 460 }: { focus: string; nodes: Ma
             <g key={n.iso}>
               <line x1={cx} y1={cy} x2={x} y2={y} stroke={tone(n.score)}
                 strokeWidth={Math.max(0.6, n.score / 45)} opacity="0.35" />
-              <Link href={`/dyad/${focus}-${n.iso}`}>
+              {/* Same reason as NetworkGraph: the SVG text children would otherwise
+                  supply the name, and "CHN68" is an ISO code welded to a score. */}
+              <Link
+                href={`/dyad/${focus}-${n.iso}`}
+                aria-label={`${countryName(n.iso)}, tension ${n.score}. `
+                  + `Open the ${countryName(focus)}–${countryName(n.iso)} relationship.`}
+              >
                 <circle cx={x} cy={y} r={rad}
                   fill={`color-mix(in oklab, ${tone(n.score)} 30%, #10182390)`}
                   stroke={tone(n.score)} strokeWidth="1.4" className="cursor-pointer" />
