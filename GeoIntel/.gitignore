@@ -16,3 +16,24 @@ out
 .env.*.bak
 .DS_Store
 *.tsbuildinfo
+
+# Sync-client duplicates: "index 2.ts", "page 3.tsx".
+#
+# 164 of these once sat untracked in the published AI_apps copy and 54 were swept into a
+# commit by `git add -A`, turning 56 files into 110. Deleting them does NOT hold: they come
+# back carrying their ORIGINAL mtimes, hours older than the deletion, which is a sync client
+# replaying its copy rather than a build regenerating one. Ignoring them is what holds.
+#
+# Scoped to source and config extensions, which covered all 164 observed cases, rather than
+# a blanket `* [0-9].*`. The blanket rule would also hide an asset named "Figure 1.png", and
+# it would hide it SILENTLY — a junk file with an unexpected extension merely showing up as
+# untracked is the far better failure. No tracked file in this repo has a space in its name.
+* [0-9].ts
+* [0-9].tsx
+* [0-9].js
+* [0-9].mjs
+* [0-9].cjs
+* [0-9].json
+* [0-9].md
+* [0-9].css
+* [0-9].patch
