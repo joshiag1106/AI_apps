@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectJumps, type Jump } from '@/lib/alerts/detect';
-import { renderDigest, sendDigest } from '@/lib/alerts/send';
+import { renderDigest, sendDigest, type MailMessage } from '@/lib/alerts/send';
 import type { WatchItem } from '@/lib/watchlist/store';
 import type { GeoEvent } from '@/lib/types';
 
@@ -19,7 +19,7 @@ function ev(p: Partial<GeoEvent> = {}): GeoEvent {
   const iso = new Date().toISOString();
   return {
     id: `e${n}`, title: `Event ${n}`, summary: '', firstSeen: iso, lastSeen: iso,
-    actors: ['CHN'], hotspots: [], domain: 'Diplomatic', escalation: 0, confidence: 40,
+    actors: ['CHN'], people: [], hotspots: [], domain: 'Diplomatic', escalation: 0, confidence: 40,
     signals: [], flags: [], articleIds: [`a${n}`], languages: ['zh'], countries: ['CHN'],
     imageUrl: null, videoId: null, ladderRung: null, ladderZh: null, ladderEn: null, ...p,
   };
@@ -152,46 +152,73 @@ describe('the digest a reader receives', () => {
 
 describe('sending', () => {
   const digest = { subject: 's', text: 't', html: '<p>t</p>' };
+  const creds = { user: 'box@gmail.test', pass: 'app-password' };
 
-  it('sends nothing and says so when no key is configured', async () => {
+  it('sends nothing and says so when no credentials are configured', async () => {
     // The whole pipeline stays exercisable in development without mailing anyone.
     let called = false;
-    const r = await sendDigest('a@b.test', digest, { apiKey: undefined, from: 'x@y.test',
-      fetchImpl: (async () => { called = true; return new Response('', { status: 200 }); }) as typeof fetch });
+    const r = await sendDigest('a@b.test', digest, {
+      user: undefined, pass: undefined, transport: async () => { called = true; },
+    });
     expect(called).toBe(false);
     expect(r.delivered).toBe(false);
     expect(r.reason).toBe('no_key');
   });
 
-  it('posts to Resend with the recipient, subject and body when a key exists', async () => {
-    let seen: { url: string; body: Record<string, unknown>; auth: string } | null = null;
-    const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
-      seen = {
-        url: String(url),
-        body: JSON.parse(String(init?.body)),
-        auth: String((init?.headers as Record<string, string>)?.Authorization ?? ''),
-      };
-      return new Response(JSON.stringify({ id: 'sent' }), { status: 200 });
-    }) as unknown as typeof fetch;
+  it('sends nothing when only half the credentials are present', async () => {
+    // A username with no password is a misconfiguration, not a licence to try anyway.
+    let called = false;
+    const r = await sendDigest('a@b.test', digest, {
+      user: 'box@gmail.test', pass: undefined, transport: async () => { called = true; },
+    });
+    expect(called).toBe(false);
+    expect(r.reason).toBe('no_key');
+  });
 
-    const r = await sendDigest('a@b.test', digest, { apiKey: 'k', from: 'x@y.test', fetchImpl });
+  it('hands the recipient, subject and both bodies to the transport', async () => {
+    let seen: MailMessage | null = null;
+    const r = await sendDigest('a@b.test', digest, {
+      ...creds, from: 'box@gmail.test', transport: async (m: MailMessage) => { seen = m; },
+    });
     expect(r.delivered).toBe(true);
-    expect(seen!.url).toContain('resend.com');
-    expect(seen!.auth).toContain('k');
-    expect(seen!.body.to).toEqual(['a@b.test']);
-    expect(seen!.body.subject).toBe('s');
+    expect(seen!.to).toBe('a@b.test');
+    expect(seen!.subject).toBe('s');
+    expect(seen!.text).toBe('t');
+    expect(seen!.html).toBe('<p>t</p>');
+  });
+
+  it('defaults the sender to the authenticated account', async () => {
+    // Gmail rewrites From to whichever account authenticated, so any other default is a
+    // header the reader will never actually see.
+    let seen: MailMessage | null = null;
+    await sendDigest('a@b.test', digest, {
+      ...creds, from: undefined, transport: async (m: MailMessage) => { seen = m; },
+    });
+    expect(seen!.from).toBe('box@gmail.test');
+  });
+
+  it('warns when the sender differs from the authenticated account', async () => {
+    // Silently substituted rather than rejected, which is the confusing kind of wrong.
+    const warnings: string[] = [];
+    await sendDigest('a@b.test', digest, {
+      ...creds, from: 'someone@else.test', transport: async () => {},
+      warn: (s: string) => warnings.push(s),
+    });
+    expect(warnings.join(' ')).toContain('someone@else.test');
   });
 
   it('reports a refusal instead of throwing, so one bad address cannot stop a run', async () => {
-    const fetchImpl = (async () => new Response('bad address', { status: 422 })) as typeof fetch;
-    const r = await sendDigest('a@b.test', digest, { apiKey: 'k', from: 'x@y.test', fetchImpl });
+    const r = await sendDigest('a@b.test', digest, {
+      ...creds, transport: async () => { throw new Error('550 5.1.1 no such user'); },
+    });
     expect(r.delivered).toBe(false);
-    expect(r.reason).toContain('422');
+    expect(r.reason).toContain('550');
   });
 
-  it('survives the network being down', async () => {
-    const fetchImpl = (async () => { throw new Error('ECONNREFUSED'); }) as typeof fetch;
-    const r = await sendDigest('a@b.test', digest, { apiKey: 'k', from: 'x@y.test', fetchImpl });
+  it('survives the mail server being unreachable', async () => {
+    const r = await sendDigest('a@b.test', digest, {
+      ...creds, transport: async () => { throw new Error('ECONNREFUSED'); },
+    });
     expect(r.delivered).toBe(false);
     expect(r.reason).toContain('ECONNREFUSED');
   });

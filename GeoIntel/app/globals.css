@@ -26,11 +26,23 @@
   /* Two severe reds. The deep one is for fills — map shading, bars — where it reads as
      alarm against the dark ground and carries no text. The light one is for anything a
      reader has to *read*: at 4.7:1 it passes AA, where the fill colour is 2.9:1. */
+  /* Re-stepped 2026-09-06 because the old ramp could not distinguish its own top bands.
+     Measured with the dataviz validator: #ef5350 (high) and #f2645f (severe) were 3.2 dE
+     apart in NORMAL vision — below the floor of 15 — so the two most serious levels this
+     product reports read as one colour to every reader, not only to colour-blind ones.
+     #e08c3c and #c9a227 were 7.1 apart, the same failure one band lower.
+
+     Re-stepped to 13.1 dE at the worst adjacent pair, a fourfold improvement, with every
+     step still clearing 4.5:1 on the lightest surface it can appear on. It stops there
+     rather than at the 15 floor deliberately: green-yellow-orange-red spans a narrow hue
+     arc, and pushing past ~13 means leaving the traffic-light convention that makes this
+     scale legible without a legend. Readers who need more separation than hue can give
+     have the luminance-encoded palettes below, which is what those are for. */
   --color-low:        #2ea043;
-  --color-guarded:    #c9a227;
-  --color-elevated:   #e08c3c;
-  --color-high:       #ef5350;
-  --color-severe:     #f2645f;
+  --color-guarded:    #f2d045;
+  --color-elevated:   #ef9a2e;
+  --color-high:       #f0564e;
+  --color-severe:     #ffadad;
   --color-severe-fill: #c62828;
 
   --color-zh:         #ff8f7a;
@@ -41,6 +53,58 @@
      to a face with no Han coverage. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, var(--font-zh), "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/*
+ * Alternate severity palettes.
+ *
+ * The severity ramp (low -> severe) is the primary information this product carries and it
+ * is carried largely in colour, so it has to survive readers who do not see colour the way
+ * the default palette assumes. The default ramp does not: measured with the dataviz
+ * validator, `elevated` #e08c3c and `guarded` #c9a227 are dE 1.7 apart under deuteranopia —
+ * indistinguishable to roughly 8% of men — and `high` #ef5350 and `severe` #f2645f are
+ * dE 3.2 apart in NORMAL vision, so the top two bands read as one colour for everyone.
+ *
+ * WHICH CHANNEL CARRIES THE INFORMATION. The constraint set below is over-determined:
+ * >=4.5:1 contrast against the lightest surface forces every step light, monotonic
+ * luminance with wide gaps forces the upper steps lighter still, and light colours in sRGB
+ * converge toward white, where chroma — and therefore hue separation — collapses. You
+ * cannot have all three. These palettes therefore encode severity in LUMINANCE, which
+ * survives every kind of colour-vision deficiency, greyscale printing and a bad projector.
+ * Hue is decoration here, not the signal. That is a deliberate trade, not an oversight.
+ *
+ * Both ramps were solved against explicit luminance targets rather than picked by eye:
+ * monotonic, minimum pairwise gap 0.17 of relative luminance, and every step at or above
+ * 4.79:1 on the lightest surface it can appear on. tests/security.test.ts pins all of it.
+ *
+ * Nothing that draws needs to know these exist. Every graph, chart and map in the product
+ * reads these custom properties rather than hard-coding a colour, so switching the
+ * attribute on <html> re-colours the network graph, the mandala, the world map and every
+ * chart at once.
+ */
+:root[data-palette="accessible"] {
+  --color-low:        #2189ff;
+  --color-guarded:    #00bbff;
+  --color-elevated:   #d2d200;
+  --color-high:       #ffdeb8;
+  --color-severe:     #fff9d9;
+  --color-severe-fill: #b98b2e;
+  /* The de-escalatory overlay crosses the friction lines, so it must stay clear of the
+     top of the ramp; violet sits opposite the whole blue-to-cream run. */
+  --color-verified:   #c9a9ff;
+}
+
+:root[data-palette="monochrome"] {
+  --color-low:        #8b8b8b;
+  --color-guarded:    #afafaf;
+  --color-elevated:   #cbcbcb;
+  --color-high:       #e3e3e3;
+  --color-severe:     #f8f8f8;
+  --color-severe-fill: #6f6f6f;
+  /* Immune to every colour-vision deficiency by construction, and the honest choice for
+     printing or a projector. The overlay keeps a hue so the one genuinely categorical
+     distinction on the graph — friction versus de-escalation — does not vanish too. */
+  --color-verified:   #7fd4c8;
 }
 
 html { color-scheme: dark; }

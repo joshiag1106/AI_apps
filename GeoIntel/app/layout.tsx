@@ -6,6 +6,7 @@ import { Nav } from '@/components/Nav';
 import { lastIngest, corpusStats } from '@/lib/queries';
 import { EmptyCorpus } from '@/components/EmptyCorpus';
 import { timeAgo } from '@/lib/format';
+import { PaletteSelect } from '@/components/PaletteSelect';
 
 /**
  * Chinese face, self-hosted.
@@ -45,7 +46,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const ingested = lastIngest();
   const empty = corpusStats().events === 0;
   return (
-    <html lang="en" className={notoSC.variable}>
+    // suppressHydrationWarning is required, not cosmetic: the inline script below sets
+    // data-palette on this element BEFORE React hydrates, so the client tree legitimately
+    // differs from the server HTML by exactly that attribute. Without it React logs a
+    // hydration mismatch on every page load for anyone who has chosen a palette. It is
+    // scoped to this element only, so a genuine mismatch anywhere inside still reports.
+    <html lang="en" className={notoSC.variable} suppressHydrationWarning>
+      <head>
+        {/*
+          Applies the reader's palette BEFORE first paint. It has to be a blocking inline
+          script rather than an effect: React would set the attribute after hydration, and
+          a reader who chose the colour-blind-safe ramp would see a flash of the green-red
+          one first — briefly showing exactly the palette they opted out of.
+          Wrapped in try/catch because localStorage throws outright in some privacy modes.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var p=localStorage.getItem('kautilya-palette');if(p&&p!=='default')document.documentElement.dataset.palette=p}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-screen">
         <Nav />
         <main className="mx-auto max-w-[1400px] px-4 py-6">
@@ -59,7 +79,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span>Corroboration and provenance analysis — not a determination of truth.</span>
             <Link href="/methodology" className="hover:text-muted">Methodology &amp; limitations</Link>
             <Link href="/pricing" className="hover:text-muted">Plans</Link>
-            {ingested && <span className="ml-auto mono-num">Corpus refreshed {timeAgo(ingested)}</span>}
+            {ingested && <span className="mono-num">Corpus refreshed {timeAgo(ingested)}</span>}
+            <PaletteSelect />
           </div>
         </footer>
       </body>

@@ -9,5 +9,10 @@ out
 *.db-shm
 .env
 .env.local
+# Anything derived from them too. A .env.local.bak carries exactly the same secrets
+# as .env.local and was not covered by the two lines above.
+.env.*.local
+.env.local.*
+.env.*.bak
 .DS_Store
 *.tsbuildinfo

@@ -26,6 +26,8 @@ export interface Article extends RawArticle {
   tier: number;
   isPrimary: boolean;
   actors: string[];       // ISO3
+  /** Roster ids. NEVER merged into actors — cluster.ts:129 forms events on shared actors. */
+  people: string[];
   hotspots: string[];     // hotspot ids
   domain: Domain;
   escalation: number;     // -100..100
@@ -57,6 +59,8 @@ export interface GeoEvent {
   firstSeen: string;
   lastSeen: string;
   actors: string[];
+  /** Roster ids. A sibling of actors, never merged into it. */
+  people: string[];
   hotspots: string[];
   domain: Domain;
   escalation: number;

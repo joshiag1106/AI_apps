@@ -23,7 +23,7 @@ const analysis = {
 
 const event = {
   id: 'ev1', title: 'T', summary: '', firstSeen: '2026-08-29T00:00:00.000Z',
-  lastSeen: '2026-08-29T00:00:00.000Z', actors: ['CHN'], hotspots: [], domain: 'Diplomatic',
+  lastSeen: '2026-08-29T00:00:00.000Z', actors: ['CHN'], people: [], hotspots: [], domain: 'Diplomatic',
   escalation: 10, confidence: 40, signals: [], flags: [], articleIds: ['a1'],
   languages: ['zh'], countries: ['CHN'], imageUrl: null, videoId: null,
   ladderRung: 4, ladderZh: '严正交涉', ladderEn: 'makes solemn representations',

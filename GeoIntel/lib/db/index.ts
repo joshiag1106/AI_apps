@@ -90,11 +90,17 @@ function migrate(db: DatabaseSync) {
   if (!cols.has('video_id')) {
     db.exec('ALTER TABLE articles ADD COLUMN video_id TEXT');
   }
+  if (!cols.has('people')) {
+    db.exec("ALTER TABLE articles ADD COLUMN people TEXT DEFAULT '[]'");
+  }
   const eventCols = new Set(
     (db.prepare('PRAGMA table_info(events)').all() as { name: string }[]).map((c) => c.name),
   );
   if (!eventCols.has('video_id')) {
     db.exec('ALTER TABLE events ADD COLUMN video_id TEXT');
+  }
+  if (!eventCols.has('people')) {
+    db.exec("ALTER TABLE events ADD COLUMN people TEXT DEFAULT '[]'");
   }
 }
 
@@ -123,10 +129,10 @@ export function upsertArticles(rows: Article[]): number {
   const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO articles (id,url,title,outlet,published_at,snippet,image_url,language,
-      beat_id,locale_key,source_country,ownership,tier,is_primary,actors,hotspots,domain,
+      beat_id,locale_key,source_country,ownership,tier,is_primary,actors,people,hotspots,domain,
       escalation,framing,ladder_rung,ladder_zh,ladder_en,glossed,title_en,relevant,video_id,ingested_at)
     VALUES (@id,@url,@title,@outlet,@published_at,@snippet,@image_url,@language,
-      @beat_id,@locale_key,@source_country,@ownership,@tier,@is_primary,@actors,@hotspots,@domain,
+      @beat_id,@locale_key,@source_country,@ownership,@tier,@is_primary,@actors,@people,@hotspots,@domain,
       @escalation,@framing,@ladder_rung,@ladder_zh,@ladder_en,@glossed,@title_en,@relevant,@video_id,@ingested_at)
     ON CONFLICT(url) DO UPDATE SET
       title=excluded.title, snippet=excluded.snippet,
@@ -135,7 +141,7 @@ export function upsertArticles(rows: Article[]): number {
       -- corrected source registry or lexicon repairs rows that are already stored.
       outlet=excluded.outlet, source_country=excluded.source_country,
       ownership=excluded.ownership, tier=excluded.tier, is_primary=excluded.is_primary,
-      actors=excluded.actors, hotspots=excluded.hotspots, domain=excluded.domain,
+      actors=excluded.actors, people=excluded.people, hotspots=excluded.hotspots, domain=excluded.domain,
       escalation=excluded.escalation, framing=excluded.framing,
       ladder_rung=excluded.ladder_rung, ladder_zh=excluded.ladder_zh,
       ladder_en=excluded.ladder_en, glossed=excluded.glossed,
@@ -149,7 +155,8 @@ export function upsertArticles(rows: Article[]): number {
         published_at: S(a.publishedAt), snippet: S(a.snippet), image_url: S(a.imageUrl),
         language: S(a.language), beat_id: S(a.beatId), locale_key: S(a.localeKey),
         source_country: S(a.sourceCountry), ownership: S(a.ownership), tier: S(a.tier),
-        is_primary: a.isPrimary ? 1 : 0, actors: J(a.actors), hotspots: J(a.hotspots),
+        is_primary: a.isPrimary ? 1 : 0, actors: J(a.actors), people: J(a.people),
+        hotspots: J(a.hotspots),
         domain: S(a.domain), escalation: S(a.escalation), framing: S(a.framing),
         ladder_rung: S(a.ladderRung), ladder_zh: S(a.ladderZh), ladder_en: S(a.ladderEn),
         glossed: J(a.glossed), title_en: S(a.titleEn), relevant: a.relevant ? 1 : 0,
@@ -166,7 +173,7 @@ function rowToArticle(r: any): Article {
     snippet: r.snippet ?? '', imageUrl: r.image_url, language: r.language,
     beatId: r.beat_id, localeKey: r.locale_key, sourceCountry: r.source_country,
     ownership: r.ownership, tier: r.tier, isPrimary: !!r.is_primary,
-    actors: P(r.actors, []), hotspots: P(r.hotspots, []), domain: r.domain,
+    actors: P(r.actors, []), people: P(r.people, []), hotspots: P(r.hotspots, []), domain: r.domain,
     escalation: r.escalation, framing: r.framing, ladderRung: r.ladder_rung,
     ladderZh: r.ladder_zh, ladderEn: r.ladder_en, glossed: P(r.glossed, []),
     titleEn: r.title_en, relevant: r.relevant !== 0, videoId: r.video_id ?? null,
@@ -187,10 +194,10 @@ export function articlesByIds(ids: string[]): Article[] {
 export function replaceEvents(events: GeoEvent[]) {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO events (id,title,summary,first_seen,last_seen,actors,hotspots,
+    INSERT OR REPLACE INTO events (id,title,summary,first_seen,last_seen,actors,people,hotspots,
       domain,escalation,confidence,signals,flags,article_ids,languages,countries,image_url,
       video_id,ladder_rung,ladder_zh,ladder_en)
-    VALUES (@id,@title,@summary,@first_seen,@last_seen,@actors,@hotspots,@domain,@escalation,
+    VALUES (@id,@title,@summary,@first_seen,@last_seen,@actors,@people,@hotspots,@domain,@escalation,
       @confidence,@signals,@flags,@article_ids,@languages,@countries,@image_url,
       @video_id,@ladder_rung,@ladder_zh,@ladder_en)
   `);
@@ -199,7 +206,8 @@ export function replaceEvents(events: GeoEvent[]) {
     for (const e of events) {
       stmt.run({
         id: S(e.id), title: S(e.title), summary: S(e.summary), first_seen: S(e.firstSeen),
-        last_seen: S(e.lastSeen), actors: J(e.actors), hotspots: J(e.hotspots),
+        last_seen: S(e.lastSeen), actors: J(e.actors), people: J(e.people),
+        hotspots: J(e.hotspots),
         domain: S(e.domain), escalation: S(e.escalation), confidence: S(e.confidence),
         signals: J(e.signals), flags: J(e.flags), article_ids: J(e.articleIds),
         languages: J(e.languages), countries: J(e.countries), image_url: S(e.imageUrl),
@@ -213,7 +221,8 @@ export function replaceEvents(events: GeoEvent[]) {
 function rowToEvent(r: any): GeoEvent {
   return {
     id: r.id, title: r.title, summary: r.summary ?? '', firstSeen: r.first_seen,
-    lastSeen: r.last_seen, actors: P(r.actors, []), hotspots: P(r.hotspots, []),
+    lastSeen: r.last_seen, actors: P(r.actors, []), people: P(r.people, []),
+    hotspots: P(r.hotspots, []),
     domain: r.domain, escalation: r.escalation, confidence: r.confidence,
     signals: P(r.signals, []), flags: P(r.flags, []), articleIds: P(r.article_ids, []),
     languages: P(r.languages, []), countries: P(r.countries, []), imageUrl: r.image_url,

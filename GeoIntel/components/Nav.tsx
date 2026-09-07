@@ -13,6 +13,8 @@ const LINKS = [
   { href: '/china', label: 'China Watch' },
   { href: '/events', label: 'Events' },
   { href: '/dashboard', label: 'Dashboard' },
+  { href: '/network/CHN', label: 'Network' },
+  { href: '/person', label: 'People' },
   { href: '/methodology', label: 'Methodology' },
 ];
 

@@ -56,7 +56,7 @@ export async function runAlerts(events: GeoEvent[], opts: RunOptions = {}): Prom
       // Not a fault — the feature simply is not configured. Counting it as a failure would
       // make the ingest report claim something went wrong when nothing did.
       report.skipped += 1;
-      log(`[alerts] would have mailed ${person.email} about ${jumps.length} jump(s); no RESEND_API_KEY set`);
+      log(`[alerts] would have mailed ${person.email} about ${jumps.length} jump(s); no SMTP credentials set`);
     } else {
       report.failed += 1;
       log(`[alerts] delivery to ${person.email} failed: ${result.reason}`);
