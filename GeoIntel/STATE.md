@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-06.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-07.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -200,6 +200,41 @@ for.
 **Never hard-code a colour in a graph.** It becomes the one mark on the page that ignores the
 reader's accessibility choice.
 
+## The roster audit, and what a review date can honestly claim (2026-09-07)
+
+`npm run roster:audit` prints every entry beside the headlines that name them. It exists
+because re-checking roles was the one maintenance job with no tooling at all, done by
+reading sixty-odd entries by eye, and that is how it stayed wrong.
+
+**It found Anil Chauhan listed as the serving Chief of Defence Staff while five of his seven
+headlines called him "Ex-CDS" or "Former CDS"** — English and Hindi, three outlets, two days.
+He is now labelled the former CDS, and the serving seat is left UNLISTED because no source in
+the window names a successor. Richard Marles became "Deputy PM and Defence Minister", the
+only hat the corpus actually gives him.
+
+Chauhan is worth understanding, because he breaks the rule the last review established. The
+comfortable assumption was that a stale entry goes quiet — an official who leaves office
+stops being written about — which made silence the signal to hunt for. **Chauhan was the
+seventh most-covered person on the roster.** He left the job and the press kept quoting him
+*as a former officeholder*, which is what a well-regarded soldier does after retiring. So a
+stale label can sit on the loudest node on the page, and coverage volume is not evidence of
+currency.
+
+The part a machine can do is bind the word to the page: the detector flags any headline
+containing former / ex- / पूर्व / 前+office beside someone this file calls serving. It cannot
+tell WHO the word attaches to, so it flags Lula next to "former Brazil military chief". The
+ratio is the signal — 5 of 7 is a finding, 1 of 1 is a sentence to read — and it never edits.
+
+The other thing this pass established is a limit on `ROSTER_REVIEWED`, which /methodology and
+/person both print to readers as a currency claim. **The corpus names 63 of the 120 people
+here; for the other 57 a review returns nothing, and silence is not confirmation.** Their
+labels rest on whichever earlier review last had evidence. That is a property of a narrow
+corpus rather than a defect — the feeds cover India-China, the South China Sea and the Gulf,
+so Singapore's foreign minister may never be named however long it runs. Verifying those
+means leaving the corpus, which is a looser standard than the rest of this product holds, so
+the date is documented as uneven rather than implied to be uniform. `data/people.ts` carries
+the same note at the constant itself.
+
 ## Where to go next, in the order I would do it
 
 0. **Done 2026-09-06 — `docs/plans/2026-09-06-person-to-person.md` is executed and merged**
@@ -249,10 +284,12 @@ reader's accessibility choice.
    Afghanistan and Nepal now have a single official, and in both the single entry is the
    one that matters.
 
-   What remains is **re-checking the roles, which nothing can automate**. They were correct
-   to the best of the author's knowledge on the review date in `data/people.ts` and go stale
-   as cabinets change. The failure is silent: a departed minister still appears in archived
-   reporting, so the node stays real while the label on the page becomes false.
+   What remains is **re-checking the roles, where the judgement cannot be automated but the
+   looking now is** — `npm run roster:audit`, added 2026-09-07, and see the section above for
+   what it found and what it cannot see. Roles were correct to the best of the author's
+   knowledge on the review date in `data/people.ts` and go stale as cabinets change. The
+   failure is silent: a departed minister still appears in archived reporting, so the node
+   stays real while the label on the page becomes false.
 
    Japan, Nepal and Bangladesh were corrected on 2026-09-06, and the method is the point:
    the corpus, not recall, is the source. Searching it for `日本首相` named 高市早苗 as prime minister and a

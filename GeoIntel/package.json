@@ -1,6 +1,6 @@
 {
   "name": "kautilya",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3111",
@@ -15,7 +15,8 @@
     "postinstall": "tsx scripts/fonts.ts || true",
     "llm:check": "tsx --env-file-if-exists=.env.local --tsconfig tsconfig.scripts.json scripts/llm-check.ts",
     "alerts:check": "tsx --env-file-if-exists=.env.local --tsconfig tsconfig.scripts.json scripts/alerts-check.ts",
-    "backfill:people": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-people.ts"
+    "backfill:people": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-people.ts",
+    "roster:audit": "tsx --tsconfig tsconfig.scripts.json scripts/roster-audit.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

@@ -30,6 +30,12 @@
 // Re-checking the roles is the recurring maintenance cost of this feature; it is not
 // optional, and nothing in the code can detect that it has fallen overdue.
 //
+// `npm run roster:audit` is the tool for that pass. It prints every entry beside the
+// headlines that name them, and flags the case a machine CAN catch: a headline calling
+// someone FORMER while this file says they serve. That is how Anil Chauhan was caught on
+// 2026-09-07 after being wrong for some time. It never edits anything — the judgement,
+// and the rule below, stay with the reviewer.
+//
 // Every `home` must be an ISO3 present in data/countries.ts, which tracks 68 states. That
 // is why some obvious figures are absent: Cambodia, for one, is not a tracked state, so its
 // prime minister has no valid home and is left off rather than filed under a neighbour.
@@ -45,8 +51,20 @@
  * to readers about how current its coverage is — the one number a reader needs in order to
  * judge an absence. Two pages display it and both import it, so it cannot drift from the
  * file it describes.
+ *
+ * WHAT THE DATE CAN AND CANNOT MEAN, measured on 2026-09-07: the review is made against
+ * this corpus, and the corpus names only 63 of the 120 people here. For those, a headline
+ * states or contradicts the role and the check is evidence. For the other 57 it returns
+ * nothing at all — and silence is not confirmation, it is absence of a source. Their labels
+ * rest on whichever earlier review last had evidence for them.
+ *
+ * This is a property of a narrow corpus, not a defect to fix: the feeds cover India-China,
+ * the South China Sea and the Gulf, so Singapore's and Sri Lanka's foreign ministers may
+ * never once be named no matter how long it runs. Verifying them means going outside this
+ * corpus, which is a different and looser standard than the one the rest of the product
+ * holds — so the honest move is to say the date is uneven, not to imply it is uniform.
  */
-export const ROSTER_REVIEWED = '2026-09-06';
+export const ROSTER_REVIEWED = '2026-09-07';
 
 export interface Person {
   id: string;
@@ -112,7 +130,13 @@ export const PEOPLE: Person[] = [
     aliases: ['vikram misri', 'मिस्री'] },
   { id: 'randhir-jaiswal', name: 'Randhir Jaiswal', role: 'MEA Spokesperson', home: 'IND', short: 'Jaiswal',
     aliases: ['randhir jaiswal'] },
-  { id: 'anil-chauhan', name: 'Anil Chauhan', role: 'Chief of Defence Staff', home: 'IND', short: 'Chauhan',
+  // Listed as the SERVING Chief of Defence Staff until 2026-09-07, when the corpus was
+  // finally read against the label: five of his seven headlines call him "Ex-CDS" or
+  // "Former CDS", in English and in Hindi (पूर्व CDS), from three outlets across two days.
+  // He is still heavily quoted, which is exactly why the wrong label survived — the node
+  // never went quiet the way a departed official's usually does. No source in the window
+  // names a successor, so the serving seat is left UNLISTED rather than guessed at.
+  { id: 'anil-chauhan', name: 'Anil Chauhan', role: 'Former Chief of Defence Staff', home: 'IND', short: 'Chauhan',
     aliases: ['anil chauhan'] },
   { id: 'shashi-tharoor', name: 'Shashi Tharoor', role: 'MP, external affairs committee', home: 'IND', short: 'Tharoor',
     aliases: ['tharoor', 'थरूर'] },
@@ -295,7 +319,10 @@ export const PEOPLE: Person[] = [
     aliases: ['albanese', '阿尔巴尼斯'] },
   { id: 'penny-wong', name: 'Penny Wong', role: 'Foreign Minister', home: 'AUS',
     aliases: ['penny wong', '黄英贤'] },
-  { id: 'richard-marles', name: 'Richard Marles', role: 'Defence Minister', home: 'AUS', short: 'Marles',
+  // Dual-hatted, and the corpus names only the other hat ("Hegseth Welcomes Australian
+  // Deputy Prime Minister"), so a reader met a page labelled Defence Minister above an
+  // article calling him Deputy PM. Both, in the form ishaq-dar and bui-thanh-son already use.
+  { id: 'richard-marles', name: 'Richard Marles', role: 'Deputy PM and Defence Minister', home: 'AUS', short: 'Marles',
     aliases: ['marles'] },
   { id: 'mark-carney', name: 'Mark Carney', role: 'Prime Minister', home: 'CAN', short: 'Carney',
     aliases: ['mark carney', '卡尼'] },
