@@ -5,6 +5,8 @@ import { ESCALATION_LADDER } from '@/data/glossary.zh';
 import { SOURCES } from '@/data/sources';
 import { BEATS, LOCALES, DIRECT_FEEDS } from '@/data/feeds';
 import { FREE_LIMIT, METERED } from '@/lib/quota';
+import { ROSTER_REVIEWED } from '@/data/people';
+import { TREND_SERIES_DAYS } from '@/lib/risk';
 
 export const metadata = { title: 'Methodology' };
 
@@ -179,7 +181,121 @@ export default function MethodologyPage() {
         uses the same maths restricted to events naming both states.
       </P>
 
-      <H>7. The optional language-model layer</H>
+      <H>7. The network of states</H>
+      <P>
+        The threat board reads one state or one pair at a time. The network view reads the
+        shape they sit in: every state that has shared a clustered event with another is a
+        node, and the line between two of them is the friction across all the events they
+        appear in together.
+      </P>
+      <P>
+        An edge therefore means the two states appeared in the same clustered event. That is a
+        <strong className="text-text"> reporting relationship, not a diplomatic one</strong> — two
+        states named in one article are not necessarily interacting, and the engine does not
+        claim otherwise. Friction reuses <span className="mono-num">impact()</span>, the same
+        function behind the dyad tension scores, so a line here and a tension score there are the
+        same arithmetic over the same events rather than two independent estimates. They can
+        still differ by a point: each page decays its events to the moment it is rendered, so
+        a pair sitting on a rounding boundary may read 57 here and 56 there.
+      </P>
+      <P>
+        Dashed lines are the de-escalatory signal. They apply the same confidence gate and
+        recency decay to the negative half of the escalation scale — the half the risk index
+        discards outright. Across the corpus that rests on
+        <strong className="text-text"> roughly 2% of events</strong>, which is far too thin to
+        carry a score. It is drawn as an overlay, labelled with the count behind it, and it has
+        no measure of its own. It is not a map of alliances.
+      </P>
+      <P>
+        Eight measures sit beside the drawing: Connections, Total friction, Brokerage, Contagion
+        exposure, Reach, Entanglement, Core depth and Conflict cluster. Every one of them is
+        computed on the <strong className="text-text">full network, never on the neighbourhood
+        being drawn</strong>. A drilldown caps its fan-out for legibility — the busiest state in
+        the corpus has 59 connections, which is a hairball on the first click — but that cap is a
+        drawing decision and nothing is ranked against it. The denominator in every rank is
+        the whole network, however few states are drawn.
+      </P>
+      <P>
+        Distance is the reciprocal of friction: a strong tie makes two states close, so the
+        shortest path between two states runs through their fiercest disputes rather than
+        around them. Conflict clusters group states most embroiled
+        <strong className="text-text"> with each other</strong>. They are mutual antagonists —
+        not blocs, alliances or alignments, and reading them as sides is the one mistake this
+        view most invites.
+      </P>
+      <P>
+        Every measure is as-of-now over the {TREND_SERIES_DAYS}-day retention window, not a historical
+        series. A state that was central last quarter and quiet since will read as quiet.
+      </P>
+
+      <H>8. People in the network</H>
+      <P>
+        The same graph, with officials as nodes. A person is linked to a state when the two
+        were named in the same clustered event — a <strong className="text-text">reporting
+        relationship, not an action</strong>. The engine cannot tell an official visiting a
+        state from one being condemned by it, and does not pretend to.
+      </P>
+      <P>
+        Coverage is exactly the roster: a hand-written list of senior figures with the forms
+        outlets actually print in their own languages, last reviewed{' '}
+        <span className="mono-num">{ROSTER_REVIEWED}</span>. An official who is not listed is
+        invisible here, so an <strong className="text-text">absence is never evidence</strong>{' '}
+        that someone was uninvolved — it is as likely to mean the roster has gone stale since
+        a cabinet changed. Nothing on this layer is extracted by a model; the roster is
+        curated for the same reason every other weight on this page is written down.
+      </P>
+      <P>
+        Two officials are linked when they were named in the same clustered event. That is a
+        weaker claim than it looks, and it is worth stating plainly because a line drawn
+        between two people reads as a relationship in a way a line between two countries does
+        not: <strong className="text-text">a co-mention is not an interaction</strong>. No edge
+        on this view carries an action, and the reason is not squeamishness — it is that the
+        corpus cannot support one. A headline reading{' '}
+        <em>&ldquo;Zelensky warns airlines Russian skies not safe&rdquo;</em> names both
+        Zelensky and, in its summary, Putin, so the two appear on one line here. Zelensky
+        warned airlines. The two did not speak. Labelling that edge from its verb would have
+        this page assert <em>Zelensky warned Putin</em> — not a thin signal but a confidently
+        wrong one. Resolving a verb to its object needs the sentence, and this pipeline stores
+        headlines.
+      </P>
+      <P>
+        The states shown on an edge are where the reporting was{' '}
+        <strong className="text-text">set, not where the people were</strong>. Two officials
+        named in a story about the South China Sea need not have been anywhere near it. They
+        are accumulated across every event behind the edge rather than sampled from the
+        strongest few, and the three most frequent are shown with the remainder counted.
+      </P>
+      <P>
+        This layer is thin beside the state graph, and that is worth knowing before reading
+        much into it: person-to-person ties rest on the small share of events naming two or
+        more listed officials, against several thousand events overall. The thin-evidence
+        caveat that applies to any low-degree node applies here throughout.
+      </P>
+      <P>
+        A person&apos;s tie to their own state is drawn but left out of the friction total,
+        which is why that row reads <em>Cross-border friction</em>. A leader is named beside
+        their own country in nearly every story about it, so counting it would turn the figure
+        into a ranking of who governs a busy country. The structural ranks keep the tie: those
+        are positions in the real network, and dropping a genuine connection to compute them
+        would rank people in a graph that does not exist.
+      </P>
+      <P>
+        Two measures from the state network are missing here rather than forgotten. A
+        person-to-state graph has no triangles at all, so <em>Entanglement</em> — which counts
+        how many of a node&apos;s counterparts are joined to each other — is exactly zero for
+        everyone, and <em>Conflict cluster</em> would group people together with countries,
+        which says nothing.
+      </P>
+      <P>
+        This layer is thin, and thinner than the state network by an order of magnitude.
+        Roughly one article in ten names a listed official at all. There are also no
+        person-to-person links: people are named in the body of an article, and this engine
+        stores headlines, so only about 1% of articles name two figures — far too few to draw
+        a network from. That is a limit of the corpus rather than of the method, and it would
+        take storing full article text to lift.
+      </P>
+
+      <H>9. The optional language-model layer</H>
       <P>
         Everything above is deterministic: rules, lexicons and arithmetic, with no external
         service involved. One feature sits outside that boundary. On an event page, if the
@@ -200,7 +316,7 @@ export default function MethodologyPage() {
         flag anywhere on this site is produced by a language model.
       </P>
 
-      <H>8. Export</H>
+      <H>10. Export</H>
       <P>
         Any event&apos;s full source table, or any filtered slice of the event corpus, exports as
         CSV or JSON. CSV carries a UTF-8 byte-order mark so spreadsheets render Chinese, Hindi
@@ -209,7 +325,7 @@ export default function MethodologyPage() {
         with the data.
       </P>
 
-      <H>9. Free and paid</H>
+      <H>11. Free and paid</H>
       <P>
         Browsing, filtering, search, the live feed and this page are free and unmetered. {FREE_LIMIT} free
         analyses cover the deep views: {Object.values(METERED).join('; ').toLowerCase()}. Re-opening
@@ -219,8 +335,16 @@ export default function MethodologyPage() {
         Signed-out visitors are metered by a device cookie, which is trivially cleared. That is stated
         here rather than hidden: only account-bound metering is real enforcement.
       </P>
+      <P>
+        The network view is priced per <em>walk</em> rather than per state. A credit is spent
+        where a walk begins, and every state you then step to is free however far the walk
+        runs; coming back later and starting again somewhere else spends another. Appending a
+        walk to a link you were sent works the same way, which means the pricing can be
+        sidestepped by anyone who edits the address bar — the same softness as the device
+        cookie above, and stated for the same reason.
+      </P>
 
-      <H>10. Known limitations</H>
+      <H>12. Known limitations</H>
       <ol className="mb-3 max-w-3xl list-decimal space-y-2 pl-5 text-[13.5px] leading-relaxed text-muted">
         <li><strong className="text-text">Corroboration is not truth.</strong> Widely-repeated false claims score well. Ownership and country diversity are a partial mitigation, not a cure.</li>
         <li><strong className="text-text">PRC domestic coverage is partial.</strong> Ministry feeds are unavailable; Chinese material arrives via aggregator queries, which under-represent domestic-only outlets.</li>

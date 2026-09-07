@@ -11,7 +11,7 @@ function art(p: Partial<Article> = {}): Article {
     id: `p${n}`, url: `https://x/${n}`, title: 'T', outlet: 'Reuters',
     publishedAt: '2026-08-29T10:00:00.000Z', snippet: '', imageUrl: null, language: 'en',
     beatId: null, localeKey: null, sourceCountry: 'GBR', ownership: 'independent', tier: 1,
-    isPrimary: false, actors: ['CHN'], hotspots: [], domain: 'Diplomatic',
+    isPrimary: false, actors: ['CHN'], people: [], hotspots: [], domain: 'Diplomatic',
     escalation: 0, framing: 0, ladderRung: null, ladderZh: null, ladderEn: null,
     glossed: [], titleEn: null, relevant: true, videoId: null, ...p,
   };

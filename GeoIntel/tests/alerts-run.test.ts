@@ -26,7 +26,7 @@ function ev(rung: number, actors: string[]): GeoEvent {
   const iso = new Date().toISOString();
   return {
     id: `x${seq}`, title: `Event ${seq}`, summary: '', firstSeen: iso, lastSeen: iso,
-    actors, hotspots: [], domain: 'Diplomatic', escalation: 0, confidence: 40,
+    actors, people: [], hotspots: [], domain: 'Diplomatic', escalation: 0, confidence: 40,
     signals: [], flags: [], articleIds: [`a${seq}`], languages: ['zh'], countries: ['CHN'],
     imageUrl: null, videoId: null, ladderRung: rung, ladderZh: '强烈抗议', ladderEn: 'strong protest',
   };

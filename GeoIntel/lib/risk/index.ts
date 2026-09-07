@@ -36,7 +36,7 @@ export function impact(e: GeoEvent, now = Date.now()): number {
   return Math.max(0, e.escalation) * (e.confidence / 100) * decay(e.lastSeen, now);
 }
 
-function squash(raw: number): number {
+export function squash(raw: number): number {
   // Diminishing returns: the difference between 20 and 30 incidents matters less
   // than between 0 and 5. Keeps the index readable on a 0-100 scale.
   return Math.round(100 * (1 - Math.exp(-raw / 120)));

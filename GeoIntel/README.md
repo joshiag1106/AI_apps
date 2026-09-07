@@ -28,6 +28,15 @@ friend and rival states, which is literally the relationship graph the site rend
   each shown with its own evidence line.
 - **Models risk.** Six-vector country risk indices and 90-day dyad tension series, with
   escalation gated by corroboration and decayed on a 14-day half-life.
+- **Maps the network.** Every state that shares a clustered event with another is a node;
+  the line between them is their accumulated friction. Eight structural measures —
+  brokerage, contagion exposure, reach, entanglement, core depth and conflict clustering
+  among them — all computed on the whole graph, never on the ten neighbours being drawn.
+  Drilldown is URL-driven, so a walk through the network is a link you can send.
+- **Puts people on the map.** A curated roster of senior officials, matched in the languages
+  outlets actually print, linked to the states they are named alongside. Their own country is
+  drawn but not counted, so the figures read as cross-border activity rather than as who
+  governs a busy country.
 - **Compares framings across languages (optional).** With an `ANTHROPIC_API_KEY` set, an
   event page can ask Claude to read the cluster's reports in their own languages and set
   out how each bloc frames the same event, what they agree on, what they contest, and what
@@ -61,6 +70,7 @@ No API keys are required. The engine is fully deterministic and runs without any
 | `npx tsx scripts/cluster-gates.ts` | What each clustering gate costs. Run before changing a threshold. |
 | `npx tsx scripts/cluster-shape.ts` | Cluster sizes and the members behind the largest. Run after. |
 | `npm run llm:check` | Send one real analysis and report what it cost. Needs a key; charges nothing without one. |
+| `npm run alerts:check -- --to=you@example.com` | Send one real alert email. Recipient must be explicit; sends nothing without a key. |
 | `KAUTILYA_AUTO_INGEST=1 npm run dev` | Refresh the corpus in the background every 30 minutes. |
 | `npm test` | 61 unit tests over the analytical core. |
 | `npm run build` | Production build. |
@@ -215,12 +225,111 @@ because Beijing repeats a formula for weeks and an alert on every repetition is 
 learn to ignore. One message per refresh however many files moved, each linking to the
 event that justifies it.
 
-Delivery is a plain HTTP call to Resend, the same shape as the Stripe integration: one
-key, no SDK. Without `RESEND_API_KEY` and `ALERTS_FROM` nothing is sent and the ingest logs
-what it would have delivered, so the pipeline is exercisable without mailing anyone.
+Delivery is SMTP, through `nodemailer`. Without `SMTP_USER` and `SMTP_PASS` nothing is
+sent and the ingest logs what it would have delivered, so the pipeline is exercisable
+without mailing anyone. `SMTP_HOST` and `SMTP_PORT` default to Gmail's.
+
+An HTTP provider came first and was replaced. Resend, like every service of that shape,
+sends only from a domain you have verified in its dashboard — which a personal address can
+never be, so the delivery half stayed unprovable for as long as it was in place. SMTP
+authenticates as a mailbox that already exists, which is the whole reason it works here.
+Which host to use follows from where the sending address's mail is actually hosted, which
+is a question for its MX records rather than its domain name — an address on your own
+domain is very often relayed by whoever hosts the domain rather than by Google. On
+Hostinger it is `smtp.hostinger.com` and the mailbox's own hPanel password; on Gmail it is
+`smtp.gmail.com` and a 16-character App Password from `myaccount.google.com/apppasswords`,
+which exists only once 2-Step Verification is on. Sending from a domain you control is
+also what makes the alerts mailable to a reader rather than merely provable, since the
+domain carries its own SPF record.
 
 Alerts are off until a reader turns them on. Signing up for an account is not consent to
 be emailed.
+
+## The network of states
+
+`/network/[iso]` draws one state and its strongest connections. A node is a state, a line
+is the friction across every clustered event the two appeared in together, and thickness
+is that friction. Dashed lines mark the de-escalatory signal, which rests on roughly 2% of
+the corpus and is therefore an overlay rather than a measure — it is not a map of
+alliances.
+
+An edge is a **reporting** relationship, not a diplomatic one. Two states named in the
+same article are not necessarily interacting, and the engine does not pretend to know
+which. Friction reuses `impact()`, the same function behind the dyad tension scores, so
+the network and the dyad pages cannot tell you different things about the same pair.
+
+Walking it is ordinary navigation. Every neighbour is a link, the trail rides in the query
+string, and the page is server-rendered — so the back button is the undo, a walk is a URL
+you can paste to someone, and there is no graph state to hydrate or lose.
+
+The fan-out is capped at ten neighbours by default, `?n=` to change it. That cap is the
+reason the module exists: the busiest state in the corpus is connected to 59 others, so an
+uncapped neighbourhood is very nearly the whole network and the first click shows a
+hairball. What the cap omits is always counted on the page rather than
+silently dropped.
+
+The picture is ForceAtlas2, seeded deterministically: neighbours that are also in dispute
+with each other settle into the same region, so an entangled theatre looks different from
+separate fronts at a glance. It seeds from a fixed ring rather than random positions and
+runs a fixed number of steps, so the same corpus always draws the same picture — two
+screenshots are comparable. Angle carries no meaning; size and thickness carry the weight.
+
+A credit is spent where a walk *begins*, not per state. Stepping from CHN to USA to IRN
+costs one; coming back tomorrow and starting fresh from IND costs another. The trail in the
+query string is what identifies the walk, so this is soft in the same way the device cookie
+is soft — it prices ordinary reading correctly and does not pretend to be enforcement.
+
+Every measure beside the drawing — Connections, Total friction, Brokerage, Contagion
+exposure, Reach, Entanglement, Core depth, Conflict cluster — is computed on the **whole
+graph, never on the neighbourhood being drawn**. The denominator in a rank is every state
+in the network, not the ten on screen. This is the constraint most likely to be broken by a
+well-meaning optimisation that measures what is visible, so it is pinned by a test rather
+than left to care.
+
+Conflict clusters group states most embroiled **with each other**. They are mutual
+antagonists, not blocs. The corpus carries almost no cooperative signal — 44 of 2,435
+events score negative escalation — so there is nothing here from which an alliance could
+honestly be inferred.
+
+## People in the network
+
+`/person` lists the roster; `/person/[id]` draws one official and both the states and the
+other officials they are named alongside. An edge is a reporting relationship — the two
+appeared in the same clustered event — not a claim that either acted toward the other.
+
+Coverage is exactly the roster, which is hand-written and dated. An unlisted official is
+invisible, so an absence here is not evidence of non-involvement, and the index says outright
+which figures the corpus currently has nothing on rather than letting you find out one
+metered click at a time. `npm run backfill:people` re-scans stored articles, which is needed
+after adding a name: the ingest only analyses articles it fetches, and articles age out of
+feeds.
+
+**Two officials are linked when they were named in the same clustered event**, and the states
+those events concerned are carried on the edge — accumulated across every contributing event,
+not sampled from the strongest few, with the three most frequent shown and the rest counted.
+
+A line between two people is **not a meeting**. It is not a call, an agreement or a dispute,
+and the engine cannot tell which. No edge carries an action, and that limit is firmer than the
+edge count ever was: a headline naming two figures usually points its verb at a third party.
+*"Zelensky warns airlines Russian skies not safe"* names Zelensky and Putin, so the two share a
+line here — but Zelensky warned airlines, and the two did not speak. Labelling that edge from
+its verb would assert *Zelensky warned Putin*, which is not a thin signal but a confidently
+wrong one. Resolving a verb to its object needs the sentence, which needs article bodies —
+a licensing question before it is an engineering one. The states on an edge are likewise where
+the reporting was *set*, not where anyone stood.
+
+All eight state measures now carry over. Entanglement and conflict clusters were absent until
+2026-09-06, and not by oversight: both count triangles, and a bipartite person-to-state graph
+has none. Mixing the graph gave that up, so both mean something again.
+
+This layer is thin beside the state graph — person-to-person ties rest on the small share of
+events naming two or more listed officials — and coverage is bounded by the roster, so a
+missing line means "not both named in one event", never "no relationship".
+
+Until 2026-09-06 this section said there were no person-to-person edges at all, on a measured
+1% of articles. That figure was taken against a **twelve-name** roster and never redone when
+the roster reached 120. Re-measured, it is 128 events and 73 distinct pairs. A measurement is
+scoped to the inputs it was taken with, and nothing in the repository knew the difference.
 
 ## Staying current
 

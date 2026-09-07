@@ -109,7 +109,7 @@ function ev(p: Partial<GeoEvent> = {}): GeoEvent {
   const iso = new Date(Date.now() - 2 * 86_400_000).toISOString();
   return {
     id: `e${n}`, title: `Event ${n}`, summary: '', firstSeen: iso, lastSeen: iso,
-    actors: ['CHN'], hotspots: [], domain: 'Diplomatic', escalation: 10, confidence: 40,
+    actors: ['CHN'], people: [], hotspots: [], domain: 'Diplomatic', escalation: 10, confidence: 40,
     signals: [], flags: [], articleIds: [`a${n}`], languages: ['en'], countries: ['GBR'],
     imageUrl: null, videoId: null, ladderRung: null, ladderZh: null, ladderEn: null, ...p,
   };

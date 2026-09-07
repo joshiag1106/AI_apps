@@ -1,25 +1,44 @@
+import { createTransport } from 'nodemailer';
 import type { Jump } from '@/lib/alerts/detect';
 
 /**
  * Composing and delivering a ladder alert.
  *
- * Delivery is a raw HTTP call to Resend, matching how Stripe is used elsewhere here: no
- * SDK, one key, and a working path when the key is absent. Without a key nothing is sent
- * and the caller is told so plainly — the whole pipeline stays exercisable in development
- * without mailing a real person, which is the only responsible default for code that can
- * put things in someone's inbox.
+ * Delivery is SMTP. An HTTP provider was tried first and abandoned: it required a verified
+ * sending domain, which a personal address can never have, so the delivery half stayed
+ * unprovable for as long as it was in place. SMTP authenticates as a mailbox that already
+ * exists, which is the whole reason it works here.
+ *
+ * Nodemailer is the single dependency this costs. Node ships no SMTP client, and
+ * hand-rolling TLS, AUTH LOGIN and MIME multipart is a great deal of fragile surface for a
+ * feature that sends a handful of messages a month.
+ *
+ * Without credentials nothing is sent and the caller is told so plainly — the whole
+ * pipeline stays exercisable in development without mailing a real person, which is the
+ * only responsible default for code that can put things in someone's inbox.
  */
-
-const ENDPOINT = 'https://api.resend.com/emails';
 
 export interface Digest { subject: string; text: string; html: string }
 export interface SendResult { delivered: boolean; reason?: string }
 
-export interface SendOptions {
-  apiKey?: string;
-  from?: string;
-  fetchImpl?: typeof fetch;
+/** One outgoing message, as handed to whatever actually puts it on the wire. */
+export interface MailMessage {
+  from: string; to: string; subject: string; text: string; html: string;
 }
+
+/** Rejects on failure; `sendDigest` turns that into a SendResult rather than a throw. */
+export type Transport = (msg: MailMessage) => Promise<void>;
+
+export interface SendOptions {
+  user?: string;
+  pass?: string;
+  host?: string;
+  port?: number;
+  from?: string;
+  transport?: Transport;
+  warn?: (message: string) => void;
+}
+
 
 /**
  * One mail covering every jump in this run.
@@ -72,29 +91,50 @@ ${esc([j.event.ladderZh, j.event.ladderEn].filter(Boolean).join(' — '))}<br>
   return { subject: `Kautilya — ${head}`, text, html };
 }
 
+/**
+ * A real SMTP connection. Port 465 is implicit TLS; anything else is treated as STARTTLS
+ * and required to upgrade, so a password never crosses the wire in the clear.
+ */
+function smtpTransport(host: string, port: number, user: string, pass: string): Transport {
+  const mailer = createTransport({
+    host,
+    port,
+    secure: port === 465,
+    requireTLS: port !== 465,
+    auth: { user, pass },
+  });
+  return async (msg: MailMessage) => { await mailer.sendMail(msg); };
+}
+
 export async function sendDigest(
   to: string,
   digest: Digest,
   opts: SendOptions = {},
 ): Promise<SendResult> {
-  const apiKey = opts.apiKey ?? process.env.RESEND_API_KEY;
-  const from = opts.from ?? process.env.ALERTS_FROM;
-  const doFetch = opts.fetchImpl ?? fetch;
+  const user = opts.user ?? process.env.SMTP_USER;
+  const pass = opts.pass ?? process.env.SMTP_PASS;
+  const host = opts.host ?? process.env.SMTP_HOST ?? 'smtp.gmail.com';
+  const port = opts.port ?? Number(process.env.SMTP_PORT ?? 465);
+  const warn = opts.warn ?? ((message: string) => console.warn(message));
 
-  // No key means no send, and no pretending otherwise. The run logs what it would have
-  // delivered so the pipeline can be exercised without a live mailbox.
-  if (!apiKey || !from) return { delivered: false, reason: 'no_key' };
+  // No credentials means no send, and no pretending otherwise. The run logs what it would
+  // have delivered so the pipeline can be exercised without a live mailbox.
+  if (!user || !pass) return { delivered: false, reason: 'no_key' };
 
+  // Most relays rewrite From to whichever account authenticated rather than refusing the
+  // mismatch, so a wrong ALERTS_FROM is silently replaced instead of erroring. Say so
+  // here, rather than leaving it to be discovered in a received header much later.
+  const from = opts.from ?? process.env.ALERTS_FROM ?? user;
+  if (from !== user) {
+    warn(`[alerts] ALERTS_FROM is ${from} but the authenticated account is ${user}; mail will be sent as ${user}.`);
+  }
+
+  const send = opts.transport ?? smtpTransport(host, port, user, pass);
   try {
-    const res = await doFetch(ENDPOINT, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject: digest.subject, text: digest.text, html: digest.html }),
-    });
-    if (!res.ok) return { delivered: false, reason: `${res.status} ${await res.text()}`.trim().slice(0, 200) };
+    await send({ from, to, subject: digest.subject, text: digest.text, html: digest.html });
     return { delivered: true };
   } catch (e) {
-    // One unreachable provider or one bad address must not abort a whole run.
+    // One unreachable server or one bad address must not abort a whole run.
     return { delivered: false, reason: e instanceof Error ? e.message : String(e) };
   }
 }

@@ -13,6 +13,8 @@ export const METERED = {
   event_detail: 'Full event analysis with verification evidence',
   dyad_analysis: 'Relationship deep-dive between two states',
   country_deepdive: 'Country risk profile',
+  network_graph: 'Network graph of connected states',
+  person_network: 'Network of states around an official',
   china_deepdive: 'Chinese-language source analysis',
   export: 'Data export',
 } as const;

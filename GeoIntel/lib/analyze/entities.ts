@@ -1,4 +1,5 @@
 import { COUNTRIES, HOTSPOTS, CN_COMPOUNDS } from '@/data/countries';
+import { PEOPLE } from '@/data/people';
 
 const LATIN = /^[\x20-\x7F]+$/;
 
@@ -37,6 +38,25 @@ export function extractHotspots(text: string): string[] {
     if (h.aliases.some((a) => matches(a, lower, raw))) hits.push(h.id);
   }
   return hits;
+}
+
+/**
+ * Named officials in a headline. Same alias machinery as extractActors — Latin aliases need
+ * word boundaries, CJK and Indic scripts are matched as substrings because they have none.
+ *
+ * People are returned SEPARATELY from actors and must stay that way. lib/verify/cluster.ts
+ * forms events by testing whether two reports share an actor, so folding a person id into
+ * that array would change which reports cluster together — the one subsystem on this project
+ * whose stability was expensive to win. tests/people.test.ts asserts the separation directly.
+ */
+export function extractPeople(text: string): string[] {
+  const lower = ` ${text.toLowerCase()} `;
+  const raw = text;
+  const hits: string[] = [];
+  for (const p of PEOPLE) {
+    if (p.aliases.some((a) => matches(a, lower, raw))) hits.push(p.id);
+  }
+  return [...new Set(hits)];
 }
 
 /**

@@ -306,6 +306,9 @@ function buildEvent(cluster: Article[]): GeoEvent {
     firstSeen: new Date(times[0]).toISOString(),
     lastSeen: new Date(times[times.length - 1]).toISOString(),
     actors: [...new Set(cluster.flatMap((a) => a.actors))],
+    // A sibling of actors, never folded into it: clustering keys on actors, so
+    // merging these would change which reports become one event.
+    people: [...new Set(cluster.flatMap((a) => a.people ?? []))],
     hotspots: [...new Set(cluster.flatMap((a) => a.hotspots))],
     domain: lead.domain,
     // Median, not max: one hyperbolic tabloid should not define an event's severity.

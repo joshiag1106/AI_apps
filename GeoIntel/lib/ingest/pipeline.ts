@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { fetchFeed, parseFeed } from '@/lib/ingest/rss';
 import { DIRECT_FEEDS, VIDEO_FEEDS, BEATS, googleNewsUrl, LOCALES, type LocaleKey } from '@/data/feeds';
 import { resolveSource } from '@/data/sources';
-import { resolveActors } from '@/lib/analyze/entities';
+import { resolveActors, extractPeople } from '@/lib/analyze/entities';
 import { scoreText, glossHeadline } from '@/lib/analyze/score';
 import { clusterArticles } from '@/lib/verify/cluster';
 import { TREND_SERIES_DAYS } from '@/lib/risk';
@@ -16,6 +16,7 @@ export function enrich(raw: RawArticle): Article {
   const src = resolveSource(raw.outlet, raw.url);
   const text = `${raw.title} ${raw.snippet}`;
   const { actors, hotspots } = resolveActors(text);
+  const people = extractPeople(text);
   const s = scoreText(raw.title, raw.snippet);
   const relevant = isRelevant(actors, hotspots, s);
 
@@ -25,6 +26,7 @@ export function enrich(raw: RawArticle): Article {
     // Trust the feed's locale over script detection when the feed declares one:
     // a Chinese outlet's English-language wire copy is still a Chinese-source item.
     language: raw.language,
+    people,
     sourceCountry: src.country,
     ownership: src.ownership,
     tier: src.tier,
