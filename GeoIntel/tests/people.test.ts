@@ -129,6 +129,32 @@ function article(over: Partial<Article> & { id: string; title: string }): Articl
   } as Article;
 }
 
+describe('alias matching across cased non-Latin scripts', () => {
+  // Found 2026-09-09 while auditing the silent half of the roster. The non-Latin branch of
+  // matches() tested the RAW text, not the lowercased copy. That is harmless for CJK, Arabic
+  // and Devanagari, none of which have letter case — and silently fatal for Cyrillic, which
+  // does. All ten Cyrillic aliases on the roster had never once matched: Russian and
+  // Ukrainian capitalise surnames, so 'песков' could only fire on text that never occurs.
+  it('matches a Cyrillic alias in the case the outlet actually publishes', () => {
+    const headline =
+      'Новые переговоры между Россией, США и Украиной осенью: Песков ответил на заявление Буданова';
+    expect(extractPeople(headline)).toContain('peskov');
+  });
+
+  it('still matches Han characters run together with their neighbours', () => {
+    // The counterpart the fix must not break: Chinese has no word boundaries and a name is
+    // routinely glued to the next word — 张又侠案 is "the Zhang Youxia case". Substring
+    // matching is what makes that work, so the fix had to stay a substring test.
+    expect(extractPeople('张又侠案下一步更凶？')).toContain('zhang-youxia');
+  });
+
+  it('follows a Russian surname into its declined forms', () => {
+    // Пескова is the genitive of Песков. Substring matching gets this for free, which is
+    // why the fix lowercases rather than adding word boundaries for Cyrillic.
+    expect(extractPeople('Заявление Пескова о переговорах')).toContain('peskov');
+  });
+});
+
 describe('people do not disturb event clustering', () => {
   it('leaves event actors byte-identical whether or not people are extracted', () => {
     // THE test this whole plan is built around. Clustering decides two reports describe the
