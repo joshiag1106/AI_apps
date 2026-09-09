@@ -52,11 +52,19 @@
  * judge an absence. Two pages display it and both import it, so it cannot drift from the
  * file it describes.
  *
- * WHAT THE DATE CAN AND CANNOT MEAN, measured on 2026-09-07: the review is made against
- * this corpus, and the corpus names only 63 of the 120 people here. For those, a headline
- * states or contradicts the role and the check is evidence. For the other 57 it returns
+ * WHAT THE DATE CAN AND CANNOT MEAN, measured on 2026-09-09: the review is made against
+ * this corpus, and the corpus names only 71 of the 120 people here. For those, a headline
+ * states or contradicts the role and the check is evidence. For the other 49 it returns
  * nothing at all — and silence is not confirmation, it is absence of a source. Their labels
  * rest on whichever earlier review last had evidence for them.
+ *
+ * THAT SILENCE IS REAL ABSENCE, NOT A BROKEN ALIAS LIST — checked on 2026-09-09, because 49
+ * unmatched names look exactly like a matcher fault and that is the first thing a reader of
+ * this file will suspect. The check has to go around the matcher rather than through it:
+ * search the stored title, snippet and translated title of every article for the name as
+ * text. Erdogan appears ZERO times across 5,868 articles while 'Turkey' appears 12, and
+ * 'bin Salman' zero while 'Saudi' appears 109. Outlets name the state and leave the official
+ * out. Nothing is missing from the aliases; the reporting genuinely does not name them.
  *
  * This is a property of a narrow corpus, not a defect to fix: the feeds cover India-China,
  * the South China Sea and the Gulf, so Singapore's and Sri Lanka's foreign ministers may
@@ -64,7 +72,7 @@
  * corpus, which is a different and looser standard than the one the rest of the product
  * holds — so the honest move is to say the date is uneven, not to imply it is uniform.
  */
-export const ROSTER_REVIEWED = '2026-09-07';
+export const ROSTER_REVIEWED = '2026-09-09';
 
 export interface Person {
   id: string;
@@ -358,7 +366,22 @@ export const PEOPLE: Person[] = [
     aliases: ['sihasak'] },
   { id: 'than-swe', name: 'Than Swe', role: 'Foreign Minister', home: 'MMR',
     aliases: ['than swe'] },
-  { id: 'min-aung-hlaing', name: 'Min Aung Hlaing', role: 'Commander-in-Chief', home: 'MMR',
+  // Corrected 2026-09-09 from 'Commander-in-Chief'. The audit's former/ex- flag could never
+  // have caught this one: nothing calls him FORMER anything, he simply holds a different
+  // office now. The Diplomat names him "Myanmar President" on 2026-09-07, and the snippet of
+  // its earlier piece calls him "the general-turned-president since his inauguration in
+  // April" — which states the transition and dates it. Reuters and the regional press call
+  // him "leader", and both Vietnam items describe a STATE visit, a head-of-state act.
+  //
+  // Noted for the next reviewer, because it looks like a contradiction and is not: the same
+  // outlet still wrote "Myanmar Military Chief" on 2026-08-20. Outlets keep using the title
+  // a figure is known by; the piece that dates the inauguration outranks the shorthand.
+  //
+  // The lesson worth keeping is that a role goes stale two ways. Chauhan's had been VACATED,
+  // and "Ex-CDS" in the headline is a marker a machine can grep for. This one was SUPERSEDED,
+  // which leaves no marker at all — only reading the headlines beside the label finds it.
+  // The army seat he left is UNLISTED: no source in the window names a successor.
+  { id: 'min-aung-hlaing', name: 'Min Aung Hlaing', role: 'President', home: 'MMR',
     aliases: ['min aung hlaing', '敏昂莱'] },
 
   // ---- South Asia ----

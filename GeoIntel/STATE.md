@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-08.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-09.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -23,8 +23,8 @@ still renders every page and shows a first-run panel telling you to run the inge
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
 | Tests | 348 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | 2,874 events; mixed person graph 124 nodes / 535 edges |
-| Person roster | 120 officials across 38 states; 63 currently appear in the corpus |
+| Corpus at last run | 3,257 events; mixed person graph 132 nodes / 604 edges |
+| Person roster | 120 officials across 38 states; 71 currently appear in the corpus |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -229,13 +229,49 @@ ratio is the signal — 5 of 7 is a finding, 1 of 1 is a sentence to read — an
 
 The other thing this pass established is a limit on `ROSTER_REVIEWED`, which /methodology and
 /person both print to readers as a currency claim. **The corpus names 63 of the 120 people
-here; for the other 57 a review returns nothing, and silence is not confirmation.** Their
-labels rest on whichever earlier review last had evidence. That is a property of a narrow
-corpus rather than a defect — the feeds cover India-China, the South China Sea and the Gulf,
+here; for the other 57 a review returns nothing, and silence is not confirmation.** (71 and
+49 when re-measured on 2026-09-09 — the figures move with the corpus, so read them beside
+their date.) Their labels rest on whichever earlier review last had evidence. That is a
+property of a narrow corpus rather than a defect — the feeds cover India-China, the South
+China Sea and the Gulf,
 so Singapore's foreign minister may never be named however long it runs. Verifying those
 means leaving the corpus, which is a looser standard than the rest of this product holds, so
 the date is documented as uneven rather than implied to be uniform. `data/people.ts` carries
 the same note at the constant itself.
+
+## The second way a role goes stale (2026-09-09)
+
+A roster pass on 2026-09-09 found **Min Aung Hlaing labelled "Commander-in-Chief" when the
+corpus calls him Myanmar's President.** The Diplomat's snippet settles it in seven words —
+"the general-turned-president since his inauguration in April" — and both Vietnam items
+describe a *state* visit, which is a head-of-state act.
+
+**The audit's detector could not have caught this, and the reason generalises.** Chauhan's
+label was stale because the seat was VACATED, and English and Hindi both mark that on the
+name: Ex-CDS, पूर्व CDS. A word to grep for. Min Aung Hlaing's was stale because the seat was
+SUPERSEDED — he did not stop being someone, he became someone else — and no language marks
+that at all. The headline just says "Myanmar President" as though it always had.
+
+So the flag covers one of the two ways a role dies, and the other is only visible by reading
+the label beside the headlines. That is the part of `roster:audit` that cannot be automated,
+and this is the second consecutive pass where the finding came from the unautomated half.
+
+Also settled, because 49 silent names look exactly like a broken alias list and that
+suspicion should not have to be re-run: **the silence is real absence.** Checked by going
+around the matcher rather than through it — searching every stored title, snippet and
+translated title as raw text. Erdogan appears ZERO times across 5,868 articles while
+"Turkey" appears 12; "bin Salman" zero while "Saudi" appears 109. Outlets name the state and
+leave the official out. Nothing is missing from the aliases.
+
+One more worth recording as method rather than finding. I doubted Nepal's entry — Balen Shah
+listed as Prime Minister — because I remembered him as mayor of Kathmandu. Two English
+headlines call him "Nepal PM Balen" and "PM Balen's government", so the roster was right and
+the recollection was wrong. **The rule caught its author rather than the file**, which is
+the strongest evidence yet for correcting from the corpus and never from memory.
+
+Not corrected, but worth a look next pass: Zhang Youxia appears beside 张又侠案 ("the Zhang
+Youxia case") in coverage of a PLA purge. Speculation in one outlet is not evidence he has
+left the CMC, so the label stands — but if he is removed, this is where it would show first.
 
 ## The accessibility pass (2026-09-07)
 
