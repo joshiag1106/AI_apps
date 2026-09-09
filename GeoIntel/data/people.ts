@@ -116,7 +116,26 @@ export const PEOPLE: Person[] = [
     aliases: ['ding xuexiang', '丁薛祥'] },
   { id: 'he-lifeng', name: 'He Lifeng', role: 'Vice Premier, economic policy', home: 'CHN',
     aliases: ['he lifeng', '何立峰'] },
-  { id: 'zhang-youxia', name: 'Zhang Youxia', role: 'CMC Vice Chairman', home: 'CHN',
+  // Corrected 2026-09-09 from 'CMC Vice Chairman'. VOA Chinese reports him 被正式免职
+  // ("formally dismissed from office") on 2026-08-31 and 被免职 again on 2026-09-01, both
+  // times paired with Liu Zhenli, amid a Rocket Force purge; 禁闻网 heads a third item
+  // 张又侠案 ("the Zhang Youxia case"). Neither Liu Zhenli nor Zhong Shaojun is on this
+  // roster, so nothing else here needed changing.
+  //
+  // THE EVIDENCE IS THINNER THAN CHAUHAN'S AND THAT IS RECORDED ON PURPOSE: his was three
+  // outlets across two languages, this is one outlet twice plus an aggregator's headline.
+  // It is still decisive against the OLD label, which had zero corpus support and is
+  // contradicted by every sentence that mentions his status — but if a source later names
+  // him serving, this entry is the one to re-read rather than assume.
+  //
+  // The serving seat is UNLISTED: no source in the window names a successor.
+  //
+  // Two blind spots hid this through the 2026-09-09 pass, both since fixed in
+  // scripts/roster-audit.ts. The audit read only titles while the MATCHER reads title +
+  // snippet, so evidence living in a snippet was invisible to the reviewer; and 免职 and
+  // 落马 are dismissal verbs, not "former X" constructions, so the detector had no word for
+  // them. A Chinese official is removed, not retitled.
+  { id: 'zhang-youxia', name: 'Zhang Youxia', role: 'Former CMC Vice Chairman', home: 'CHN',
     aliases: ['zhang youxia', '张又侠'] },
   { id: 'cai-qi', name: 'Cai Qi', role: 'Politburo Standing Committee', home: 'CHN',
     aliases: ['cai qi', '蔡奇'] },
