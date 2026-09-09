@@ -5,12 +5,21 @@ export function Panel({ children, className = '', ...rest }: { children: ReactNo
   return <div className={`panel ${className}`} {...rest}>{children}</div>;
 }
 
-export function SectionTitle({ children, kicker, action }: { children: ReactNode; kicker?: string; action?: ReactNode }) {
+/**
+ * `level` exists because a section heading and a page heading look the same here but are
+ * not the same thing. /person/[id] and /network/[iso] opened with this component and so
+ * had no <h1> at all — the 0.5.1 sweep fixed /person and /network, the list pages, and
+ * never saw the dynamic routes underneath them. Heading level is not font size: these two
+ * pages keep the compact 15px title they were designed with and simply stop lying about
+ * their place in the document outline.
+ */
+export function SectionTitle({ children, kicker, action, level = 2 }: { children: ReactNode; kicker?: string; action?: ReactNode; level?: 1 | 2 }) {
+  const Heading = level === 1 ? 'h1' : 'h2';
   return (
     <div className="flex items-end justify-between gap-4 mb-3">
       <div>
         {kicker && <div className="text-[10px] uppercase tracking-[0.18em] text-faint mb-1">{kicker}</div>}
-        <h2 className="text-[15px] font-semibold tracking-tight text-text">{children}</h2>
+        <Heading className="text-[15px] font-semibold tracking-tight text-text">{children}</Heading>
       </div>
       {action}
     </div>

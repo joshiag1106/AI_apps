@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-07.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-08.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 339 passing (`npm test`) |
+| Tests | 348 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 2,874 events; mixed person graph 124 nodes / 535 edges |
 | Person roster | 120 officials across 38 states; 63 currently appear in the corpus |
@@ -72,16 +72,14 @@ a new origin, and anyone appending `?trail=CHN` by hand rides a paid walk for fr
 deliberate and both are stated on `/methodology`, in the same breath as the existing
 admission that device metering is trivially cleared.
 
-One thing review left open, needing a decision rather than a fix:
-
-1. **Eigenvector centrality can oscillate rather than converge.** Power iteration with a
-   fixed 100 iterations has no convergence check, so on a bipartite component it returns a
-   parity-dependent answer — on a star beside a triangle, iteration 100 and iteration 101
-   give different vectors and neither is the true one. It is **not live**: the real 68-node
-   graph was verified fully converged (|100 vs 101| = 2.2e-16, |100 vs 2000| = 0), because
-   547 edges is far from bipartite. The standard fix is a spectral shift, which would move
-   every Contagion exposure rank on the site — too large a change to make on a latent
-   issue without deciding to.
+**The eigenvector question review left open is CLOSED**, and this document described it as
+open for longer than it was. Power iteration cannot converge on a bipartite component —
+the spectrum is symmetric, so there is no dominant eigenvalue and iteration 100 and 101
+disagree by parity. It is fixed by averaging the last two iterates, which cancels the
+-lambda term exactly; the reasoning is on the code at `lib/graph/metrics.ts:204`. The
+spectral shift this file used to propose was never needed. It stopped being a latent
+issue when the person layer arrived: a mixed graph is far more nearly bipartite than the
+68-node state graph, so the fix was a prerequisite for that work rather than a tidy-up.
 
 ## Three things that are NOT verified — read before relying on them
 
@@ -92,8 +90,8 @@ One thing review left open, needing a decision rather than a fix:
    "Where to go next".
 2. **The Dockerfile has never been built.** Docker was not installed. The standalone Node
    path in `README.md` *was* tested end to end and works.
-3. **No penetration test, and no screen reader has actually been run.** An accessibility
-   pass on 2026-09-07 audited the structure and fixed what it found (see below), but it
+3. **No penetration test, and no screen reader has actually been run.** Accessibility
+   passes on 2026-09-07 and 2026-09-08 audited the structure and fixed what they found, but
    drove the accessibility TREE, not VoiceOver or NVDA. Those are not the same exercise: the
    tree says a link has a name, and only a real screen reader tells you the name is read at
    the wrong moment, or that the live region interrupts, or that the graph is exhausting to
@@ -283,6 +281,58 @@ management on the palette control, and measured colour contrast across the three
 running.** They share `.next`, and the build leaves the dev server throwing
 `MODULE_NOT_FOUND` on chunks until it is restarted. It cost a false "the build is broken"
 and a false 500 on `/network/IND` in one session. Restart the dev server after any build.
+
+## Finishing the accessibility pass (2026-09-08)
+
+The five things 0.5.1 left unaudited. Two were clean, three were not.
+
+**The two alternate palettes were re-stepped, and the reason is the metric rather than the
+colours.** Both were spaced evenly in WCAG relative luminance — about 0.17 a step, which
+`tests/security.test.ts` measured and passed. Relative luminance is LINEAR and perceived
+lightness is roughly its cube root, so the same 0.17 step bought 0.109 of perceptual
+lightness at the dark end and 0.060 at the pale end. Separation shrank as severity ROSE,
+and the narrowest pair on the ramp was `high` against `severe` — the same failure the
+default ramp was re-stepped to fix in 0.5.0, reproduced in the two palettes whose entire
+job is to carry severity in luminance. Respaced evenly in OKLCH L with the endpoints held
+(`low` is pinned by the 4.5:1 floor, `severe` by white): worst adjacent pair 0.060 -> 0.084
+accessible, 0.063 -> 0.085 monochrome, and the worst adjacent pair under deuteranopia goes
+5.9 -> 8.3 dE and 6.3 -> 8.5, clearing the 8.0 target both previously failed. No hue moved;
+contrast is unchanged at the ends and higher in the middle. The test now pins perceptual
+lightness alongside the linear check — **the old palette passes every other assertion in
+that file, which is exactly why this survived.**
+
+**Focus was being dropped on the floor in two places, both verified in the running page
+rather than reasoned about.** Activating a video's Play button unmounted the button that
+held focus, so focus fell to `<body>` and a keyboard user was returned to the top of the
+document; it now moves to the player's iframe. Asking a question on `/ask` is a client-side
+`router.push`, so the browser does none of what it does on a real navigation — the URL and
+the `<h1>` both changed to the question while `document.activeElement` stayed `<body>`, with
+nothing said. Focus now moves to the heading. That is deliberately NOT the live region
+LivePulse uses: LivePulse rewrites the page under a reader who did not ask, so it must speak
+without stealing focus; here the reader asked, so the repair is to take them to it.
+
+**`/person/[id]` and `/network/[iso]` had no `<h1>` at all.** The 0.5.1 pass swept "all ten
+pages" — there are SIXTEEN route files, and the six it never counted included these two,
+which open with `SectionTitle`. The list pages were fixed while the detail pages reached by
+clicking anything on those lists were not. Both also return early for a reader over quota,
+which is a second document that needed its own heading; verified by exhausting the free
+five with a shared cookie jar and confirming the paywalled page renders `h1` then the
+Paywall's `h2`. `SectionTitle` took a `level` prop rather than changing size — heading level
+is not font size. A source-walking test now enumerates the routes from disk, because
+counting them by hand is the thing that failed.
+
+**Clean, and worth recording so nobody re-audits them:** `Paywall` passes contrast
+comfortably (10.13:1 on the primary button, 5.06:1 on the smallest text) and sits under a
+real `h1` on every page that renders it. `PaletteSelect` resolves its accessible name
+correctly from the `sr-only` span, with the visible "Colours" label `aria-hidden` so it does
+not double up. I also chased a focus-outline bug that **does not exist**: `focus:outline-none`
+on the ask input is specificity (0,2,0) against `:focus-visible`'s (0,1,0), but Tailwind's
+utilities sit in `@layer utilities` and unlayered styles beat layered ones whatever the
+specificity. Measured in the browser: `outlineStyle: solid`, 2px, accent. The cascade-layer
+rule is what makes the approach in `globals.css` sound, not the specificity.
+
+**Still not audited:** measured contrast of the non-severity chrome across the three
+palettes, and `/ask`'s answer panel beyond its heading and focus behaviour.
 
 ## Where to go next, in the order I would do it
 

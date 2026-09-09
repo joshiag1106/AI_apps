@@ -141,9 +141,11 @@ describe('palette contrast (WCAG AA)', () => {
    * copy in TypeScript — the CSS is the artefact a reader sees, and a duplicate here would
    * be one more thing to drift.
    *
-   * These three properties all fail SILENTLY in a browser, which is why they are pinned:
+   * These properties all fail SILENTLY in a browser, which is why they are pinned:
    * a missing token inherits the default and produces a mixed scheme; two steps at the same
-   * luminance merge in greyscale; a non-monotonic ramp stops reading as a scale at all.
+   * luminance merge in greyscale; a non-monotonic ramp stops reading as a scale at all; and
+   * a ramp even in LINEAR luminance is uneven to a reader, which is the one that got past
+   * this file once already.
    *
    * Hue separation is deliberately NOT asserted here. The palettes encode severity in
    * luminance on purpose (see the note in globals.css: >=4.5:1 contrast plus wide monotonic
@@ -195,6 +197,49 @@ describe('palette contrast (WCAG AA)', () => {
             expect(Math.abs(lums[i] - lums[j]),
               `${name}: ${RAMP[i]} and ${RAMP[j]} merge in greyscale`).toBeGreaterThan(0.06);
           }
+        }
+      }
+    });
+
+    /*
+     * OKLab's lightness channel. Forward transform only — this is arithmetic on a colour,
+     * not the CVD simulation the note above declines to reimplement, and there is no way
+     * to ask the question without it.
+     */
+    const okLightness = (hex: string) => {
+      const n = hex.replace('#', '');
+      const [r, g, b] = [0, 2, 4]
+        .map((i) => parseInt(n.slice(i, i + 2), 16) / 255)
+        .map((c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+      const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+      const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+      const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+      return 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+    };
+
+    it('spaces the ramp evenly in PERCEPTUAL lightness, not merely in linear luminance', () => {
+      /*
+       * The greyscale test above measures WCAG relative luminance. That is the right
+       * question for "does this survive a black-and-white printer" and the WRONG one for
+       * "can a reader tell two adjacent bands apart", because relative luminance is linear
+       * and perceived lightness is roughly its cube root.
+       *
+       * Both ramps were once spaced evenly in the linear quantity — about 0.17 a step,
+       * which this file measured and passed — while the perceptual step fell from 0.109 at
+       * the dark end to 0.060 between `high` and `severe`. Separation shrank as severity
+       * ROSE, in the two palettes whose whole purpose is to carry severity in luminance.
+       * The test agreed the ramp was even the entire time.
+       *
+       * 0.08 is the floor because that is what even spacing yields across the lightness
+       * range the 4.5:1 contrast floor leaves available. Falling under it means the steps
+       * have gone uneven again, not that the range ran out.
+       */
+      for (const name of PALETTES) {
+        const ls = RAMP.map((t) => okLightness(block(name).get(t)!));
+        for (let i = 0; i < ls.length - 1; i++) {
+          const gap = ls[i + 1] - ls[i];
+          expect(gap, `${name}: ${RAMP[i]} and ${RAMP[i + 1]} are ${gap.toFixed(3)} apart perceptually`)
+            .toBeGreaterThanOrEqual(0.08);
         }
       }
     });

@@ -91,7 +91,7 @@ export default async function NetworkPage({
   if (!gate.allowed) {
     return (
       <div className="space-y-4">
-        <SectionTitle>{country.name} — network</SectionTitle>
+        <SectionTitle level={1}>{country.name} — network</SectionTitle>
         <Paywall what={`The ${country.name} connection network`} kind={gate.kind} />
       </div>
     );
@@ -114,7 +114,7 @@ export default async function NetworkPage({
 
   return (
     <div className="space-y-4">
-      <SectionTitle>{country.name} — network</SectionTitle>
+      <SectionTitle level={1}>{country.name} — network</SectionTitle>
 
         <nav aria-label="Walk" className="flex flex-wrap items-center gap-1 text-[11px] text-muted">
           {trail.map((t, i) => {

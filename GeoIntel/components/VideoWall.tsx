@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { timeAgo } from '@/lib/format';
 import type { GeoEvent } from '@/lib/types';
@@ -20,6 +20,26 @@ export function VideoWall({ events, titles }: {
   titles?: Record<string, ReactNode>;
 }) {
   const [playing, setPlaying] = useState<string | null>(null);
+  const frame = useRef<HTMLIFrameElement>(null);
+
+  /*
+   * Put the reader in the player they just opened.
+   *
+   * Activating Play unmounts the button that had focus, and focus does not go anywhere
+   * sensible when that happens — it falls all the way back to <body>. Verified in the
+   * running page rather than reasoned about: focus was on the Play button before the
+   * click and on document.body after it. For a keyboard user that means pressing Enter on
+   * a video returns them to the top of the document, with the whole header to tab through
+   * again before they can reach the thing they just started; for a screen-reader user
+   * nothing says a player opened at all.
+   *
+   * The iframe is focusable in its own right, so moving focus there both repairs the
+   * position and puts the embedded player's own controls next in the tab order.
+   */
+  useEffect(() => {
+    if (playing) frame.current?.focus();
+  }, [playing]);
+
   if (!events.length) return null;
 
   return (
@@ -29,6 +49,7 @@ export function VideoWall({ events, titles }: {
           <div className="relative aspect-video bg-[color:var(--color-surface)]">
             {playing === e.videoId ? (
               <iframe
+                ref={frame}
                 className="absolute inset-0 h-full w-full"
                 src={`https://www.youtube-nocookie.com/embed/${e.videoId}?autoplay=1&rel=0`}
                 title={e.title}

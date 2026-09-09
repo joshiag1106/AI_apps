@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Sparkline, Radar, Columns } from '@/components/charts';
@@ -84,5 +86,52 @@ describe('graph nodes name themselves', () => {
     expect(out).toContain('Open the India–China relationship."');
     // The drawn text stays the code — this is a naming change, not a layout one.
     expect(out).toContain('>CHN</text>');
+  });
+});
+
+
+/**
+ * Every route starts with an h1.
+ *
+ * This is checked against the SOURCE rather than a rendered tree because the failure it
+ * catches is one of coverage, not of rendering: the 0.5.1 pass swept "all ten pages" and
+ * fixed /person, which opened with a SectionTitle. There are sixteen route files. The six
+ * it never counted included /person/[id] and /network/[iso], which open with the same
+ * component and so had no h1 at all — the list page was fixed while the detail page
+ * underneath it, reached by clicking anything on that list, was not.
+ *
+ * Both of those also have a second, earlier return for a reader over the free quota, and
+ * that branch renders a different document. Enumerating routes by hand missed the dynamic
+ * segments; enumerating by eye inside a file misses the metered branch. Walking the
+ * directory is the only version of this check that cannot quietly stop covering something.
+ */
+describe('page structure', () => {
+  const pages = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? pages(join(dir, e.name)) : e.name === 'page.tsx' ? [join(dir, e.name)] : []);
+
+  it('gives every route an h1, in every branch it can return from', () => {
+    const routes = pages('app');
+    // A guard on the guard: if the walk stops finding files, the loop below passes vacuously.
+    expect(routes.length).toBeGreaterThanOrEqual(16);
+
+    for (const file of routes) {
+      const src = readFileSync(file, 'utf8');
+      const heads = (src.match(/<h1[\s>]/g) ?? []).length
+        + (src.match(/<SectionTitle level=\{1\}/g) ?? []).length;
+      expect(heads, `${file} renders no top-level heading`).toBeGreaterThan(0);
+
+      /*
+       * Only an EARLY RETURN needs a second heading. A page that renders the paywall as a
+       * ternary inside one tree — `{!gate.allowed ? <Paywall/> : …}`, which is what
+       * /country, /dyad and /events do — has already emitted its h1 above the branch, and
+       * one serves both. `if (!gate.allowed) return (…)` builds a separate document that
+       * shares nothing with the other, and that is the shape which lost its heading.
+       */
+      if (/if \(!gate\.allowed\)/.test(src)) {
+        expect(heads, `${file} returns early for the paywall, so that branch needs its own top-level heading`)
+          .toBeGreaterThanOrEqual(2);
+      }
+    }
   });
 });

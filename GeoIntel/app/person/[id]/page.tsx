@@ -59,7 +59,7 @@ export default async function PersonPage({
   if (!gate.allowed) {
     return (
       <div className="space-y-4">
-        <SectionTitle>{person.name} — network</SectionTitle>
+        <SectionTitle level={1}>{person.name} — network</SectionTitle>
         <Paywall what={`The ${person.name} connection network`} kind={gate.kind} />
       </div>
     );
@@ -78,7 +78,7 @@ export default async function PersonPage({
 
   return (
     <div className="space-y-4">
-      <SectionTitle>{person.name} — network</SectionTitle>
+      <SectionTitle level={1}>{person.name} — network</SectionTitle>
       <p className="text-[11px] text-muted">
         {person.role}, {homeName} ·{' '}
         <Link href="/person" className="hover:text-[color:var(--color-accent)]">All people</Link>

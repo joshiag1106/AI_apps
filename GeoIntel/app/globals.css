@@ -73,9 +73,29 @@
  * survives every kind of colour-vision deficiency, greyscale printing and a bad projector.
  * Hue is decoration here, not the signal. That is a deliberate trade, not an oversight.
  *
- * Both ramps were solved against explicit luminance targets rather than picked by eye:
- * monotonic, minimum pairwise gap 0.17 of relative luminance, and every step at or above
- * 4.79:1 on the lightest surface it can appear on. tests/security.test.ts pins all of it.
+ * Both ramps are solved against explicit lightness targets rather than picked by eye:
+ * monotonic, evenly spaced in PERCEPTUAL lightness, and every step at or above 4.79:1 on
+ * the lightest surface it can appear on. tests/security.test.ts pins all of it.
+ *
+ * RE-STEPPED 2026-09-08, and what forced it was the choice of metric rather than the
+ * colours. Both ramps were originally spaced evenly in WCAG relative luminance — about
+ * 0.17 at every step, which the tests measured and passed. But relative luminance is
+ * LINEAR and perceived lightness is roughly its cube root, so a ramp that is even in the
+ * one compresses toward white in the other. The same 0.17 linear step bought 0.109 of
+ * perceptual lightness at the dark end and only 0.060 at the pale end: separation shrank
+ * monotonically as severity ROSE, and the narrowest pair on the whole ramp was `high`
+ * against `severe`. That is the same failure the default ramp was re-stepped to fix,
+ * reproduced here in the two palettes whose entire job is to carry severity in luminance.
+ *
+ * Respacing evenly in OKLCH L instead — endpoints held, because `low` is pinned by the
+ * 4.5:1 contrast floor and `severe` by white — moves the worst adjacent pair from 0.060
+ * to 0.084 (accessible) and 0.063 to 0.085 (monochrome). Measured with the dataviz
+ * validator, the worst adjacent pair under deuteranopia goes 5.9 -> 8.3 dE and 6.3 -> 8.5,
+ * clearing the 8.0 target that both ramps previously failed. Contrast is unchanged at the
+ * ends and rises in the middle; no hue moved.
+ *
+ * The lesson generalises past this file: a ramp spaced evenly in a linear quantity is not
+ * evenly spaced to a reader, and a test that measures the linear quantity will say it is.
  *
  * Nothing that draws needs to know these exist. Every graph, chart and map in the product
  * reads these custom properties rather than hard-coding a colour, so switching the
@@ -84,9 +104,9 @@
  */
 :root[data-palette="accessible"] {
   --color-low:        #2189ff;
-  --color-guarded:    #00bbff;
-  --color-elevated:   #d2d200;
-  --color-high:       #ffdeb8;
+  --color-guarded:    #00b3f5;
+  --color-elevated:   #c9c900;
+  --color-high:       #f6d6b0;
   --color-severe:     #fff9d9;
   --color-severe-fill: #b98b2e;
   /* The de-escalatory overlay crosses the friction lines, so it must stay clear of the
@@ -96,9 +116,9 @@
 
 :root[data-palette="monochrome"] {
   --color-low:        #8b8b8b;
-  --color-guarded:    #afafaf;
-  --color-elevated:   #cbcbcb;
-  --color-high:       #e3e3e3;
+  --color-guarded:    #a5a5a5;
+  --color-elevated:   #c0c0c0;
+  --color-high:       #dcdcdc;
   --color-severe:     #f8f8f8;
   --color-severe-fill: #6f6f6f;
   /* Immune to every colour-vision deficiency by construction, and the honest choice for
