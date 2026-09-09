@@ -21,10 +21,10 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 360 passing (`npm test`) |
+| Tests | 363 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 3,257 events; mixed person graph 132 nodes / 604 edges |
-| Person roster | 120 officials across 38 states; 71 currently appear in the corpus |
+| Person roster | 120 officials across 38 states; 72 currently appear in the corpus |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -309,6 +309,60 @@ Three of the four new tests pin a mutant that a first attempt did NOT catch. The
 fixture is the real VOA sentence, which contains 免职 **and** 落马 — so deleting either from
 the pattern left the test green, the same coincidence that let two earlier tests in this repo
 pass against their own mutants. Each marker now has a fixture that can match by no other route.
+
+## Auditing the silent half found a dead matcher (2026-09-09)
+
+The roster's silent half — entries no article names — had never been examined, because
+STATE.md's own position was that checking them means leaving the corpus. Examining them from
+INSIDE it turned out to be worth doing, though not for the reason expected.
+
+**First, the negative result, which stands.** Ranking the silent entries by how much the corpus
+covers their state looked promising and was measuring the wrong thing. `actors` tags a state
+when it is the SETTING, not when its politics are covered: the UAE's 170 articles are Strait of
+Hormuz shipping, Saudi Arabia's 116 are Houthi strikes and one about LIV Golf, and Venezuela's
+48 are a US oil deal in which Trump is the actor. Of those 170 UAE articles, **zero** name any
+Emirati official. So "high coverage, silent official" is not an anomaly at all, and the silence
+is explained by structure: the corpus names heads of state whose POLITICS it follows, and names
+nobody from states that appear only as places. Two inversions that looked suspicious — Maduro
+silent while his own vice-president speaks, Erdogan silent while his foreign minister is named
+once — both dissolve the same way. **No roster entry was corrected as a result.**
+
+**Then the real finding, which came out of asking why one silent entry was silent.** Peskov was
+listed silent in a corpus containing the headline "Песков ответил на заявление Буданова". The
+name is right there. `matches()` in `lib/analyze/entities.ts` tested non-Latin aliases against
+the RAW text rather than the lowercased copy:
+
+```ts
+if (!LATIN.test(alias)) return haystackRaw.includes(alias);   // before
+```
+
+That is identical behaviour for every script with no letter case — Han, Arabic, Devanagari —
+and wrong for the one on this roster that has case. **All ten Cyrillic aliases had never matched
+anything**, because they are stored lowercase and Russian and Ukrainian capitalise surnames, so
+'песков' could only fire on text no outlet publishes. Putin, Lavrov, Zelensky and Zakharova all
+appeared to work only because their LATIN aliases were carrying them.
+
+The countries file escaped by an accident of style: its 68 Cyrillic aliases are stored
+capitalised, so they matched capitalised text. The same bug, invisible, because the data
+happened to be written the other way up.
+
+Fixed by comparing lowercased on both sides — a no-op for the caseless scripts. It stays a
+SUBSTRING test, and two opposite languages force that: Han glues a name to its neighbour
+(张又侠案 is "the Zhang Youxia case") and Russian declines it (Пескова is the genitive of
+Песков). Word boundaries would break both. 16 rows moved, coverage 842 -> 856 articles.
+
+**A real limit found alongside it and deliberately NOT fixed.** On that same headline,
+`extractActors` returns `["USA"]` alone: Россией and Украиной are declined, and the country
+aliases are nominative, so a Russian article about Russia and Ukraine is tagged with neither.
+Person aliases survive declension because surnames decline by suffix and the stem stays a
+prefix; country names change their ending, so the alias is not a substring. Fixing it means
+stemming Russian, which is a large job for 33 Cyrillic articles — 0.6% of the corpus. Worth
+doing only if Russian-language feeds are ever expanded, and worth knowing about before then.
+
+The lesson that outlives the bug: **a branch written for "the scripts that are not Latin"
+silently assumed the property that actually mattered was having no word boundaries, when the
+property that mattered here was having no case.** Those two sets are not the same set, and
+nothing failed loudly when they diverged.
 
 ## The accessibility pass (2026-09-07)
 

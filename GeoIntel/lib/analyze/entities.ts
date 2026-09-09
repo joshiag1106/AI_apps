@@ -8,9 +8,22 @@ const LATIN = /^[\x20-\x7F]+$/;
  * "India" fires on "Indiana"; CJK and Indic scripts have no word boundaries, so those
  * are substring matches. Short aliases like "us" and "lac" are the reason boundaries
  * are mandatory rather than a nicety: a bare substring test finds "us" inside "bus".
+ *
+ * The non-Latin branch matches the LOWERCASED text, and that word is doing real work.
+ * It used to test the raw text, which is identical for every script that has no letter
+ * case — Han, Arabic, Devanagari — and wrong for the one on this roster that does.
+ * Cyrillic has case, Russian and Ukrainian capitalise surnames, and so all ten Cyrillic
+ * aliases here had never matched anything: 'песков' can only fire on text no outlet
+ * publishes. Found 2026-09-09 by asking why Peskov was silent in a corpus containing
+ * Песков. Lowercasing is a no-op for the caseless scripts, so nothing else changes.
+ *
+ * It stays a SUBSTRING test rather than gaining word boundaries, for two reasons that
+ * pull the same way. Han glues names to their neighbours — 张又侠案 is "the Zhang Youxia
+ * case" and must match — and Russian declines them, so Пескова is the genitive of
+ * Песков and should match too. Boundaries would break both.
  */
-function matches(alias: string, haystackLower: string, haystackRaw: string): boolean {
-  if (!LATIN.test(alias)) return haystackRaw.includes(alias);
+function matches(alias: string, haystackLower: string): boolean {
+  if (!LATIN.test(alias)) return haystackLower.includes(alias.toLowerCase());
   const a = alias.trim().toLowerCase();
   if (!a) return false;
   const escaped = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -22,7 +35,7 @@ export function extractActors(text: string): string[] {
   const raw = text;
   const hits: string[] = [];
   for (const c of COUNTRIES) {
-    if (c.aliases.some((a) => matches(a, lower, raw))) hits.push(c.iso);
+    if (c.aliases.some((a) => matches(a, lower))) hits.push(c.iso);
   }
   for (const [compound, isos] of Object.entries(CN_COMPOUNDS)) {
     if (raw.includes(compound)) hits.push(...isos);
@@ -32,10 +45,9 @@ export function extractActors(text: string): string[] {
 
 export function extractHotspots(text: string): string[] {
   const lower = ` ${text.toLowerCase()} `;
-  const raw = text;
   const hits: string[] = [];
   for (const h of HOTSPOTS) {
-    if (h.aliases.some((a) => matches(a, lower, raw))) hits.push(h.id);
+    if (h.aliases.some((a) => matches(a, lower))) hits.push(h.id);
   }
   return hits;
 }
@@ -51,10 +63,9 @@ export function extractHotspots(text: string): string[] {
  */
 export function extractPeople(text: string): string[] {
   const lower = ` ${text.toLowerCase()} `;
-  const raw = text;
   const hits: string[] = [];
   for (const p of PEOPLE) {
-    if (p.aliases.some((a) => matches(a, lower, raw))) hits.push(p.id);
+    if (p.aliases.some((a) => matches(a, lower))) hits.push(p.id);
   }
   return [...new Set(hits)];
 }
