@@ -256,12 +256,23 @@ So the flag covers one of the two ways a role dies, and the other is only visibl
 the label beside the headlines. That is the part of `roster:audit` that cannot be automated,
 and this is the second consecutive pass where the finding came from the unautomated half.
 
-Also settled, because 49 silent names look exactly like a broken alias list and that
-suspicion should not have to be re-run: **the silence is real absence.** Checked by going
-around the matcher rather than through it — searching every stored title, snippet and
+Also checked, because 49 silent names look exactly like a broken alias list: **where an
+entry's aliases cover the scripts it could appear in, the silence is real absence.** Checked
+by going around the matcher rather than through it — searching every stored title, snippet and
 translated title as raw text. Erdogan appears ZERO times across 5,868 articles while
 "Turkey" appears 12; "bin Salman" zero while "Saudi" appears 109. Outlets name the state and
-leave the official out. Nothing is missing from the aliases.
+leave the official out. Both examples still hold: each carries an Arabic alias, and neither is
+written in Devanagari anywhere in the corpus.
+
+**"Nothing is missing from the aliases" was too strong, and a later pass the same day
+disproved it.** Anura Kumara Dissanayake was listed silent while a Hindi headline called him
+राष्ट्रपति दिसानायके beside Rajnath Singh. His aliases were Latin-only, so the matcher never
+saw him — and the raw-text check could not have caught it either, because it searched the
+LATIN form. `title_en` exists only for Chinese (867 of 1,509), so the 733 hi/ar/ja/ru articles
+carry no Latin rendering of their headlines for either the matcher or the check to read. **A
+Latin-only alias is invisible in precisely the articles that most need it.** 21 of the 48
+silent entries are Latin-only and 20 of those are still untested; Dissanayake surfaced only
+because his mention happened to sit in an article the audit printed under someone else.
 
 One more worth recording as method rather than finding. I doubted Nepal's entry — Balen Shah
 listed as Prime Minister — because I remembered him as mayor of Kathmandu. Two English

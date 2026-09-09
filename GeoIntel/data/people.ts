@@ -342,8 +342,17 @@ export const PEOPLE: Person[] = [
     aliases: ['albares'] },
 
   // ---- Australia, Canada, New Zealand ----
+  // The bare surname was dropped 2026-09-09. It matched UN Special Rapporteur Francesca
+  // Albanese ("UN expert Francesca Albanese calls for a 'true paradigm shift'"), putting an
+  // Israel/UK story on Australia's PM and counting him NAMED on another person's coverage.
+  // Same rule as the bare 'shah' below, with one difference: Balen Shah keeps a distinctive
+  // given name to fall back on and this entry has none, since 'anthony' is far commoner than
+  // the surname. So a surname-only mention now needs a title or 'government' beside it, and
+  // one written as plain "Albanese said" will be missed. That costs nothing measurable today
+  // - the corpus names him zero times in any script - and the alternative is a known false
+  // positive on a figure this beat keeps covering.
   { id: 'anthony-albanese', name: 'Anthony Albanese', role: 'Prime Minister', home: 'AUS', short: 'Albanese',
-    aliases: ['albanese', '阿尔巴尼斯'] },
+    aliases: ['anthony albanese', 'pm albanese', 'prime minister albanese', 'albanese government', '阿尔巴尼斯'] },
   { id: 'penny-wong', name: 'Penny Wong', role: 'Foreign Minister', home: 'AUS',
     aliases: ['penny wong', '黄英贤'] },
   // Dual-hatted, and the corpus names only the other hat ("Hegseth Welcomes Australian
@@ -414,8 +423,13 @@ export const PEOPLE: Person[] = [
   // Listing nobody costs nothing measurable: a stale entry matches zero articles anyway,
   // because officials who leave office stop being written about. It only carries a false
   // label. Add Bangladesh back the moment a source names its government.
+
+  // Devanagari alias added 2026-09-09 from the corpus, which writes him दिसानायके. The audit
+  // counted him SILENT while a Hindi headline named him beside Rajnath Singh. A Latin-only
+  // alias hides a person in the 733 hi/ar/ja/ru articles: title_en exists only for Chinese,
+  // so there is no Latin form of those headlines for either the matcher or a raw-text check.
   { id: 'anura-dissanayake', name: 'Anura Kumara Dissanayake', role: 'President', home: 'LKA', short: 'Dissanayake',
-    aliases: ['dissanayake'] },
+    aliases: ['dissanayake', 'दिसानायके'] },
   { id: 'vijitha-herath', name: 'Vijitha Herath', role: 'Foreign Minister', home: 'LKA', short: 'Herath',
     aliases: ['vijitha herath'] },
   // Corrected 2026-09-06 from the corpus. Sushila Karki's caretaker government has been
