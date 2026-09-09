@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Panel, SectionTitle, Stat, Badge, Empty } from '@/components/ui';
 import { EventCard } from '@/components/EventCard';
 import { AskBox } from '@/components/AskBox';
+import { AnswerFocus } from '@/components/AnswerFocus';
 import { answerQuestion } from '@/lib/ask/answer';
 import { corpus } from '@/lib/queries';
 
@@ -35,7 +36,10 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
     <div className="space-y-6">
       <div>
         <p className="text-[10px] uppercase tracking-[0.2em] text-faint">Ask the corpus</p>
-        <h1 className="mt-2 max-w-3xl text-2xl font-semibold leading-snug tracking-tight">
+        {/* tabIndex={-1} for the same reason <main> carries it: this heading is a focus
+            target, and an id alone moves the scroll position without moving focus. */}
+        <h1 id="ask-heading" tabIndex={-1}
+          className="mt-2 max-w-3xl text-2xl font-semibold leading-snug tracking-tight">
           {question || 'Ask a question about what is being reported'}
         </h1>
         <p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-muted">
@@ -46,6 +50,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
       </div>
 
       <AskBox initial={question} autoFocus={!question} className="max-w-2xl" />
+      <AnswerFocus question={question} targetId="ask-heading" />
 
       {!answer && (
         <Panel className="p-4">
