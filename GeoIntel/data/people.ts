@@ -321,8 +321,20 @@ export const PEOPLE: Person[] = [
   // ---- Europe ----
   { id: 'yvette-cooper', name: 'Yvette Cooper', role: 'Foreign Secretary', home: 'GBR', short: 'Cooper',
     aliases: ['yvette cooper'] },
-  { id: 'keir-starmer', name: 'Keir Starmer', role: 'Prime Minister', home: 'GBR', short: 'Starmer',
-    aliases: ['starmer', '斯塔默'] },
+  // Corrected 2026-09-09 from the corpus. Keir Starmer was listed here as Prime Minister; the
+  // corpus puts ANDY BURNHAM in the office across 8 articles in two languages — "the first EU
+  // leader to meet new Prime Minister Andy Burnham in Downing Street", "New UK Prime Minister
+  // Andy Burnham", "hosted by Prime Minister Andy Burnham", and 会见英国新首相伯纳姆.
+  //
+  // A SUPERSEDED seat, not a vacated one: nothing writes "former Starmer", so the audit's
+  // FORMER/DISMISSED flags could never fire on it. Starmer also counted as NAMED on 2 articles,
+  // neither of which called him PM, so coverage volume gave no warning either — the same shape
+  // as Anil Chauhan. Starmer is UNLISTED rather than relabelled, because no source in the window
+  // says what office he holds now, if any. Found while sweeping the Latin-only silent entries.
+  //
+  // The bare surname is kept here, unlike 'albanese': every Burnham mention in the corpus is him.
+  { id: 'andy-burnham', name: 'Andy Burnham', role: 'Prime Minister', home: 'GBR', short: 'Burnham',
+    aliases: ['andy burnham', 'burnham', '伯纳姆'] },
   { id: 'macron', name: 'Emmanuel Macron', role: 'President', home: 'FRA', short: 'Macron',
     aliases: ['macron', '马克龙', 'ماكرون'] },
   { id: 'jean-noel-barrot', name: 'Jean-Noel Barrot', role: 'Foreign Minister', home: 'FRA', short: 'Barrot',
@@ -368,8 +380,11 @@ export const PEOPLE: Person[] = [
   // ---- Southeast Asia ----
   { id: 'ferdinand-marcos', name: 'Ferdinand Marcos Jr', role: 'President', home: 'PHL', short: 'Marcos',
     aliases: ['marcos jr', 'bongbong marcos', '马科斯'] },
+  // Chinese alias added 2026-09-09 from the corpus: 王毅晤菲律宾外长拉扎罗 (2026-07-22) names her
+  // and confirms the office. The SECOND hidden mention found by sweeping the silent entries whose
+  // aliases were Latin-only, after Dissanayake — same defect, different script.
   { id: 'theresa-lazaro', name: 'Theresa Lazaro', role: 'Foreign Secretary', home: 'PHL', short: 'Lazaro',
-    aliases: ['theresa lazaro'] },
+    aliases: ['theresa lazaro', '拉扎罗'] },
   { id: 'prabowo', name: 'Prabowo Subianto', role: 'President', home: 'IDN', short: 'Prabowo',
     aliases: ['prabowo', '普拉博沃'] },
   { id: 'sugiono', name: 'Sugiono', role: 'Foreign Minister', home: 'IDN',
@@ -380,6 +395,12 @@ export const PEOPLE: Person[] = [
     aliases: ['mohamad hasan'] },
   { id: 'to-lam', name: 'To Lam', role: 'Communist Party General Secretary', home: 'VNM',
     aliases: ['to lam', 'tô lâm', '苏林'] },
+  // FLAGGED 2026-09-09 and deliberately NOT changed. One Chinese article (stored twice) reads
+  // 越南政府总理黎明兴 — "Vietnamese government Prime Minister" followed by a name the corpus
+  // writes ONLY in Chinese characters. If that holds, this seat is stale. Left alone for two
+  // reasons: it is a single story from one outlet, and romanising 黎明兴 from nothing but those
+  // characters would be exactly the recall-based guess this file exists to prevent. Re-check when
+  // a second source names the office; if it holds, UNLIST this entry rather than invent a spelling.
   { id: 'pham-minh-chinh', name: 'Pham Minh Chinh', role: 'Prime Minister', home: 'VNM',
     aliases: ['pham minh chinh', 'phạm minh chính'] },
   { id: 'bui-thanh-son', name: 'Bui Thanh Son', role: 'Deputy PM and Foreign Minister', home: 'VNM',
