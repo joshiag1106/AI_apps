@@ -7,13 +7,20 @@ out
 *.db-journal
 *.db-wal
 *.db-shm
-.env
-.env.local
-# Anything derived from them too. A .env.local.bak carries exactly the same secrets
-# as .env.local and was not covered by the two lines above.
-.env.*.local
-.env.local.*
-.env.*.bak
+# The whole env family, with the committed template as the single exception. This is a
+# denylist turned into an allowlist on purpose: the previous rules named the shapes anyone
+# had thought of — .env.local, .env.local.bak — and the sync client promptly invented one
+# nobody had. It duplicated `.env.example` as `.env 2.example` in the published copy, which
+# means it inserts its number BEFORE what it reads as the extension, so a duplicate of the
+# real secrets file is `.env 2.local`. That matched none of the old rules and none of the
+# extension-scoped rules below, because `.local` is not among them.
+#
+# Nothing had leaked when this was found — only .env.example has ever been committed here.
+# But this repository already had its history scrubbed once for a file variant the ignore
+# rules did not anticipate, and enumerating variants is what failed both times. Ignore
+# everything and name the one file that is allowed out.
+.env*
+!.env.example
 .DS_Store
 *.tsbuildinfo
 
@@ -37,3 +44,8 @@ out
 * [0-9].md
 * [0-9].css
 * [0-9].patch
+# Extensionless duplicates: the same client produced a bare `.gitignore 2`. Safe to match
+# broadly in a way `* [0-9].*` is not — the asset that rule would have hidden silently,
+# "Figure 1.png", has an extension by definition, and a real file called "Figure 1" with
+# none is not a thing this repository contains.
+* [0-9]
