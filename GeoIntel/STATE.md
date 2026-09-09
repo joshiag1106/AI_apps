@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 348 passing (`npm test`) |
+| Tests | 360 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 3,257 events; mixed person graph 132 nodes / 604 edges |
 | Person roster | 120 officials across 38 states; 71 currently appear in the corpus |
@@ -269,9 +269,46 @@ headlines call him "Nepal PM Balen" and "PM Balen's government", so the roster w
 the recollection was wrong. **The rule caught its author rather than the file**, which is
 the strongest evidence yet for correcting from the corpus and never from memory.
 
-Not corrected, but worth a look next pass: Zhang Youxia appears beside 张又侠案 ("the Zhang
-Youxia case") in coverage of a PLA purge. Speculation in one outlet is not evidence he has
-left the CMC, so the label stands — but if he is removed, this is where it would show first.
+## The audit was reading less than the matcher (2026-09-09)
+
+**Zhang Youxia was listed as CMC Vice Chairman while VOA reported him 被正式免职 — "formally
+relieved of office" — twice**, on 2026-08-31 and 2026-09-01, both times paired with Liu Zhenli
+amid a Rocket Force purge. He is now the FORMER vice chairman and the serving seat is unlisted.
+
+I had looked straight at him earlier the same day and cleared him, on the grounds that
+张又侠案 ("the Zhang Youxia case") in one dissident aggregator's headline was speculation. It
+was — but it was not the evidence. **The evidence was in two VOA snippets, and the audit does
+not read snippets.** `backfill-people.ts` matches names over `title + snippet`; the audit
+selected `title, title_en` only. So a person matched through a snippet is listed as NAMED
+beside headlines that do not contain their name, and anything the snippet says about them is
+invisible to the reviewer and to the detector both. **A tool that shows you less than it
+matched on will let you certify what it hid.**
+
+The vocabulary was the second gap. FORMER looks for a retitling — Ex-CDS, पूर्व CDS — because
+that is what an outlet does to someone who left office and is still quoted. It has no word for
+a removal, and **a Chinese official is not retitled, he is removed**: 免职, 落马, 解职, 双开.
+DISMISSED is now a separate marker, kept separate because the two say different things — FORMER
+says the corpus disagrees with the label, DISMISSED says the person may hold no office at all.
+
+**Fixing it cost a precision regression that had to be fixed too, and that is the part worth
+remembering.** Reading snippets took CONTRADICTED from one entry to eight, all false — "the
+ex-communist east", "the former British empire", "former reality television star". A title is
+one clause, so proximity is implicit and never had to be stated; a snippet is a paragraph
+naming several people, and one 免职 about a general marked Xi, Trump and the US Treasury
+Secretary off a single VOA digest. **Widening what a detector reads silently invalidates the
+assumption that made it precise.** `marksPerson` now requires the marker within 32 characters
+of one of that person's own aliases, which returns the noise to zero and still flags Zhang
+Youxia at 2 of 3 — verified by restoring the wrong label and confirming the tool catches what
+it missed, rather than assuming the fix worked.
+
+Bare English "dismissed" came out of the vocabulary entirely: in news copy it means *rejected*
+far more often than *removed*, and it was matching "Putin has dismissed rumors" and "Netanyahu
+has dismissed accusations".
+
+Three of the four new tests pin a mutant that a first attempt did NOT catch. The obvious
+fixture is the real VOA sentence, which contains 免职 **and** 落马 — so deleting either from
+the pattern left the test green, the same coincidence that let two earlier tests in this repo
+pass against their own mutants. Each marker now has a fixture that can match by no other route.
 
 ## The accessibility pass (2026-09-07)
 

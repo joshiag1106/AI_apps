@@ -19,6 +19,7 @@
 // - "home state is a real country": a typo'd or stale ISO3 in the roster.
 import { describe, it, expect } from 'vitest';
 import { PEOPLE, BY_PERSON, ROSTER_REVIEWED } from '@/data/people';
+import { FORMER, DISMISSED, marksPerson } from '../scripts/roster-markers';
 import { extractPeople } from '@/lib/analyze/entities';
 import { BY_ISO } from '@/data/countries';
 import { clusterArticles } from '@/lib/verify/cluster';
@@ -160,5 +161,73 @@ describe('people do not disturb event clustering', () => {
     const [event] = clusterArticles(arts);
     expect(event.people.slice().sort()).toEqual(['modi', 'wang-yi']);
     expect(event.actors).not.toContain('modi');
+  });
+});
+
+describe('the roster audit detectors', () => {
+  // Added 2026-09-09, after Zhang Youxia sat mislabelled through a whole review pass. Two
+  // separate blind spots hid him, and each of these tests pins one of them shut.
+  it('reads a dismissal, which is not a "former" construction at all', () => {
+    // The exact sentence VOA published, and the reason FORMER was never going to match it:
+    // "formally relieved of office" contains no former-shaped word in any language.
+    const voa = '习近平军中大清洗再升级 张又侠、刘振立被正式免职，习的亲信钟绍军落马';
+    expect(FORMER.test(voa)).toBe(false);
+    expect(DISMISSED.test(voa)).toBe(true);
+  });
+
+  // Each marker gets its OWN fixture, and that is not redundant with the sentence above.
+  // The real VOA line carries 免职 AND 落马, so deleting either from the pattern left the
+  // test green — the fixture's right and wrong answers coincided, which is the exact way
+  // two earlier tests in this repo passed against their own mutants. A fixture that can
+  // still match by another route pins nothing.
+  it.each([
+    ['免职', '张又侠、刘振立被正式免职'],
+    ['落马', '习近平的亲信钟绍军也落马'],
+    ['解职', '该将领已被解职'],
+    ['被查', '中央军委委员被查'],
+    ['双开', '前防长被双开'],
+  ])('pins %s on a fixture that matches by no other route', (_marker, sentence) => {
+    expect(DISMISSED.test(sentence)).toBe(true);
+  });
+
+  it('keeps the precision guard that stops Chinese 前 firing on everything', () => {
+    // 目前 (currently) and 之前 (before) are ordinary words. A detector that fires on bare 前
+    // flags the whole corpus and gets ignored, which is worse than not existing.
+    expect(FORMER.test('目前中方立场不变')).toBe(false);
+    expect(FORMER.test('之前的会谈')).toBe(false);
+    expect(FORMER.test('前防长表示')).toBe(true);
+  });
+
+  // The VOA digest that made proximity necessary. It is one paragraph naming a purge AND
+  // three unrelated figures, so a detector that only asks "does this article contain 免职"
+  // marks Xi, Trump and the US Treasury Secretary as dismissed. The real sentence is
+  // 张又侠、刘振立被正式免职 — the marker sits beside the name it belongs to.
+  const digest =
+    '2026年9月1日《VOA今日焦点》重点新闻内容包括：美加码伊朗制裁牵动中国，财长贝森特敦促20国集团成员国应重新审视对中国的贸易条款；' +
+    '习近平军中大清洗再升级 张又侠、刘振立被正式免职，习的亲信钟绍军落马，专家分析：影响解放军“指挥链”与对台战力';
+
+  it('binds a dismissal to the name it stands beside', () => {
+    expect(marksPerson(digest, DISMISSED, ['张又侠'])).toBe(true);
+  });
+
+  it('does not mark everyone else named in the same paragraph', () => {
+    // Bessent is in this text, 40-odd characters from a 免职 that has nothing to do with him.
+    // Before the window existed he came back flagged as removed from office.
+    expect(marksPerson(digest, DISMISSED, ['贝森特'])).toBe(false);
+  });
+
+  it('does not bind a marker to a name in a different clause', () => {
+    const lula = 'former Brazil military chief reveals inside struggle, as Lula responded';
+    expect(marksPerson(lula, FORMER, ['lula'])).toBe(false);
+  });
+
+  it('does not treat an ordinary word as a dismissal', () => {
+    expect(DISMISSED.test('India and China resume border talks')).toBe(false);
+    expect(DISMISSED.test('中印边境会谈重启')).toBe(false);
+  });
+
+  it('reads English removals as well as Chinese ones', () => {
+    expect(DISMISSED.test('Defence chief sacked amid corruption probe')).toBe(true);
+    expect(DISMISSED.test('General removed from his post')).toBe(true);
   });
 });
