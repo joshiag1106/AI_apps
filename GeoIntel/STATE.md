@@ -270,9 +270,31 @@ disproved it.** Anura Kumara Dissanayake was listed silent while a Hindi headlin
 saw him — and the raw-text check could not have caught it either, because it searched the
 LATIN form. `title_en` exists only for Chinese (867 of 1,509), so the 733 hi/ar/ja/ru articles
 carry no Latin rendering of their headlines for either the matcher or the check to read. **A
-Latin-only alias is invisible in precisely the articles that most need it.** 21 of the 48
-silent entries are Latin-only and 20 of those are still untested; Dissanayake surfaced only
-because his mention happened to sit in an article the audit printed under someone else.
+Latin-only alias is invisible in precisely the articles that most need it.** Dissanayake
+surfaced only because his mention happened to sit in an article the audit printed under
+someone else.
+
+**All 21 Latin-only silent entries have now been swept** (2026-09-09), by reading the
+non-Latin coverage of each one's home state rather than searching for a romanisation nobody
+had. It found a SECOND hidden mention — **Theresa Lazaro**, written 拉扎罗 in
+王毅晤菲律宾外长拉扎罗 — and no evidence for the other 19, whose office-word hits were
+consistently about other people (China's MFA answering a question, Russia's foreign minister,
+Macron, PM Carney). Treat those 19 as consistent with genuine absence but not proven: the
+sweep only surfaces articles carrying an office word, so a bare-name mention would still hide.
+
+**That sweep also found the pass's most consequential error, in an entry that was not silent
+at all.** Keir Starmer was listed as UK Prime Minister; the corpus puts **Andy Burnham** in the
+office across 8 articles and two languages ("the first EU leader to meet new Prime Minister
+Andy Burnham in Downing Street", 会见英国新首相伯纳姆). Starmer had 2 articles, neither calling
+him PM. So this was SUPERSEDED, invisible to the FORMER/DISMISSED flags, and invisible to
+coverage volume as well — the Chauhan lesson in a new shape. Burnham now matches 10 articles,
+which would have made him one of the roster's better-covered figures the whole time he was
+missing. Starmer is unlisted; no source says what office he now holds.
+
+**Left flagged and deliberately unchanged: Vietnam.** One Chinese story (stored twice) reads
+越南政府总理黎明兴, which would make Pham Minh Chinh's seat stale. One outlet, one story, and
+the corpus gives only the characters — romanising them would be the guess this file forbids.
+`data/people.ts` carries the evidence so the next pass starts from it.
 
 One more worth recording as method rather than finding. I doubted Nepal's entry — Balen Shah
 listed as Prime Minister — because I remembered him as mayor of Kathmandu. Two English
