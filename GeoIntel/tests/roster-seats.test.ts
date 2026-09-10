@@ -105,6 +105,16 @@ describe('the noise the first live run turned up', () => {
     expect(findSeatMentions('继莫斯科之后 两位美国总统特使首次到访乌克兰')).toEqual([]);
   });
 
+  it('ignores a colon, which introduces a quote and never a name', () => {
+    // 尼泊尔外长：尼方无意… is "Nepal's FM: we do not intend…". Both of these were reported
+    // as mismatches the moment Teodoro and Khanal were added — the office is referenced,
+    // the holder is not named, and the run-capture was stepping over the punctuation to
+    // read the first two Han characters of the QUOTE. Structural, not another stopword:
+    // in this construction a name follows the office directly or not at all.
+    expect(findSeatMentions('尼泊尔外长：尼方无意向中国等国家寻求“气候正义赔偿”')).toEqual([]);
+    expect(findSeatMentions('中国外交部回应菲律宾国防部长：奉劝菲方个别人停止哗众取宠')).toEqual([]);
+  });
+
   it('still reads the name it was built for', () => {
     // The guard against over-correcting: the exclusions above must not silence a real name.
     expect(findSeatMentions('美国总统特朗普表示')[0]?.run.startsWith('特朗普')).toBe(true);
