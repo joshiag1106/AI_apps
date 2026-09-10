@@ -552,13 +552,23 @@ Minister, because that is the office and because Lazaro above is already 'Foreig
 extending `SEATS` to map 国防部长 onto the new role string; without it the entry would have
 resolved to nothing and the seat would have gone on reading unclaimed.
 
-**Khanal [NPL], Foreign Minister — and the given name is deliberately absent.** Three English
-items name him, all surname-only: "Foreign Minister Khanal Compares India, China Relations to
-Parents". The Chinese does print a full name, 尼泊尔外交部长希希尔·卡纳尔, but turning 希希尔
-into Latin letters would be romanising from characters — the exact move this file refuses for
-Vietnam's 黎明兴. So the surname is used because it is evidenced in Latin, and the given name
-is left out because it is not. **The rule applied at the granularity of half a name rather
-than a whole seat.** Complete it when a source prints it; do not fill it in from memory.
+**Khanal [NPL], Foreign Minister — the two halves of the name rest on different evidence.**
+Three English items name him, all surname-only: "Foreign Minister Khanal Compares India, China
+Relations to Parents". The Chinese prints a full name, 尼泊尔外交部长希希尔·卡纳尔, but turning
+希希尔 into Latin letters would be romanising from characters — the exact move this file refuses
+for Vietnam's 黎明兴. So he was listed as "Khanal" alone for several hours: **the rule applied
+at the granularity of half a name rather than a whole seat.**
+
+**The given name came from the OPERATOR, later the same day, and is recorded as such.** Josh
+supplied "Sishir"; the entry now reads Sishir Khanal and the comment on it says plainly that
+the surname is corpus-evidenced and the given name is not. That distinction is worth keeping
+rather than smoothing over — a person who knows the brief is a better source than a model
+recalling one, but this roster's review date only ever claimed the CORPUS, and a reader who
+cannot tell which claims rest on which has lost the thing the date was for. 希希尔 is
+consistent with "Sishir", which is a consistency check and not independent confirmation.
+
+**Nothing else in the roster currently rests on an operator-supplied fact.** If that changes,
+mark it the same way.
 
 **Adding them immediately exposed a noise class the first live run could not have shown.**
 Both new entries were reported as SEAT MISMATCHES against a correct roster within seconds:

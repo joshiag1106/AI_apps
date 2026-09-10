@@ -572,16 +572,24 @@ export const PEOPLE: Person[] = [
   // seats. Nepal had exactly one entry before this, so the corpus was naming a foreign
   // minister this product had no node for at all.
   //
-  // THE GIVEN NAME IS DELIBERATELY ABSENT, and that is not an oversight. Three English items
-  // name him — "Foreign Minister Khanal Compares India, China Relations to Parents", "India,
-  // Nepal must redefine ties amid shared ecological threat: Foreign Minister Khanal" — and
-  // every one gives the surname alone. The Chinese does print a full name,
-  // 尼泊尔外交部长希希尔·卡纳尔, but turning 希希尔 into Latin letters would be romanising from
-  // characters, which is the exact move this file forbids and refuses for Vietnam's 黎明兴.
-  // The surname is evidenced in Latin, so it is used; the given name is not, so it is not
-  // invented. Complete this when a source prints it — do not fill it in from memory.
-  { id: 'khanal', name: 'Khanal', role: 'Foreign Minister', home: 'NPL', short: 'Khanal',
-    aliases: ['khanal', '卡纳尔'] },
+  // THE SURNAME AND THE GIVEN NAME REST ON DIFFERENT EVIDENCE, and the difference is recorded
+  // because a future reader cannot otherwise tell.
+  //
+  // SURNAME — corpus. Three English items give it, all surname-only: "Foreign Minister Khanal
+  // Compares India, China Relations to Parents", "India, Nepal must redefine ties amid shared
+  // ecological threat: Foreign Minister Khanal". The Chinese prints 尼泊尔外交部长希希尔·卡纳尔,
+  // which also states the office.
+  //
+  // GIVEN NAME — SUPPLIED BY THE OPERATOR on 2026-09-10, not found in the corpus. It was left
+  // out for several hours precisely because romanising 希希尔 from the characters would be the
+  // guess this file forbids and still refuses for Vietnam's 黎明兴. A person who knows the brief
+  // telling you a name is a different and better source than a model recalling one, but it is
+  // NOT the corpus, and this roster's review date only ever claimed the corpus. 希希尔 is
+  // consistent with "Sishir", which is a consistency check and not independent confirmation.
+  //
+  // If a source ever prints it in Latin, delete this paragraph and say so.
+  { id: 'khanal', name: 'Sishir Khanal', role: 'Foreign Minister', home: 'NPL', short: 'Khanal',
+    aliases: ['khanal', 'sishir khanal', '卡纳尔', '希希尔'] },
   { id: 'mohamed-muizzu', name: 'Mohamed Muizzu', role: 'President', home: 'MDV', short: 'Muizzu',
     aliases: ['muizzu', '穆伊兹'] },
   { id: 'abdulla-khaleel', name: 'Abdulla Khaleel', role: 'Foreign Minister', home: 'MDV', short: 'Khaleel',
