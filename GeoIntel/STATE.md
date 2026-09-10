@@ -20,7 +20,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 
 | | |
 |---|---|
-| History | linear on `main`, **no remote**; run `git log --oneline` for the count |
+| History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
 | Tests | 381 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 6,348 articles, 3,485 events; drifts with every ingest, so re-measure |
@@ -101,8 +101,10 @@ issue when the person layer arrived: a mixed graph is far more nearly bipartite 
 
 The SQLite WAL and SHM sidecars were tracked before `.gitignore` covered them, and the
 blob in three of those commits held two bcrypt password hashes and two email addresses.
-Nothing was ever exposed — this repo has no remote and has never been pushed, and the copy
-published in the AI_apps monorepo has always been source-only for exactly this reason.
+Nothing was ever exposed. At the time this repo had no remote and had never been pushed, and
+the copy published in the AI_apps monorepo has always been source-only for exactly this reason.
+**The history now DOES have a remote — see below — and that was only safe because the scrub was
+re-verified before pushing.**
 
 It is gone now. `git filter-branch` removed `kautilya.db`, `-wal` and `-shm` from every
 commit, `refs/original` was deleted and the objects garbage-collected. Verified rather than
@@ -623,6 +625,39 @@ coverage rather than as a typo.
 
 The next pass should start by running the audit and reading the four sections above. If any
 count has moved, the corpus has moved with it.
+
+## The history is backed up now (2026-09-10)
+
+Until today GeoIntel's git history existed on one machine and nowhere else. The AI_apps copy
+publishes the SOURCE, not the history, so a disk failure would have taken 125 commits with it —
+and the gitignored build ledgers, which are not in the history either.
+
+**`github.com/joshiag1106/GeoIntel`, PRIVATE.** Two branches:
+
+- `main` — the full history, 125 commits, identical to this working copy.
+- `ledgers` — an ORPHAN commit holding `.superpowers/sdd/`, the three build ledgers.
+
+**The ledgers are on their own branch for a specific reason, so do not "tidy" them onto main.**
+They are gitignored here, and the AI_apps sync enumerates files with `git ls-files`. Force-adding
+them to `main` would make them tracked, and the next sync would copy them into a PUBLIC
+repository. The orphan branch keeps them backed up while leaving `main`'s tracked set at exactly
+151 files. They were committed through a scratch `GIT_INDEX_FILE` so the real index and working
+tree were never touched.
+
+**The scrub was re-verified before anything was pushed, not assumed from the 2026-09-02 note.**
+Every blob in the repository was scanned: 481 blobs, **zero** bcrypt hashes, **zero** database
+objects reachable from any ref. One blob matched a secret-shaped pattern and was inspected —
+`scripts/alerts-check.ts` printing `SMTP_PASS=<that mailbox's password>` as a help string, a
+placeholder in a file that is already public. `.env.local` is gitignored, has never been
+committed, and is in neither branch.
+
+**The backup was restored before being called a backup.** Cloned fresh from the remote:
+151/151 tracked files byte-identical to this working copy, 33 ledger files present, and the
+network-graph `progress.md` identical. A backup nobody has restored is a claim, not a backup.
+
+Private rather than public deliberately. The source is already public in AI_apps either way,
+so publishing the history would buy nothing and would permanently expose every intermediate
+commit, including pre-scrub-era commit messages.
 
 ## The accessibility pass (2026-09-07)
 
