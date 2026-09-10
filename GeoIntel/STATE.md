@@ -23,8 +23,8 @@ still renders every page and shows a first-run panel telling you to run the inge
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
 | Tests | 381 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | 6,291 articles, 3,464 events; drifts with every ingest, so re-measure |
-| Person roster | 122 officials across 39 states; 77 currently appear in the corpus |
+| Corpus at last run | 6,348 articles, 3,485 events; drifts with every ingest, so re-measure |
+| Person roster | 122 officials across 39 states; 77 named, 45 silent, 23 seats corpus-confirmed |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -579,6 +579,40 @@ false `mismatch`. A tool whose output you never act on cannot show you its own b
 Mismatches back to 1 (Vietnam, genuine), unclaimed to 1 in a covered state — 朝鲜国防部长努光铁遭解职,
 a DPRK defence minister the corpus reports being DISMISSED and the roster has no node for,
 which is a seat to leave empty rather than fill. 23 of 122 confirmed. 381 tests.
+
+## Where 2026-09-10 ended
+
+Verified after the final merge, not assumed. Corpus **6,348 articles / 3,485 events**, median
+age 9.8 days. Roster **122 entries, 77 named, 45 silent, 23 seats corpus-confirmed**. **381
+tests**, build green, 73/73 feeds.
+
+`npm run roster:audit` now ends in a state worth reading as a baseline:
+
+- **CONTRADICTED — 1, known noise.** Lula within 32 characters of "ex-leader", which is
+  Bolsonaro. Re-confirmed this pass rather than waved past.
+- **DISMISSED — 1, known noise.** The VOA digest reads 习近平军中大清洗再升级 followed by
+  张又侠、刘振立被正式免职: Xi is the one doing the purging. The 32-character proximity rule
+  cut this class from eight to one and cannot cut it further without parsing the sentence.
+- **SEAT MISMATCH — 1, genuine.** Vietnam. 越南政府总理黎明兴, still one story from one outlet
+  stored twice, still no romanisation anywhere. Flagged since 2026-09-09 and still not guessed at.
+- **UNCLAIMED SEAT — 1 in a covered state.** 朝鲜国防部长努光铁遭解职 — a DPRK defence minister
+  the corpus reports being DISMISSED. **Leave this one empty**; adding a node for someone the
+  corpus says was just removed would be the mistake Zhang Youxia's entry was made to avoid.
+
+Three merged PRs: #55 (Kushner's portfolio, and the header retraction), #56 (the seat-holder
+detector), #57 (Teodoro and Khanal, and the colon fix). AI_apps master at dfb2659, GeoIntel
+main linear.
+
+**Four dead or missing Chinese aliases were found in one day** — Anwar 安华, Pezeshkian
+佩泽什基扬, Araghchi 阿拉格齐, plus Lazaro 拉扎罗 and Dissanayake राष्ट्रपति दिसानायके the day
+before. Two of the four came from the detector's first run, in under a minute, after three
+careful hand sweeps had missed them. If one thing from this day is worth carrying forward it
+is that **a dead alias is invisible in exactly the way the roster is least equipped to
+notice**: the entry looks complete, the person lists as silent, and the silence reads as thin
+coverage rather than as a typo.
+
+The next pass should start by running the audit and reading the four sections above. If any
+count has moved, the corpus has moved with it.
 
 ## The accessibility pass (2026-09-07)
 
