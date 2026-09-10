@@ -459,6 +459,23 @@ export const PEOPLE: Person[] = [
   // aliases were Latin-only, after Dissanayake — same defect, different script.
   { id: 'theresa-lazaro', name: 'Theresa Lazaro', role: 'Foreign Secretary', home: 'PHL', short: 'Lazaro',
     aliases: ['theresa lazaro', '拉扎罗'] },
+  // Added 2026-09-10, from scripts/roster-seats.ts reporting PHL 国防部长 as an UNCLAIMED
+  // SEAT across 3 articles — an office the corpus was filling and this roster left empty.
+  // Well evidenced in both scripts, and one sentence carries both: 菲律宾国防部长特奥多罗
+  // （Gilberto Teodoro）, plus 菲律宾国防部长吉尔伯托·C·特奥多罗二世（Gilberto C. Teodoro Jr.）
+  // and an English item, "Philippine Defense Secretary Gilberto Teodoro".
+  //
+  // 'Defence Secretary' rather than 'Defence Minister' because that is what the office is
+  // called and what the corpus prints, and because Lazaro above is already 'Foreign
+  // Secretary' — the Philippines uses secretaries, and the roster should not translate that
+  // away. SEATS in scripts/roster-seats.ts was extended to map 国防部长 onto it; without that
+  // this entry would resolve to nothing and the seat would still read unclaimed.
+  //
+  // Bare 'teodoro' is safe here, unlike 'albanese': all three occurrences in the corpus are
+  // him. Note 菲防长 (abbreviated 菲 + 防长) appears too and the seat detector cannot see it —
+  // 菲 is not a country alias in data/countries.ts. A known gap, not a defect in this entry.
+  { id: 'gilberto-teodoro', name: 'Gilberto Teodoro', role: 'Defence Secretary', home: 'PHL', short: 'Teodoro',
+    aliases: ['teodoro', '特奥多罗'] },
   { id: 'prabowo', name: 'Prabowo Subianto', role: 'President', home: 'IDN', short: 'Prabowo',
     aliases: ['prabowo', '普拉博沃'] },
   { id: 'sugiono', name: 'Sugiono', role: 'Foreign Minister', home: 'IDN',
@@ -551,6 +568,20 @@ export const PEOPLE: Person[] = [
   // collide with Amit Shah, who is also on this roster.
   { id: 'balen-shah', name: 'Balendra "Balen" Shah', role: 'Prime Minister', home: 'NPL', short: 'Balen Shah',
     aliases: ['balen shah', 'balendra shah', 'balen', 'बालेन'] },
+  // Added 2026-09-10, from scripts/roster-seats.ts reporting NPL 外长 AND 外交部长 as unclaimed
+  // seats. Nepal had exactly one entry before this, so the corpus was naming a foreign
+  // minister this product had no node for at all.
+  //
+  // THE GIVEN NAME IS DELIBERATELY ABSENT, and that is not an oversight. Three English items
+  // name him — "Foreign Minister Khanal Compares India, China Relations to Parents", "India,
+  // Nepal must redefine ties amid shared ecological threat: Foreign Minister Khanal" — and
+  // every one gives the surname alone. The Chinese does print a full name,
+  // 尼泊尔外交部长希希尔·卡纳尔, but turning 希希尔 into Latin letters would be romanising from
+  // characters, which is the exact move this file forbids and refuses for Vietnam's 黎明兴.
+  // The surname is evidenced in Latin, so it is used; the given name is not, so it is not
+  // invented. Complete this when a source prints it — do not fill it in from memory.
+  { id: 'khanal', name: 'Khanal', role: 'Foreign Minister', home: 'NPL', short: 'Khanal',
+    aliases: ['khanal', '卡纳尔'] },
   { id: 'mohamed-muizzu', name: 'Mohamed Muizzu', role: 'President', home: 'MDV', short: 'Muizzu',
     aliases: ['muizzu', '穆伊兹'] },
   { id: 'abdulla-khaleel', name: 'Abdulla Khaleel', role: 'Foreign Minister', home: 'MDV', short: 'Khaleel',

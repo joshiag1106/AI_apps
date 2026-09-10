@@ -73,8 +73,8 @@ export const SEATS: Seat[] = [
   // either is right. Leaving them out would report a mismatch on a correct roster.
   { office: '外交部长', roles: ['Foreign Minister', 'External Affairs Minister', 'Foreign Secretary', 'Secretary of State', 'Deputy PM and Foreign Minister', 'Prime Minister and Foreign Minister'] },
   { office: '外长', roles: ['Foreign Minister', 'External Affairs Minister', 'Foreign Secretary', 'Secretary of State', 'Deputy PM and Foreign Minister', 'Prime Minister and Foreign Minister'] },
-  { office: '国防部长', roles: ['Defence Minister', 'Secretary of Defense', 'Deputy PM and Defence Minister'] },
-  { office: '防长', roles: ['Defence Minister', 'Secretary of Defense', 'Deputy PM and Defence Minister'] },
+  { office: '国防部长', roles: ['Defence Minister', 'Defence Secretary', 'Secretary of Defense', 'Deputy PM and Defence Minister'] },
+  { office: '防长', roles: ['Defence Minister', 'Defence Secretary', 'Secretary of Defense', 'Deputy PM and Defence Minister'] },
 ];
 
 /**
@@ -157,6 +157,12 @@ export function findSeatMentions(text: string): SeatMention[] {
       const seat = OFFICES.find((s) => text.startsWith(s.office, cursor));
       if (!seat) continue;
       const after = cursor + seat.office.length;
+      // The name must follow the office IMMEDIATELY. Filtering the window down to its Han
+      // characters would step over punctuation, and the commonest headline construction in
+      // this corpus puts a colon there — 尼泊尔外长：尼方无意…, 菲律宾国防部长：奉劝菲方… — which
+      // introduces a QUOTE, not a person. Both of those were reported as mismatches against
+      // a correct roster until this guard existed.
+      if (!HAN.test(text[after] ?? '')) continue;
       const run = [...text.slice(after, after + RUN)].filter((ch) => HAN.test(ch)).join('');
       // Two characters is the shortest Chinese personal name; one is always a fragment.
       if (run.length < 2 || NOT_A_NAME_START.has(run[0])) continue;

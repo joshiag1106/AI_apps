@@ -21,10 +21,10 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 380 passing (`npm test`) |
+| Tests | 381 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 6,291 articles, 3,464 events; drifts with every ingest, so re-measure |
-| Person roster | 120 officials across 38 states; 75 currently appear in the corpus |
+| Person roster | 122 officials across 39 states; 77 currently appear in the corpus |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -540,6 +540,45 @@ are exclusion lists and will be incomplete. A missing entry produces a false FLA
 reviewer dismisses in seconds — never a missed finding. Do not widen them with characters
 that could open a surname: suppressing a real name is the failure that matters, and unlike a
 false flag it says nothing at all.
+
+## Acting on the detector, and the noise class it found by being acted on (2026-09-10)
+
+Two of the four unclaimed seats filled, from the detector's own report.
+
+**Gilberto Teodoro [PHL], Defence Secretary.** Three articles, and one sentence carries both
+scripts: 菲律宾国防部长特奥多罗（Gilberto Teodoro）. Labelled 'Defence **Secretary**', not
+Minister, because that is the office and because Lazaro above is already 'Foreign Secretary'
+— the Philippines uses secretaries and the roster should not translate that away. That meant
+extending `SEATS` to map 国防部长 onto the new role string; without it the entry would have
+resolved to nothing and the seat would have gone on reading unclaimed.
+
+**Khanal [NPL], Foreign Minister — and the given name is deliberately absent.** Three English
+items name him, all surname-only: "Foreign Minister Khanal Compares India, China Relations to
+Parents". The Chinese does print a full name, 尼泊尔外交部长希希尔·卡纳尔, but turning 希希尔
+into Latin letters would be romanising from characters — the exact move this file refuses for
+Vietnam's 黎明兴. So the surname is used because it is evidenced in Latin, and the given name
+is left out because it is not. **The rule applied at the granularity of half a name rather
+than a whole seat.** Complete it when a source prints it; do not fill it in from memory.
+
+**Adding them immediately exposed a noise class the first live run could not have shown.**
+Both new entries were reported as SEAT MISMATCHES against a correct roster within seconds:
+尼泊尔外长：尼方无意… and 菲律宾国防部长：奉劝菲方… — the office named, the holder not, and
+the run-capture stepping over the colon to read the first two characters of the QUOTE.
+
+The fix is structural rather than another stopword, and that distinction is the point. The
+exclusion lists are lexical and will always be incomplete; this one is a rule — **a name
+follows the office immediately or not at all**, so a non-Han character in that position ends
+the match. `<country><office>：` is a headline convention for attributing a quote and it can
+never introduce a name.
+
+**Worth noting how it surfaced: the detector could only find this by being ACTED ON.** With
+those seats empty the same sentences classified as `unclaimed`, which is a plausible-looking
+verdict, and nothing looked wrong. Filling the seats turned the same input into a visibly
+false `mismatch`. A tool whose output you never act on cannot show you its own blind spots.
+
+Mismatches back to 1 (Vietnam, genuine), unclaimed to 1 in a covered state — 朝鲜国防部长努光铁遭解职,
+a DPRK defence minister the corpus reports being DISMISSED and the roster has no node for,
+which is a seat to leave empty rather than fill. 23 of 122 confirmed. 381 tests.
 
 ## The accessibility pass (2026-09-07)
 
