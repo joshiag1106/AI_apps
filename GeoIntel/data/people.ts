@@ -31,10 +31,24 @@
 // optional, and nothing in the code can detect that it has fallen overdue.
 //
 // `npm run roster:audit` is the tool for that pass. It prints every entry beside the
-// headlines that name them, and flags the case a machine CAN catch: a headline calling
-// someone FORMER while this file says they serve. That is how Anil Chauhan was caught on
-// 2026-09-07 after being wrong for some time. It never edits anything — the judgement,
-// and the rule below, stay with the reviewer.
+// headlines and snippets that name them, and flags the two cases a machine CAN catch:
+// FORMER, where something retitles a serving official (Ex-CDS, पूर्व CDS — that is how Anil
+// Chauhan was caught on 2026-09-07), and DISMISSED, where something says they were removed
+// (免职, 落马, 双开 — that is how Zhang Youxia was caught on 2026-09-09). It never edits
+// anything; the judgement, and the rule below, stay with the reviewer.
+//
+// DO NOT READ A CLEAN FLAG AS A CLEAN ROSTER. Both flags look for a WORD marking a seat as
+// ended, and the most common way a label goes wrong prints no such word. A superseded seat
+// is simply reported in the new holder's name, as though it always had been: Min Aung
+// Hlaing was captioned Commander-in-Chief beside headlines calling him Myanmar's President;
+// Keir Starmer held the UK Prime Minister seat here while 8 articles put Andy Burnham in it;
+// Jared Kushner was captioned "Envoy, Middle East" over 45 articles, 44 of them Ukraine and
+// none of them Middle East. Three findings, no flag possible on any of them, and coverage
+// volume warned of nothing either — Starmer and Min Aung Hlaing both looked healthily NAMED.
+//
+// So the flags are the cheap half. The half that finds things is reading each printed label
+// against the headlines under it, and that is the part of this pass that cannot be automated
+// with what the corpus currently stores.
 //
 // Every `home` must be an ISO3 present in data/countries.ts, which tracks 68 states. That
 // is why some obvious figures are absent: Cambodia, for one, is not a tracked state, so its
@@ -52,19 +66,37 @@
  * judge an absence. Two pages display it and both import it, so it cannot drift from the
  * file it describes.
  *
- * WHAT THE DATE CAN AND CANNOT MEAN, measured on 2026-09-09: the review is made against
- * this corpus, and the corpus names only 71 of the 120 people here. For those, a headline
- * states or contradicts the role and the check is evidence. For the other 49 it returns
+ * WHAT THE DATE CAN AND CANNOT MEAN, measured on 2026-09-10: the review is made against
+ * this corpus, and the corpus names only 75 of the 120 people here. For those, a headline
+ * states or contradicts the role and the check is evidence. For the other 45 it returns
  * nothing at all — and silence is not confirmation, it is absence of a source. Their labels
  * rest on whichever earlier review last had evidence for them.
  *
- * THAT SILENCE IS REAL ABSENCE, NOT A BROKEN ALIAS LIST — checked on 2026-09-09, because 49
- * unmatched names look exactly like a matcher fault and that is the first thing a reader of
- * this file will suspect. The check has to go around the matcher rather than through it:
+ * MOST OF THAT SILENCE IS REAL ABSENCE, AND SOME OF IT HAS BEEN A BROKEN ALIAS LIST. The
+ * distinction matters because 45 unmatched names look exactly like a matcher fault, and this
+ * comment asserted the reassuring half of it — "nothing is missing from the aliases" — for a
+ * day after that had been disproven. Both halves, with their evidence:
+ *
+ * The absence is usually real. Checked by going around the matcher rather than through it:
  * search the stored title, snippet and translated title of every article for the name as
- * text. Erdogan appears ZERO times across 5,868 articles while 'Turkey' appears 12, and
+ * text. Erdogan appears ZERO times across 6,291 articles while 'Turkey' appears 12, and
  * 'bin Salman' zero while 'Saudi' appears 109. Outlets name the state and leave the official
- * out. Nothing is missing from the aliases; the reporting genuinely does not name them.
+ * out.
+ *
+ * BUT THAT CHECK CANNOT SEE THE CASE IT MOST NEEDS TO. It searches the LATIN form of a name,
+ * and `title_en` is populated only for Chinese — so hi/ar/ja/ru articles carry no Latin
+ * rendering of their headline for the matcher OR the check to read. A Latin-only alias is
+ * therefore invisible in precisely the articles that most need it, and the check that would
+ * catch that is blind in the same place, for the same reason. Two entries were hiding behind
+ * this on 2026-09-09: Anura Kumara Dissanayake, named राष्ट्रपति दिसानायके, and Theresa Lazaro,
+ * named 拉扎罗. Both were listed silent; both were being named all along.
+ *
+ * 27 of the 120 entries still carry Latin-only aliases. They were swept once, on 2026-09-09,
+ * by reading their home state's non-Latin coverage — which is a weaker instrument than it
+ * sounds, because it only surfaces articles carrying an office word, so a bare-name mention
+ * would still hide. Treat those 27 as consistent with absence and NOT as proven absent, and
+ * treat any new Latin-only entry as unverifiable until it has an alias in the scripts its
+ * home state is actually covered in.
  *
  * This is a property of a narrow corpus, not a defect to fix: the feeds cover India-China,
  * the South China Sea and the Gulf, so Singapore's and Sri Lanka's foreign ministers may
@@ -72,7 +104,7 @@
  * corpus, which is a different and looser standard than the one the rest of the product
  * holds — so the honest move is to say the date is uneven, not to imply it is uniform.
  */
-export const ROSTER_REVIEWED = '2026-09-09';
+export const ROSTER_REVIEWED = '2026-09-10';
 
 export interface Person {
   id: string;
@@ -183,7 +215,19 @@ export const PEOPLE: Person[] = [
     aliases: ['hegseth', '赫格塞思'] },
   { id: 'steve-witkoff', name: 'Steve Witkoff', role: 'Special Envoy', home: 'USA', short: 'Witkoff',
     aliases: ['witkoff', '威特科夫'] },
-  { id: 'jared-kushner', name: 'Jared Kushner', role: 'Envoy, Middle East', home: 'USA', short: 'Kushner',
+  // Was 'Envoy, Middle East' until 2026-09-10. The corpus does not support the qualifier and
+  // contradicts it by portfolio: of his 45 articles, ZERO contain "Middle East", "Gaza" or 中东,
+  // and 44 are Russia-Ukraine. Outlets call him a "US envoy", a "US peace envoy" and 美国总统特使
+  // ("US presidential special envoy"), never a regional one, and they name him beside Witkoff in
+  // nearly every one — same shuttle, Moscow then Kyiv, same office word.
+  //
+  // A third shape of stale role, after Chauhan's VACATED and Min Aung Hlaing's SUPERSEDED: the
+  // office is right and the QUALIFIER is unsupported. No flag can see it. FORMER and DISMISSED
+  // both look for a word marking a seat as ended, and nothing marks a portfolio as moved; the
+  // page simply captioned 45 Ukraine articles "Envoy, Middle East". Dropping the qualifier is the
+  // minimal correction the evidence licenses — it claims only what the corpus says, and does not
+  // assert he stopped Middle East work, which no source in the window addresses either way.
+  { id: 'jared-kushner', name: 'Jared Kushner', role: 'Special Envoy', home: 'USA', short: 'Kushner',
     aliases: ['kushner', '库什纳'] },
   { id: 'scott-bessent', name: 'Scott Bessent', role: 'Treasury Secretary', home: 'USA', short: 'Bessent',
     aliases: ['bessent', '贝森特'] },

@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-09.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-10.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -23,8 +23,8 @@ still renders every page and shows a first-run panel telling you to run the inge
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
 | Tests | 363 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | 3,257 events; mixed person graph 132 nodes / 604 edges |
-| Person roster | 120 officials across 38 states; 72 currently appear in the corpus |
+| Corpus at last run | 6,291 articles, 3,464 events; drifts with every ingest, so re-measure |
+| Person roster | 120 officials across 38 states; 75 currently appear in the corpus |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -396,6 +396,58 @@ The lesson that outlives the bug: **a branch written for "the scripts that are n
 silently assumed the property that actually mattered was having no word boundaries, when the
 property that mattered here was having no case.** Those two sets are not the same set, and
 nothing failed loudly when they diverged.
+
+## A third shape of stale role, and a file that reassured its own reader (2026-09-10)
+
+Ingest 73/73, corpus 5,956 -> 6,291. The roster moved to **75 named / 45 silent** from 72/48
+without any alias work this pass — last session's Dissanayake, Lazaro and Burnham fixes
+carrying names that were always there. Both audit flags fired on known noise and were
+re-confirmed as noise, not waved past: Lula sits within 32 characters of "ex-leader", which
+is Bolsonaro, and the Xi digest is 习近平军中大清洗再升级 followed by 张又侠、刘振立被正式免职 —
+Xi is the one doing the purging. 363 tests throughout.
+
+**The finding was Jared Kushner, captioned "Envoy, Middle East" over 45 articles of which
+ZERO mention the Middle East, Gaza or 中东, and 44 are Russia-Ukraine.** Outlets call him a
+"US envoy", a "US peace envoy" and 美国总统特使, never a regional one, and name him beside
+Witkoff in nearly every one — same shuttle, Moscow then Kyiv. Corrected to `Special Envoy`,
+which is the label Witkoff already carried and the only one the corpus licenses. The
+qualifier is dropped rather than replaced: nothing in the window says he stopped Middle East
+work either, and inventing a new region would be the guess this file forbids.
+
+**This is a THIRD shape of stale role and it is worth separating from the other two.**
+Chauhan's seat was VACATED and outlets retitle a vacated seat, so FORMER can see it. Zhang
+Youxia's was REMOVED and Chinese outlets print 免职, so DISMISSED can see it. Kushner's OFFICE
+was never wrong — the QUALIFIER on it was, and no language marks a portfolio as moved. It
+joins Min Aung Hlaing and Starmer/Burnham in the class no flag can reach, which is now three
+of the last five findings.
+
+**The pass's other finding was in this project's own documentation, and it is the more
+embarrassing one.** `data/people.ts` still told its reader, in the header a reviewer reads
+first, "Nothing is missing from the aliases; the reporting genuinely does not name them."
+That claim was disproven on 2026-09-09 by Dissanayake and Lazaro. It was retracted **here**
+that day and left standing **there** — so the correction reached the narrative document and
+never reached the file that actually governs the next pass. Worse than a stale number: it is
+the reassurance that made the silent half look settled, sitting directly above the roster it
+was wrong about.
+
+Both corrected in place. The header now carries what the sweep actually established — that
+the raw-text check searches the LATIN form while `title_en` is populated only for Chinese, so
+a Latin-only alias and the check meant to catch it are blind in the same articles, for the
+same reason — and that **27 of the 120 entries are still Latin-only** and are consistent with
+absence rather than proven absent. The audit's own description was stale too, naming only
+FORMER; it now names DISMISSED, says it reads snippets, and states plainly that a clean flag
+is not a clean roster, with all three superseded findings as the evidence.
+
+**The lesson, and it generalises past this repo: a correction is not finished when the
+document that narrates the work is fixed. It is finished when every artefact that asserts the
+false thing is fixed** — and the one most worth checking is whichever a future reader
+consults before deciding how hard to look.
+
+**Vietnam re-checked and deliberately unchanged, as last session asked.** 越南政府总理黎明兴
+is still one story from one outlet, stored twice, with no romanisation anywhere. A Kremlin
+item does head "Statements by the President of Russia and the President of Vietnam" on the
+day To Lam visited Moscow, but it names nobody and carries an empty snippet, so it cannot
+settle the seat either way. Still flagged; still not guessed at.
 
 ## The accessibility pass (2026-09-07)
 
