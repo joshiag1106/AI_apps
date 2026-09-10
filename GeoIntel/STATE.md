@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`, **no remote**; run `git log --oneline` for the count |
-| Tests | 363 passing (`npm test`) |
+| Tests | 380 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 6,291 articles, 3,464 events; drifts with every ingest, so re-measure |
 | Person roster | 120 officials across 38 states; 75 currently appear in the corpus |
@@ -478,6 +478,69 @@ item does head "Statements by the President of Russia and the President of Vietn
 day To Lam visited Moscow, but it names nobody and carries an empty snippet, so it cannot
 settle the seat either way. Still flagged; still not guessed at.
 
+## The seat-holder detector (2026-09-10)
+
+`scripts/roster-seats.ts`, `tests/roster-seats.test.ts`, three new sections in
+`npm run roster:audit`. 380 tests, build green. It automates the half of the roster pass that
+three consecutive sessions did by hand.
+
+**What it does.** Chinese headline copy writes a seat as one adjacent run —
+日本首相高市早苗 — so country, office and name arrive together. The tool resolves
+`<country><modifier?><office>` to the seat `data/people.ts` claims and asks whether the
+LISTED HOLDER'S OWN ALIAS sits within 32 characters of it. Three verdicts: **confirmed**,
+**mismatch** (someone else is named in a seat the roster fills), **unclaimed** (the corpus
+fills an office the roster leaves empty).
+
+**It does not parse where the Chinese name ends, and that was the design decision that
+mattered.** An early sketch extracted the name and compared it, which truncated
+加拿大总理马克[龙] and would need to know every surname length in every language. Asking
+instead whether the expected alias is nearby needs no name boundaries at all, and it reuses
+`WINDOW` from `marksPerson` rather than inventing a second distance that could drift from it.
+
+**The corpus corrected the design twice, before and after first light.** Before: matching
+only adjacent `<country><office>` would have missed 英国**新**首相伯纳姆 and
+越南**政府**总理黎明兴 — the two headlines the detector exists for, both carrying a modifier
+in the middle. After: the first live run produced 10 mismatches of which 9 were noise, and
+the noise was not what the design predicted. 涨薪, 重申, 举行, 任期 are verbs where a name
+should be, and **美国总统特使 is a compound office** — a presidential ENVOY — which cannot be
+excluded by banning a leading character, because 特 opens 特使 and also opens 特朗普. Word,
+not character, is the unit that disambiguates. Every one of those strings is now a test
+fixture. Mismatches went 10 -> 1, and the survivor is the genuine Vietnam case.
+
+**It found two dead aliases on its first run, which is the whole argument for it.** Masoud
+Pezeshkian carried 佩泽希齐扬 and Abbas Araghchi 阿拉格奇 — **each occurring ZERO times in
+6,315 articles** — while outlets print 伊朗总统佩泽什基扬 and 伊朗外长阿拉格齐 and state the
+office besides. Both fixed, both now read CONFIRMED, which is the tool checking its own work.
+
+That makes three of this class in one day, after Anwar. **A dead alias is the worst kind of
+roster fault**: the entry looks complete, the audit lists the person as silent, and the
+silence reads as thin coverage rather than as a typo. Nothing in three careful hand sweeps
+caught any of the three; the tool caught two in under a minute.
+
+**What it reports today:** 1 mismatch (Vietnam), 4 unclaimed seats in states the roster
+covers, 21 of 120 seats confirmed. The unclaimed four are real gaps worth filling —
+菲律宾国防部长特奥多罗 (3 articles, and the article gives the Latin name too), Nepal's
+foreign minister under both 外长 and 外交部长, and 朝鲜国防部长努光铁遭解职, which is a
+dismissal the roster has no node for at all.
+
+**21 of 120 is the honest ceiling, not a disappointment.** Only 67 states carry Chinese
+aliases and the corpus's Chinese coverage concentrates on a dozen of them, so most of the
+roster can never be confirmed this way. It is still the first MECHANICAL confirmation this
+roster has ever had — every previous review date rested on a human having read a headline
+once, which is what the `ROSTER_REVIEWED` comment means when it calls the date uneven.
+
+**Chinese only, deliberately.** The adjacency is a property of Chinese headline grammar.
+English has the same construction — "new Prime Minister Andy Burnham" — but "the first EU
+leader to meet new Prime Minister Andy Burnham in Downing Street" puts the country nowhere
+near the office. Hindi and Arabic name offices as often but not in fixed order. Extending it
+is a separate problem and should not have blocked this one.
+
+**The known limit, stated because it is silent.** `NOT_A_NAME_START` and `COMPOUND_OFFICE`
+are exclusion lists and will be incomplete. A missing entry produces a false FLAG — a line a
+reviewer dismisses in seconds — never a missed finding. Do not widen them with characters
+that could open a surname: suppressing a real name is the failure that matters, and unlike a
+false flag it says nothing at all.
+
 ## The accessibility pass (2026-09-07)
 
 Five commits. Structural, and audited against the accessibility tree in a real browser
@@ -583,7 +646,10 @@ palettes, and `/ask`'s answer panel beyond its heading and focus behaviour.
 
 
 
-1. **Build the seat-holder detector. This is the first item I would actually do**, because
+1. **DONE 2026-09-10 — the seat-holder detector is built and shipped.** See its own section
+   above. Left here because the reasoning for building it still explains what it is for.
+
+   ~~Build the seat-holder detector~~, because
    the roster pass now finds something every time and finds it by hand, and on 2026-09-10 a
    ten-line throwaway script found in two minutes a mention three careful hand sweeps had
    missed (Anwar, 安华 — see the section above).

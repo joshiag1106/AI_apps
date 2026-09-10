@@ -16,6 +16,7 @@
 import { getDb } from '@/lib/db';
 import { PEOPLE } from '@/data/people';
 import { FORMER, DISMISSED, marksPerson } from './roster-markers';
+import { findSeatMentions, classifySeat, SEATS } from './roster-seats';
 
 const filter = process.argv[2]?.toLowerCase();
 
@@ -97,6 +98,92 @@ function report(title: string, rows: ReturnType<typeof flag>, re: RegExp) {
 
 report('CONTRADICTED: something calls them FORMER while the roster says serving', flag(FORMER), FORMER);
 report('DISMISSED: something says they were removed from office', flag(DISMISSED), DISMISSED);
+
+// The seat check. FORMER and DISMISSED above look for a word marking a seat as ENDED; this
+// asks the opposite question — who does the corpus actually put in the office? — and it is
+// the only section that can catch a superseded seat, which prints no marker word at all.
+// Chinese only, because only Chinese headline copy writes <country><office><name> adjacently.
+// See scripts/roster-seats.ts for why, and for what this cannot do.
+type Seen = { count: number; sample: (typeof rows)[number]; run: string };
+const mismatch = new Map<string, Seen & { holder: string; role: string }>();
+const unclaimed = new Map<string, Seen>();
+const confirmed = new Map<string, Seen & { holder: string; offices: Set<string> }>();
+
+for (const r of rows) {
+  const text = textOf(r);
+  if (!/[\u4e00-\u9fff]/.test(text)) continue;
+  for (const m of findSeatMentions(text)) {
+    if (filter && m.iso.toLowerCase() !== filter) continue;
+    const v = classifySeat(text, m, PEOPLE);
+    // Grouped by SEAT, not by the name-run: three outlets writing 菲律宾国防部长 with three
+    // different renderings of the same minister is one finding, not three.
+    const seat = `${m.iso} ${m.office}`;
+    if (v.verdict === 'confirmed') {
+      // Keyed on the person, so an official their outlets call both 总理 and 首相 — Anwar is
+      // written both ways — is one confirmed seat rather than two.
+      const cur = confirmed.get(v.holder.id);
+      if (cur) { cur.count += 1; cur.offices.add(m.office); }
+      else confirmed.set(v.holder.id, { count: 1, sample: r, run: m.run, holder: v.holder.name, offices: new Set([m.office]) });
+    } else if (v.verdict === 'mismatch') {
+      const cur = mismatch.get(seat);
+      if (cur) cur.count += 1;
+      else mismatch.set(seat, { count: 1, sample: r, run: m.run, holder: v.holder.name, role: v.holder.role });
+    } else {
+      const cur = unclaimed.get(seat);
+      if (cur) cur.count += 1;
+      else unclaimed.set(seat, { count: 1, sample: r, run: m.run });
+    }
+  }
+}
+
+const where = (r: (typeof rows)[number], run: string) => {
+  const t = textOf(r);
+  const i = t.indexOf(run);
+  return t.slice(Math.max(0, i - 16), i + 24).replace(/\s+/g, ' ').trim();
+};
+const plural = (n: number) => `${n} article${n > 1 ? 's' : ''}`;
+
+console.log('\n=== SEAT MISMATCH: the corpus names someone else in a seat this roster fills ===');
+if (!mismatch.size) console.log('  none');
+for (const [seat, v] of [...mismatch].sort((a, b) => b[1].count - a[1].count)) {
+  console.log(`  ${seat} — roster says ${v.holder} ("${v.role}") — ${plural(v.count)}`);
+  console.log(`      ${v.sample.published_at.slice(0, 10)}  …${where(v.sample, v.run)}…`);
+}
+
+// Split, because the two halves mean opposite things. A state the roster COVERS with an
+// empty seat is a gap to fill — the corpus is naming an official this product has no node
+// for. A state the roster does not cover at all is working as designed: it tracks 38 of the
+// 68 states, and reporting the other 30 every run would bury the half that matters.
+const covered = new Set(PEOPLE.map((p) => p.home));
+const gaps = [...unclaimed].filter(([k]) => covered.has(k.split(' ')[0]));
+const offRoster = [...unclaimed].filter(([k]) => !covered.has(k.split(' ')[0]));
+
+console.log('\n=== UNCLAIMED SEAT: the corpus fills an office this roster leaves empty ===');
+if (!gaps.length) console.log('  none');
+for (const [seat, v] of gaps.sort((a, b) => b[1].count - a[1].count)) {
+  const roles = SEATS.find((x) => x.office === seat.split(' ')[1])?.roles.slice(0, 3).join(' / ') ?? '';
+  console.log(`  ${seat} (${roles}) — ${plural(v.count)}`);
+  console.log(`      ${v.sample.published_at.slice(0, 10)}  …${where(v.sample, v.run)}…`);
+}
+if (offRoster.length) {
+  const states = [...new Set(offRoster.map(([k]) => k.split(' ')[0]))].sort();
+  console.log(`\n  (${offRoster.length} more in ${states.length} states this roster does not cover, which is by design: ${states.join(', ')})`);
+}
+
+// Printed because the roster has never had MECHANICAL confirmation of anything. The review
+// date in data/people.ts is uneven by its own admission: most entries rest on a human having
+// read a headline once. These are the seats the corpus itself vouches for today.
+//
+// The office is printed rather than the name-run because the run is only a CANDIDATE name —
+// the verdict comes from finding the holder's own alias nearby, and where the two differ the
+// run is the misleading half (阿根廷总统喊话英国 confirms Milei on an alias further along,
+// but 喊话 is a verb).
+console.log(`\n=== SEATS CONFIRMED BY THE CORPUS: ${confirmed.size} of ${roster.length} roster entries ===`);
+if (!confirmed.size) console.log('  none');
+for (const [id, v] of [...confirmed].sort((a, b) => b[1].count - a[1].count)) {
+  const p = PEOPLE.find((x) => x.id === id)!;
+  console.log(`  ${v.holder.padEnd(26)} [${p.home}] ${[...v.offices].join(' ')} — ${p.role}  (${v.count})`);
+}
 
 console.log('\n=== NAMED: listed role, then the headlines that mention them ===');
 for (const p of seen.sort((a, b) => (hits.get(b.id)!.length - hits.get(a.id)!.length))) {

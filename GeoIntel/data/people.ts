@@ -47,8 +47,18 @@
 // volume warned of nothing either — Starmer and Min Aung Hlaing both looked healthily NAMED.
 //
 // So the flags are the cheap half. The half that finds things is reading each printed label
-// against the headlines under it, and that is the part of this pass that cannot be automated
-// with what the corpus currently stores.
+// against the headlines under it.
+//
+// PART OF THAT READING IS NOW AUTOMATED, and this comment claimed it could never be for
+// about two hours. `scripts/roster-seats.ts` resolves the seat Chinese copy names —
+// 日本首相高市早苗 is country, office and name in one adjacent run — and asks whether the
+// holder listed here is the one named in it. It prints SEAT MISMATCH, UNCLAIMED SEAT and a
+// list of the seats the corpus positively confirms, which is the first mechanical
+// confirmation this roster has ever had. It found two dead Chinese aliases on its first run.
+//
+// It covers Chinese only, so it ranks the reading pass rather than replacing it: the
+// adjacency is a property of Chinese headline grammar, and 45 of the 120 entries are named
+// by no article at all in any language. Read the printed labels anyway.
 //
 // Every `home` must be an ISO3 present in data/countries.ts, which tracks 68 states. That
 // is why some obvious figures are absent: Cambodia, for one, is not a tracked state, so its
@@ -329,10 +339,21 @@ export const PEOPLE: Person[] = [
   // ---- Iran ----
   { id: 'khamenei', name: 'Ali Khamenei', role: 'Supreme Leader', home: 'IRN', short: 'Khamenei',
     aliases: ['khamenei', '哈梅内伊', 'خامنئی'] },
+  // 佩泽什基扬 and 阿拉格齐 added 2026-09-10, both extracted from the articles. Each entry
+  // ALREADY carried a Chinese alias and neither had ever matched anything: 佩泽希齐扬 occurs
+  // ZERO times in 6,315 articles and 阿拉格奇 zero, while the forms outlets actually print —
+  // 伊朗总统佩泽什基扬 and 伊朗外长阿拉格齐 — occur and state the office besides.
+  //
+  // Found by scripts/roster-seats.ts on its FIRST live run, which is the point worth keeping.
+  // These are the Anwar case again (a right-script, wrong-rendering alias, invisible to any
+  // check that asks only whether an entry covers a script) and three careful hand sweeps had
+  // missed all three. A dead alias is the worst kind of roster fault: the entry looks
+  // complete, the audit lists the person as silent, and the silence reads as absence of
+  // coverage rather than as a typo. The old forms are kept — an outlet may yet use them.
   { id: 'pezeshkian', name: 'Masoud Pezeshkian', role: 'President', home: 'IRN', short: 'Pezeshkian',
-    aliases: ['pezeshkian', '佩泽希齐扬', 'پزشکیان'] },
+    aliases: ['pezeshkian', '佩泽希齐扬', '佩泽什基扬', 'پزشکیان'] },
   { id: 'araghchi', name: 'Abbas Araghchi', role: 'Foreign Minister', home: 'IRN', short: 'Araghchi',
-    aliases: ['araghchi', '阿拉格奇', 'عراقچی'] },
+    aliases: ['araghchi', '阿拉格奇', '阿拉格齐', 'عراقچی'] },
   { id: 'larijani', name: 'Ali Larijani', role: 'Supreme National Security Council Secretary', home: 'IRN', short: 'Larijani',
     aliases: ['larijani', 'لاریجانی'] },
   { id: 'esmail-baghaei', name: 'Esmail Baghaei', role: 'MFA Spokesman', home: 'IRN', short: 'Baghaei',
