@@ -98,6 +98,15 @@
  * treat any new Latin-only entry as unverifiable until it has an alias in the scripts its
  * home state is actually covered in.
  *
+ * AND HAVING AN ALIAS IN THE RIGHT SCRIPT IS NOT SUFFICIENT EITHER — found 2026-09-10, one day
+ * after the paragraph above was written, which is why it sits here rather than replacing it.
+ * Anwar Ibrahim carried 安瓦尔 and was still invisible in 马来西亚首相安华: both are current
+ * Chinese renderings of his name, and the outlet chose the other one. Transliteration is a
+ * choice each publisher makes, not a property of the language, so a per-entry script-coverage
+ * check would have passed him. The exposure is therefore wider than "Latin-only": it is every
+ * transliterated name with fewer renderings listed than its outlets use, and this file cannot
+ * tell you how many of those there are.
+ *
  * This is a property of a narrow corpus, not a defect to fix: the feeds cover India-China,
  * the South China Sea and the Gulf, so Singapore's and Sri Lanka's foreign ministers may
  * never once be named no matter how long it runs. Verifying them means going outside this
@@ -433,8 +442,23 @@ export const PEOPLE: Person[] = [
     aliases: ['prabowo', '普拉博沃'] },
   { id: 'sugiono', name: 'Sugiono', role: 'Foreign Minister', home: 'IDN',
     aliases: ['sugiono'] },
+  // 安华 added 2026-09-10, extracted from the article rather than typed from recall. Deutsche
+  // Welle Chinese heads 马来西亚首相安华打破该国政治惯例 — it names him AND states the office —
+  // and that article was matching NOBODY, because his only Chinese alias was 安瓦尔 and the piece
+  // uses 安华 exclusively. Both renderings are current: 安瓦尔 is the mainland transliteration,
+  // 安华 the one Malaysian and DW Chinese copy uses.
+  //
+  // A DIFFERENT GAP FROM DISSANAYAKE AND LAZARO, and the reason the 2026-09-09 sweep could never
+  // have found it: that sweep looked at entries whose aliases were LATIN-ONLY. Anwar's were not.
+  // He had an alias in the right script and it was the wrong rendering of it — so a script-
+  // coverage check passes him and he stays invisible anyway. Transliteration is a choice each
+  // outlet makes, not a property of the language.
+  //
+  // Safe as a bare two-character alias on this corpus: 安华 occurs exactly once across 6,291
+  // articles and it is him. Re-check if the feeds ever widen to business news — 安华 is also a
+  // Chinese insurer's name, and Han has no word boundaries to protect against that.
   { id: 'anwar-ibrahim', name: 'Anwar Ibrahim', role: 'Prime Minister', home: 'MYS', short: 'Anwar',
-    aliases: ['anwar ibrahim', '安瓦尔'] },
+    aliases: ['anwar ibrahim', '安瓦尔', '安华'] },
   { id: 'mohamad-hasan', name: 'Mohamad Hasan', role: 'Foreign Minister', home: 'MYS',
     aliases: ['mohamad hasan'] },
   { id: 'to-lam', name: 'To Lam', role: 'Communist Party General Secretary', home: 'VNM',

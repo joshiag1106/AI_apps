@@ -443,6 +443,35 @@ document that narrates the work is fixed. It is finished when every artefact tha
 false thing is fixed** — and the one most worth checking is whichever a future reader
 consults before deciding how hard to look.
 
+**A THIRD hidden mention, and the first one found by a method rather than by hand.** Testing
+whether the unautomated half could be automated — extract `<country><office><name>` from the
+Chinese coverage and check the name against the roster's holder of that seat — turned up
+**Anwar Ibrahim invisible in 马来西亚首相安华** (Deutsche Welle Chinese, 2026-08-20), an article
+that names him AND states the office and was matching NOBODY. His only Chinese alias was
+安瓦尔; the piece uses 安华 exclusively. Added, backfilled, propagated: 1 row updated, no
+collateral, Anwar 2 -> 3 articles.
+
+**It is a different gap from Dissanayake and Lazaro, and that is the part worth keeping.**
+Those two were LATIN-ONLY, and the 2026-09-09 sweep was built around exactly that property.
+Anwar was not Latin-only. He had an alias in the right script and it was the wrong RENDERING
+of it — so a per-entry script-coverage check, which is the obvious next detector and the one
+this experiment was testing, would have passed him clean. Transliteration is a choice each
+publisher makes, not a property of the language. The exposure is wider than "Latin-only": it
+is every transliterated name carrying fewer renderings than its outlets use, and nothing in
+the repo can say how many of those exist.
+
+Which also means the header paragraph written earlier THIS SESSION was already too narrow
+when it was written. It has been widened in place rather than rewritten, so the sequence
+stays legible — the same failure this session set out to fix, caught one step faster.
+
+**The experiment itself is worth repeating and is NOT yet a tool.** The extraction is ten
+lines of throwaway Python against `language='zh'` and it is noisy (韩国总统府 is the
+presidential OFFICE, not a person; the regex grabs trailing characters). But it re-derived
+Burnham unprompted — 英国首相伯纳姆 sits right there in the output — which is the strongest
+evidence available that the class of finding the last three passes made by reading is
+mechanisable. It found something in two minutes that three careful hand sweeps missed.
+Building it properly is the top candidate for the next session; see "Where to go next".
+
 **Vietnam re-checked and deliberately unchanged, as last session asked.** 越南政府总理黎明兴
 is still one story from one outlet, stored twice, with no romanisation anywhere. A Kremlin
 item does head "Statements by the President of Russia and the President of Vietnam" on the
@@ -554,11 +583,36 @@ palettes, and `/ask`'s answer panel beyond its heading and focus behaviour.
 
 
 
-1. **Legal review before charging anyone.** Publisher and aggregator terms of service
+1. **Build the seat-holder detector. This is the first item I would actually do**, because
+   the roster pass now finds something every time and finds it by hand, and on 2026-09-10 a
+   ten-line throwaway script found in two minutes a mention three careful hand sweeps had
+   missed (Anwar, 安华 — see the section above).
+
+   The idea, and it is narrow on purpose: Chinese headline copy uses a rigid construction,
+   `<country><office><name>` — 日本首相高市早苗, 英国首相伯纳姆, 加拿大总理卡尼. Extract those
+   triples, resolve `<country><office>` to the seat this roster claims, and compare the name
+   to the person listed in it. Three outcomes worth printing: the name matches (confirmation,
+   which the roster has never had mechanically), the name is a person on the roster in a
+   DIFFERENT seat, or the name matches nobody at all — which is either an alias gap or a
+   seat that has changed hands. That last case is exactly Burnham, and the experiment
+   re-derived him unprompted.
+
+   Two things to know before starting. It is NOISY as written — 韩国总统府 is the presidential
+   OFFICE not a person, 德国总理的中国困 is the regex eating trailing characters, and 加拿大总理马克
+   truncates Carney's name — so the name half needs validating against something, and the
+   32-character proximity discipline from `marksPerson` is the precedent for how. And it is
+   Chinese-only: this construction is a property of Chinese headline grammar. Hindi and Arabic
+   name the office too but not in a fixed adjacent order, so treat those as a separate problem
+   and do not block the Chinese half on them.
+
+   It does not replace the reading pass; it ranks it. Say so on `/methodology` if it ever
+   surfaces to readers.
+
+2. **Legal review before charging anyone.** Publisher and aggregator terms of service
    govern commercial redistribution of this material, and the CC-CEDICT dictionary carries
    a CC BY-SA 4.0 obligation. This matters more now that Desk Pro has features attached to
    it.
-2. **Send one real alert email.** The pipeline is built and tested but has still never put
+3. **Send one real alert email.** The pipeline is built and tested but has still never put
    a message in an inbox. Delivery moved from Resend to SMTP on 2026-09-03: Resend sends
    only from a domain verified in its dashboard, and a personal address can never be one,
    so the transport was the blocker rather than anything in the pipeline.
@@ -580,7 +634,7 @@ palettes, and `/ask`'s answer panel beyond its heading and focus behaviour.
    Until that lands in an inbox the delivery half is unproven in exactly the way the LLM
    layer was.
 
-3. **Full article text — now needed only for the ACTION on an edge, not for the edge.**
+4. **Full article text — now needed only for the ACTION on an edge, not for the edge.**
    ~~Person-to-person is impossible.~~ That ruling was wrong and is corrected above: the
    edges shipped 2026-09-06. What full text would buy is the *verb* — "X met Y" rather than
    "X and Y were named together" — and that limit is firmer than the edge count ever was,
