@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-10.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-11.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 381 passing (`npm test`) |
+| Tests | 402 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 6,348 articles, 3,485 events; drifts with every ingest, so re-measure |
 | Person roster | 122 officials across 39 states; 77 named, 45 silent, 23 seats corpus-confirmed |
@@ -88,8 +88,12 @@ issue when the person layer arrived: a mixed graph is far more nearly bipartite 
    empty, so nothing has left the machine. The rendering half *was* checked against a real
    corpus event; delivery was not. One missing value stands between this and proven — see
    "Where to go next".
-2. **The Dockerfile has never been built.** Docker was not installed. The standalone Node
-   path in `README.md` *was* tested end to end and works.
+2. **It has never run on a real server.** The standalone Node path in `README.md` was tested
+   end to end, and on 2026-09-11 the production build answered correctly to the headers a
+   reverse proxy sends for a public host — but no real proxy, TLS certificate or DNS has
+   been in front of it yet. (This item used to read "the Dockerfile has never been built".
+   There is no Dockerfile: the README described one, and a compose file, that were never
+   committed, and git has no trace of either.)
 3. **No penetration test, and no screen reader has actually been run.** Accessibility
    passes on 2026-09-07 and 2026-09-08 audited the structure and fixed what they found, but
    drove the accessibility TREE, not VoiceOver or NVDA. Those are not the same exercise: the
@@ -658,6 +662,59 @@ network-graph `progress.md` identical. A backup nobody has restored is a claim, 
 Private rather than public deliberately. The source is already public in AI_apps either way,
 so publishing the history would buy nothing and would permanently expose every intermediate
 commit, including pre-scrub-era commit messages.
+
+## Getting it ready to host publicly (2026-09-11)
+
+Josh wants the site public, on a VPS behind a reverse proxy. Reading the code against how it
+would actually run there found five things in the way. All five are fixed on branch
+`public-deploy`, test first, each test watched failing against the old code.
+
+1. **Checkout would have redirected to localhost.** Both checkout routes built their
+   redirects from `new URL(req.url).origin`. Next 15.5.4 builds a route handler's `req.url`
+   from the host and port the server itself listens on — `attachRequestMeta` in
+   `next-server.js`, and `resolve-routes.js` — never from the Host header. So behind a proxy,
+   a reader returning from Stripe lands on `http://localhost:3000`. `lib/site.ts` now supplies
+   the address from `KAUTILYA_ORIGIN` to checkout and to alert mail, strips a trailing slash
+   (which would have made every mail link `//events`), and throws in production rather than
+   guess. The ingest already contains alert failures, and nothing is marked sent, so a missing
+   origin delays mail rather than losing it.
+2. **Test-mode checkout handed out Pro in production**, and /pricing named the `STRIPE_*`
+   settings to every visitor. `lib/billing.ts` now decides stripe / mock / closed in one place;
+   mock is development-only. That also ended a split: pricing read the secret key alone, the
+   route read the key and the price, so a key without a price advertised live checkout and
+   then quietly ran test mode. "Cancel Pro (test mode)" now shows only in test mode — with live
+   billing it would have dropped the plan while Stripe went on charging.
+3. **An open image proxy.** `images.remotePatterns` with host `**` let `/_next/image` fetch any
+   URL and re-serve it from this domain. Nothing uses next/image; it is gone. The test asks
+   Next's own matcher rather than reading the config's text.
+4. **The paid model call now needs an account.** Device-cookie metering bounds nothing for a
+   client that never stores the cookie — middleware mints a fresh device, and a fresh five,
+   on every request. Anonymous `/api/analyse` returns 401 `{ unavailable: 'signin' }` and the
+   panel offers a sign-in link instead of the button.
+5. **The README described a deploy path that did not exist** — the Docker section — and a
+   `cp -r public` step for a folder the repo has never had. It now says what production needs.
+
+**Verified against the production build, not only the tests.** The standalone server, run with
+production settings over a copy of the corpus and probed with the headers a proxy sends for
+the public host: checkout 303 to the public origin, `/_next/image` 400, anonymous
+`/api/analyse` 401, /pricing "not open yet" with no setting names, `/api/cron` 401 without
+its secret. 402 tests.
+
+**Two things learned that will recur:**
+
+- **In production `kautilya.db` is not a cache.** It holds accounts, plans and watchlists. The
+  standalone server `chdir`s into `.next/standalone`, so without `KAUTILYA_DB` the database
+  lands in the folder every build replaces. Set it outside the build, and back it up.
+- **The preview tool reads the WORKSPACE `launch.json`, not this repo's.** Asked for a config
+  that only `Output/GeoIntel/.claude/launch.json` had, it started the dev server instead — and
+  `next dev` deleted `.next/standalone` on startup. The shared-`.next` trap cuts both ways: a
+  build breaks a running dev server, and starting dev wipes a build.
+
+**Still to do before it is public:** the domain's registrar verification (it was not resolving
+on 2026-09-11); the server itself — Node 24, a service manager, a TLS-terminating proxy, cron
+on `/api/cron`, a nightly database backup; DNS; a spend limit on the Anthropic workspace; and
+`SMTP_PASS`. Whether to launch free or with real billing is still open, and the code is safe
+either way.
 
 ## The accessibility pass (2026-09-07)
 

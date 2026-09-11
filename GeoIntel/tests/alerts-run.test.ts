@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -133,6 +133,45 @@ describe('not repeating itself', () => {
     const r = recorder();
     await m.run.runAlerts(events, { send: r.send, origin: 'https://k.test' });
     expect(r.sent.map((s) => s.to).sort()).toEqual(['a1@test.invalid', 'b1@test.invalid']);
+  });
+});
+
+describe('where the links point', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('links to the configured public address when the caller names none', async () => {
+    // The ingest calls runAlerts with no origin, so this default is what readers receive.
+    // The trailing slash is how the value is often written; it must not become "//events".
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('KAUTILYA_ORIGIN', 'https://kautilya.example/');
+    user('pro8', 'pro', true);
+    m.watch.addWatch('pro8', { kind: 'country', id: 'CHN', label: 'China' });
+    const bodies: string[] = [];
+    const send = async (_to: string, d: { text: string }) => { bodies.push(d.text); return { delivered: true as const }; };
+
+    await m.run.runAlerts([ev(8, ['CHN'])], { send });
+
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatch(/https:\/\/kautilya\.example\/events\/x\d+/);
+    expect(bodies[0]).not.toContain('localhost');
+  });
+
+  it('refuses to mail from production with no public address, and still sends once one is set', async () => {
+    // Links to the server's own address are useless in an inbox. Failing is right, and
+    // the ingest contains the failure; what matters is that nothing is marked delivered.
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('KAUTILYA_ORIGIN', '');
+    user('pro9', 'pro', true);
+    m.watch.addWatch('pro9', { kind: 'country', id: 'CHN', label: 'China' });
+    const events = [ev(8, ['CHN'])];
+    const r = recorder();
+
+    await expect(m.run.runAlerts(events, { send: r.send })).rejects.toThrow(/KAUTILYA_ORIGIN/);
+    expect(r.sent).toEqual([]);
+
+    vi.stubEnv('KAUTILYA_ORIGIN', 'https://kautilya.example');
+    await m.run.runAlerts(events, { send: r.send });
+    expect(r.sent).toHaveLength(1);
   });
 });
 

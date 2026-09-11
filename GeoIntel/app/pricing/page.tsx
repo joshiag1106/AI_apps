@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Panel, Badge } from '@/components/ui';
 import { FREE_LIMIT, METERED, quotaState } from '@/lib/quota';
 import { currentUser } from '@/lib/auth';
+import { billing } from '@/lib/billing';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Plans' };
@@ -25,7 +26,7 @@ const PRO = [
 
 export default async function PricingPage() {
   const [quota, user] = await Promise.all([quotaState(), currentUser()]);
-  const stripeLive = !!process.env.STRIPE_SECRET_KEY;
+  const mode = billing().mode;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -76,10 +77,14 @@ export default async function PricingPage() {
             <div className="mt-5 rounded-md border border-[color:var(--color-line)] px-4 py-2 text-center text-[12.5px] text-muted">
               You&apos;re on Pro
             </div>
+          ) : mode === 'closed' ? (
+            <div className="mt-5 rounded-md border border-[color:var(--color-line)] px-4 py-2 text-center text-[12.5px] text-muted">
+              Subscriptions are not open yet
+            </div>
           ) : user ? (
             <form action="/api/checkout" method="post" className="mt-5">
               <button className="w-full rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[13px] font-medium text-[#0a0d13] hover:opacity-90">
-                {stripeLive ? 'Continue to checkout' : 'Activate Pro (test mode)'}
+                {mode === 'stripe' ? 'Continue to checkout' : 'Activate Pro (test mode)'}
               </button>
             </form>
           ) : (
@@ -89,7 +94,9 @@ export default async function PricingPage() {
             </Link>
           )}
 
-          {!stripeLive && (
+          {/* Development only. In production the same state is `closed`, and a page open to
+              the public has no business naming the server's settings. */}
+          {mode === 'mock' && (
             <p className="mt-3 text-[10.5px] leading-relaxed text-faint">
               Stripe keys are not configured, so checkout runs in test mode: the button activates Pro
               on your account immediately without taking payment. Set <code className="mono-num">STRIPE_SECRET_KEY</code> and{' '}

@@ -15,6 +15,7 @@ import { cachedAnalysis } from '@/lib/llm/analyse';
 import { ChineseText, zhTitleMap } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { llmEnabled } from '@/lib/llm/client';
+import { currentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const { event, articles } = detail;
 
   const gate = await consume('event_detail', id);
+  const signedIn = !!(await currentUser());
   const esc = escalationLabel(event.escalation);
   // Render an already-computed analysis without an API call; otherwise offer the button.
   const priorAnalysis = llmEnabled() ? cachedAnalysis(event, articles) : null;
@@ -178,7 +180,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          <FramingAnalysis eventId={id} initial={priorAnalysis} enabled={llmEnabled()} />
+          <FramingAnalysis eventId={id} initial={priorAnalysis} enabled={llmEnabled()} signedIn={signedIn} />
 
           {glossHits.length > 0 && (
             <Panel className="p-4">

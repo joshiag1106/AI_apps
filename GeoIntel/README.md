@@ -111,18 +111,20 @@ Database path defaults to `./kautilya.db`, override with `KAUTILYA_DB`.
 
 ## Configuration
 
-Everything in `.env.example` is optional; the engine runs fully without any of it.
+For local development everything in `.env.example` is optional; the engine runs fully
+without any of it. A production deployment needs three settings — see
+[What production needs](#what-production-needs).
 
 - `ANTHROPIC_API_KEY` — enables the cross-language framing comparison on event pages
   (`lib/llm/`). Absent, the panel says so and every other feature works unchanged.
-  `KAUTILYA_LLM_MODEL` overrides the model (default `claude-opus-5`).
-
-  > **Not verified against a live call.** This layer was written against the documented
-  > API contract and is covered by tests for its schema, cache and disabled paths, but no
-  > API key was available in the environment where it was built, so the request has never
-  > actually been sent. Exercise it once against your own key before relying on it.
-- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` — live billing. Absent, checkout runs in mock mode.
-- `CRON_SECRET` — protects the refresh endpoint. Required in production.
+  `KAUTILYA_LLM_MODEL` overrides the model (default `claude-opus-5`). It has run live
+  (2026-09-02, on Sonnet 5), and `npm run llm:check` sends one request and reports what it
+  cost. It is the only feature that spends money per click, so it needs a signed-in
+  account, and the key's workspace should carry a spend limit.
+- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` — live billing; both are needed. Without them a
+  development server runs checkout in test mode, activating Pro without payment, and
+  production closes checkout and says subscriptions are not open yet (`lib/billing.ts`).
+- `KAUTILYA_ORIGIN`, `KAUTILYA_DB`, `CRON_SECRET` — required in production.
 
 ## Deploying
 
@@ -133,43 +135,55 @@ where this can run.
 | Host | Works? | Why |
 |---|---|---|
 | VPS / bare metal / Fly.io / Railway / Render | **Yes** | Persistent disk; mount it and set `KAUTILYA_DB` |
-| Docker anywhere | **Yes** | `docker compose up` with the bundled volume |
+| Managed hosts that replace the app folder on every deploy | **Only with care** | The database must live outside that folder, or each deploy deletes every account |
 | **Vercel / Netlify / Cloudflare Workers** | **No** | Read-only, ephemeral filesystem. Ingest would report success and the data would vanish on the next cold start — a silent failure, not a crash |
+
+There is no Dockerfile. An earlier version of this section described one, and a compose
+file, that were never committed; the standalone path below is the one that exists.
 
 To run on a serverless host you would need to replace `lib/db/` with a hosted database.
 The rest of the codebase does not care: every stage reads and writes rows through that
 one module.
 
-### Docker
+### What production needs
 
-```bash
-CRON_SECRET=$(openssl rand -hex 32) docker compose up --build
-```
+Three settings, each of which fails in its own way without it:
 
-The bundled `refresher` service calls `/api/cron` hourly. The database lives on the
-`kautilya-data` volume, never in the image layer.
+- **`KAUTILYA_ORIGIN`** — the address readers use, e.g. `https://example.com`. Behind a
+  reverse proxy, Next builds a route handler's `req.url` from the server's own listening
+  address, so checkout redirects and alert-mail links cannot be taken from the request.
+  They come from here, and in production the server throws rather than guess
+  (`lib/site.ts`).
+- **`KAUTILYA_DB`** — an absolute path outside the build. The standalone server changes
+  directory into `.next/standalone` at startup, so the default `./kautilya.db` lands in the
+  folder `npm run build` replaces. In production that file holds accounts, plans and
+  watchlists as well as the rebuildable corpus, so it is not a cache there: back it up.
+- **`CRON_SECRET`** — `/api/cron` returns 403 in production without it.
 
-> **Not verified.** Docker was not installed in the environment where this was built,
-> so the Dockerfile and compose file are written but have never been executed. The
-> standalone Node path below **was** tested and works.
+Refresh the corpus one way: host cron calling `/api/cron`, or `KAUTILYA_AUTO_INGEST=1` in
+the server process — not both, since nothing stops the two overlapping. Serve it over
+HTTPS: session cookies are `secure` in production, so over plain HTTP a sign-in never
+sticks.
 
 ### Standalone Node (verified)
 
 ```bash
 npm run build
 cp -r .next/static .next/standalone/.next/static
-cp -r public .next/standalone/public
-KAUTILYA_DB=/var/lib/kautilya/kautilya.db PORT=3000 node .next/standalone/server.js
+KAUTILYA_ORIGIN=https://example.com KAUTILYA_DB=/var/lib/kautilya/kautilya.db \
+  CRON_SECRET=… HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js
 ```
 
-Boots in about 250 ms. Schedule refreshes with host cron:
+Boots in about 250 ms. `HOSTNAME=127.0.0.1` keeps it reachable only through the reverse
+proxy in front of it. Schedule refreshes with host cron:
 
 ```
-0 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
+0 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron
 ```
 
-`/api/cron` refuses to run unauthenticated when `NODE_ENV=production`, so set
-`CRON_SECRET` or the endpoint returns 403.
+`npm run ingest` works on the server too, but it reads only what its shell exports, not
+the server's environment. Export the same settings first: with mail credentials and no
+`KAUTILYA_ORIGIN`, its alerts would link to localhost.
 
 ## Security and accessibility
 
@@ -199,8 +213,21 @@ covered by tests (`tests/security.test.ts`).
 - **Keyboard focus.** `outline-none` on the inputs had removed the only affordance keyboard
   users had; a global `:focus-visible` ring restores it without affecting mouse users.
 
-Not done: no penetration test, no formal screen-reader pass, no rate limiting on the
-export or analysis endpoints beyond the usage quota.
+- **Redirects to localhost (fixed).** Checkout built its redirects from `req.url`, which
+  behind a reverse proxy is the server's own address — a reader returning from payment
+  would have landed on `localhost`. Redirects and mail links now come from
+  `KAUTILYA_ORIGIN`.
+- **Free Pro in production (fixed).** With no Stripe keys, checkout's test mode activated
+  Pro for anyone who pressed the button, and the pricing page named the server's settings
+  to every visitor. Test mode is now development-only.
+- **Open image proxy (fixed).** `next.config.mjs` allowed `/_next/image` to fetch from any
+  host and re-serve the result from this domain. Nothing used it; it is gone.
+- **The paid call needs an account.** The anonymous allowance is keyed on a device cookie
+  that a script simply does not store, so it bounded nothing on the one endpoint that
+  spends money per click.
+
+Not done: no penetration test, no formal screen-reader pass, no rate limiting beyond the
+usage quota — which for anonymous readers is advisory, for the reason just given.
 
 ## Asking it questions
 

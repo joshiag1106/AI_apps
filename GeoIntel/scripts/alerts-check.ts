@@ -13,6 +13,7 @@
  */
 import { allEvents } from '@/lib/db';
 import { renderDigest, sendDigest } from '@/lib/alerts/send';
+import { siteOrigin } from '@/lib/site';
 import type { Jump } from '@/lib/alerts/detect';
 
 function arg(name: string): string | undefined {
@@ -27,7 +28,7 @@ async function main() {
   const host = process.env.SMTP_HOST ?? 'smtp.gmail.com';
   const port = process.env.SMTP_PORT ?? '465';
   const from = process.env.ALERTS_FROM ?? user;
-  const origin = process.env.KAUTILYA_ORIGIN ?? 'http://localhost:3111';
+  const origin = siteOrigin('http://localhost:3111');
 
   console.log(`\n  server   ${host}:${port}`);
   console.log(`  user     ${user ?? '(SMTP_USER not set)'}`);
