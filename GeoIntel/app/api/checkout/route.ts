@@ -1,23 +1,30 @@
 import { NextResponse } from 'next/server';
 import { currentUser, setPlan } from '@/lib/auth';
+import { siteOrigin } from '@/lib/site';
+import { billing } from '@/lib/billing';
 
 /**
- * Checkout. With Stripe keys present this creates a real Checkout Session; without
- * them it activates Pro directly so the whole subscriber flow is exercisable in
- * development. The mode is stated on the pricing page rather than hidden.
+ * Checkout. With Stripe keys present this creates a real Checkout Session. Without them, a
+ * development server activates Pro directly so the whole subscriber flow is exercisable,
+ * and production refuses — see lib/billing.ts. The mode is stated on the pricing page
+ * rather than hidden.
  */
 export async function POST(req: Request) {
   const user = await currentUser();
-  const origin = new URL(req.url).origin;
+  // Not `new URL(req.url).origin`: behind a proxy that is the server's own address, and
+  // every redirect below would send the reader to localhost. See lib/site.ts.
+  const origin = siteOrigin(new URL(req.url).origin);
   if (!user) return NextResponse.redirect(`${origin}/login?next=/pricing`, 303);
 
-  const key = process.env.STRIPE_SECRET_KEY;
-  const price = process.env.STRIPE_PRICE_ID;
-
-  if (!key || !price) {
+  const setup = billing();
+  if (setup.mode === 'closed') {
+    return NextResponse.redirect(`${origin}/pricing?error=billing_closed`, 303);
+  }
+  if (setup.mode === 'mock') {
     setPlan(user.id, 'pro');
     return NextResponse.redirect(`${origin}/account`, 303);
   }
+  const { key, price } = setup;
 
   const body = new URLSearchParams({
     mode: 'subscription',

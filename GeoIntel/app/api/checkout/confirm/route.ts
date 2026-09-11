@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { currentUser, setPlan } from '@/lib/auth';
+import { siteOrigin } from '@/lib/site';
 
 /** Stripe success redirect. Verifies the session was actually paid before granting Pro. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const origin = url.origin;
+  // The query is read from the request; the address to send the reader on to is not —
+  // behind a proxy that is the server's own. See lib/site.ts.
+  const origin = siteOrigin(url.origin);
   const sessionId = url.searchParams.get('session_id');
   const user = await currentUser();
   const key = process.env.STRIPE_SECRET_KEY;

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Panel, SectionTitle, Stat, Badge } from '@/components/ui';
 import { currentUser, endSession, setPlan } from '@/lib/auth';
+import { billing } from '@/lib/billing';
 import { alertsEnabled, setAlertsEnabled } from '@/lib/alerts/state';
 import { listWatch } from '@/lib/watchlist/store';
 import { quotaState, usageLog, METERED, FREE_LIMIT } from '@/lib/quota';
@@ -16,6 +17,7 @@ export default async function AccountPage() {
   const [quota, log] = await Promise.all([quotaState(), usageLog(25)]);
   const alerting = user.plan === 'pro' && alertsEnabled(user.id);
   const watching = listWatch(user.id).length;
+  const mode = billing().mode;
 
   async function signOut() {
     'use server';
@@ -93,11 +95,15 @@ export default async function AccountPage() {
       {!quota.unlimited && (
         <Panel className="p-4">
           <SectionTitle kicker="Unlimited analysis across every view">Upgrade to Pro</SectionTitle>
-          <form action="/api/checkout" method="post">
-            <button className="rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[13px] font-medium text-[#0a0d13] hover:opacity-90">
-              {process.env.STRIPE_SECRET_KEY ? 'Continue to checkout' : 'Activate Pro (test mode)'}
-            </button>
-          </form>
+          {mode === 'closed' ? (
+            <p className="text-[12.5px] text-muted">Subscriptions are not open yet.</p>
+          ) : (
+            <form action="/api/checkout" method="post">
+              <button className="rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[13px] font-medium text-[#0a0d13] hover:opacity-90">
+                {mode === 'stripe' ? 'Continue to checkout' : 'Activate Pro (test mode)'}
+              </button>
+            </form>
+          )}
         </Panel>
       )}
 
@@ -126,7 +132,9 @@ export default async function AccountPage() {
             Sign out
           </button>
         </form>
-        {quota.unlimited && (
+        {/* Test mode only. With live billing this would drop the plan here while Stripe
+            went on charging the card. */}
+        {quota.unlimited && mode === 'mock' && (
           <form action={downgrade}>
             <button className="rounded-md border border-[color:var(--color-line)] px-3 py-1.5 text-[12px] text-faint hover:text-muted">
               Cancel Pro (test mode)

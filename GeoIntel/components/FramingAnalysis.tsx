@@ -8,7 +8,29 @@ type State =
   | { k: 'idle' }
   | { k: 'loading' }
   | { k: 'done'; a: EventAnalysis; cached: boolean; remaining?: number; unlimited?: boolean }
-  | { k: 'blocked'; why: 'no_key' | 'quota' | 'refused' | 'error'; detail?: string };
+  | { k: 'blocked'; why: 'no_key' | 'signin' | 'quota' | 'refused' | 'error'; detail?: string };
+
+/** Back to this event after signing in; the login page accepts same-site paths only. */
+const signInHref = (eventId: string) => `/login?next=/events/${encodeURIComponent(eventId)}`;
+
+type Blocked = Extract<State, { k: 'blocked' }>;
+
+/** Why the optional layer is not showing an analysis, said in the reader's terms. */
+export function BlockedNotice({ why, detail, eventId }: { why: Blocked['why']; detail?: string; eventId: string }) {
+  return (
+    <div className="mt-3 rounded-md border border-[color:var(--color-line)] px-3 py-2.5 text-[12px] leading-relaxed text-muted">
+      {why === 'signin' && (
+        <><Link href={signInHref(eventId)} className="text-[color:var(--color-accent)] hover:underline">Sign in</Link> to run the comparison — the deterministic analysis above stays available.</>
+      )}
+      {why === 'quota' && (
+        <>Free allowance used. <Link href="/pricing" className="text-[color:var(--color-accent)] hover:underline">See plans</Link> — the deterministic analysis above stays available.</>
+      )}
+      {why === 'no_key' && <>Not configured on this deployment.</>}
+      {why === 'refused' && <>The model declined to analyse this material. {detail}</>}
+      {why === 'error' && <>The optional layer failed: {detail}. Nothing else on this page is affected.</>}
+    </div>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -19,8 +41,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function FramingAnalysis({ eventId, initial, enabled }: {
+export function FramingAnalysis({ eventId, initial, enabled, signedIn }: {
   eventId: string; initial: EventAnalysis | null; enabled: boolean;
+  /** The call spends money, so it needs an account; see app/api/analyse/route.ts. */
+  signedIn: boolean;
 }) {
   const [state, setState] = useState<State>(
     initial ? { k: 'done', a: initial, cached: true } : { k: 'idle' },
@@ -52,12 +76,17 @@ export function FramingAnalysis({ eventId, initial, enabled }: {
           <div className="text-[10px] uppercase tracking-[0.16em] text-faint">Optional layer</div>
           <h3 className="mt-0.5 text-[15px] font-semibold tracking-tight">Cross-language framing comparison</h3>
         </div>
-        {state.k === 'idle' && enabled && (
+        {state.k === 'idle' && enabled && (signedIn ? (
           <button onClick={run}
             className="rounded-md bg-[color:var(--color-accent)] px-3 py-1.5 text-[12.5px] font-medium text-[#0a0d13] hover:opacity-90">
             Compare how sources frame this
           </button>
-        )}
+        ) : (
+          <Link href={signInHref(eventId)}
+            className="rounded-md bg-[color:var(--color-accent)] px-3 py-1.5 text-[12.5px] font-medium text-[#0a0d13] hover:opacity-90">
+            Sign in to compare framings
+          </Link>
+        ))}
         {state.k === 'done' && state.cached && (
           <span className="text-[10px] uppercase tracking-wider text-faint">cached</span>
         )}
@@ -72,8 +101,8 @@ export function FramingAnalysis({ eventId, initial, enabled }: {
 
       {!enabled && (
         <div className="mt-3 rounded-md border border-[color:var(--color-line)] px-3 py-2.5 text-[12px] leading-relaxed text-muted">
-          Not configured. Set <code className="mono-num text-[color:var(--color-accent)]">ANTHROPIC_API_KEY</code> to
-          enable it. Everything else on this page works without it.
+          {/* The setting is named in the README, not here: this page is public. */}
+          Not configured on this deployment. Everything else on this page works without it.
         </div>
       )}
 
@@ -83,16 +112,7 @@ export function FramingAnalysis({ eventId, initial, enabled }: {
         </div>
       )}
 
-      {state.k === 'blocked' && (
-        <div className="mt-3 rounded-md border border-[color:var(--color-line)] px-3 py-2.5 text-[12px] leading-relaxed text-muted">
-          {state.why === 'quota' && (
-            <>Free allowance used. <Link href="/pricing" className="text-[color:var(--color-accent)] hover:underline">See plans</Link> — the deterministic analysis above stays available.</>
-          )}
-          {state.why === 'no_key' && <>Not configured on this deployment.</>}
-          {state.why === 'refused' && <>The model declined to analyse this material. {state.detail}</>}
-          {state.why === 'error' && <>The optional layer failed: {state.detail}. Nothing else on this page is affected.</>}
-        </div>
-      )}
+      {state.k === 'blocked' && <BlockedNotice why={state.why} detail={state.detail} eventId={eventId} />}
 
       {state.k === 'done' && (
         <div className="mt-4 space-y-4">

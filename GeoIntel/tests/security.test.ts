@@ -8,6 +8,22 @@ process.env.KAUTILYA_DB = join(mkdtempSync(join(tmpdir(), 'kautilya-sec-')), 'te
 
 import { safeRedirect, loginErrorMessage } from '@/lib/security/redirect';
 import { isThrottled, recordFailure, clearFailures } from '@/lib/security/throttle';
+import { hasRemoteMatch } from 'next/dist/shared/lib/match-remote-pattern';
+import nextConfig from '../next.config.mjs';
+
+describe('image optimizer', () => {
+  it('fetches no image from a host this site does not name', () => {
+    // /_next/image fetches any remote URL the config allows and re-serves it from this
+    // domain. A wildcard host makes the site an open image proxy for anyone who links to
+    // it — and nothing here renders through next/image; feed images are plain <img> tags.
+    // This asks Next's own matcher, the one the optimizer consults, rather than reading
+    // the config's text.
+    const images = nextConfig.images ?? {};
+    for (const url of ['https://evil.example/x.png', 'https://i.ytimg.com/vi/abc/hqdefault.jpg']) {
+      expect(hasRemoteMatch(images.domains ?? [], images.remotePatterns ?? [], new URL(url))).toBe(false);
+    }
+  });
+});
 
 describe('post-login redirect', () => {
   it('allows same-site paths', () => {
