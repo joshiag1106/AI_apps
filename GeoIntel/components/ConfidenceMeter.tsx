@@ -1,5 +1,6 @@
 import { confidenceBand, FLAG_LABEL } from '@/lib/format';
 import { Badge } from '@/components/ui';
+import { RevealOnView } from '@/components/RevealOnView';
 import type { ConfidenceSignal, EventFlag } from '@/lib/types';
 
 /**
@@ -10,6 +11,7 @@ import type { ConfidenceSignal, EventFlag } from '@/lib/types';
 export function ConfidenceMeter({ value, signals, flags }: { value: number; signals: ConfidenceSignal[]; flags: EventFlag[] }) {
   const band = confidenceBand(value);
   return (
+    <RevealOnView>
     <div className="panel p-4">
       <div className="flex items-baseline justify-between gap-3">
         <div>
@@ -27,7 +29,8 @@ export function ConfidenceMeter({ value, signals, flags }: { value: number; sign
       </div>
 
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[color:var(--color-line)]">
-        <div className="h-full rounded-full transition-[width]" style={{ width: `${value}%`, background: band.color }} />
+        <div className="h-full rounded-full transition-[width]" data-reveal-bar
+          style={{ width: `${value}%`, background: band.color }} />
       </div>
 
       <div className="mt-4 space-y-2.5">
@@ -44,7 +47,8 @@ export function ConfidenceMeter({ value, signals, flags }: { value: number; sign
             </div>
             {s.max > 0 && (
               <div className="mt-1 h-1 w-full rounded-full bg-[color:var(--color-line-soft)]">
-                <div className="h-full rounded-full" style={{ width: `${Math.max(0, (s.points / s.max) * 100)}%`, background: 'var(--color-accent)', opacity: 0.75 }} />
+                <div className="h-full rounded-full" data-reveal-bar
+                  style={{ width: `${Math.max(0, (s.points / s.max) * 100)}%`, background: 'var(--color-accent)', opacity: 0.75 }} />
               </div>
             )}
             <p className="mt-1 text-[11px] leading-snug text-muted">{s.detail}</p>
@@ -59,5 +63,6 @@ export function ConfidenceMeter({ value, signals, flags }: { value: number; sign
         highly; a correct exclusive will score low.
       </p>
     </div>
+    </RevealOnView>
   );
 }

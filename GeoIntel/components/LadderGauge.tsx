@@ -1,6 +1,7 @@
 import { ESCALATION_LADDER } from '@/data/glossary.zh';
 import { ChineseText, chineseTitle } from '@/components/ChineseText';
 import { toPinyin } from '@/lib/lang/pinyin';
+import { RevealOnView } from '@/components/RevealOnView';
 
 /**
  * The PRC official escalation ladder, with the detected rung marked.
@@ -14,6 +15,7 @@ export function LadderGauge({ rung, compact = false }: { rung: number; compact?:
   const hit = ESCALATION_LADDER.find((r) => r.rung === rung);
 
   return (
+    <RevealOnView>
     <div className="panel p-4">
       <div className="text-[10px] uppercase tracking-[0.16em] text-faint">PRC official escalation ladder</div>
       {hit && (
@@ -35,7 +37,7 @@ export function LadderGauge({ rung, compact = false }: { rung: number; compact?:
             <div key={r.rung} className="flex items-center gap-2">
               <span className="mono-num w-5 text-right text-[10px] text-faint">{r.rung}</span>
               <div className="relative h-4 flex-1 overflow-hidden rounded-sm bg-[color:var(--color-line-soft)]">
-                <div className="absolute inset-y-0 left-0 rounded-sm"
+                <div className="absolute inset-y-0 left-0 rounded-sm" data-reveal-bar
                   style={{
                     width: `${r.severity}%`,
                     background: active ? 'var(--color-zh)' : below ? 'color-mix(in oklab, var(--color-zh) 22%, transparent)' : 'var(--color-line)',
@@ -65,5 +67,6 @@ export function LadderGauge({ rung, compact = false }: { rung: number; compact?:
         signal and verify the outlet and date directly before acting on it.
       </p>
     </div>
+    </RevealOnView>
   );
 }
