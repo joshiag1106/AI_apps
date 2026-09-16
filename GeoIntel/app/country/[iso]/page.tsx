@@ -4,6 +4,7 @@ import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui'
 import { EventCard } from '@/components/EventCard';
 import { Radar, BarList, Sparkline, Ribbon } from '@/components/charts';
 import { Mandala } from '@/components/Mandala';
+import { CountUp } from '@/components/CountUp';
 import { Paywall } from '@/components/Paywall';
 import { WatchToggle } from '@/components/Watchlist';
 import { corpus, eventsFor, countryName } from '@/lib/queries';
@@ -76,12 +77,12 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Composite risk" value={risk.composite} sub={band.label} tone={`var(--color-${band.tone})`} />
-            <Stat label="Events" value={risk.eventCount} sub="in current corpus" />
+            <Stat label="Composite risk" value={<CountUp value={risk.composite} />} sub={band.label} tone={`var(--color-${band.tone})`} />
+            <Stat label="Events" value={<CountUp value={risk.eventCount} />} sub="in current corpus" />
             <Stat label="30-day trend" value={<Trend value={risk.trend} />} sub="vs prior window" />
             <Stat label="Top domain" value={risk.topDomain ?? '—'} sub="most frequent" />
-            <Stat label="Counterparties" value={dyads.length} sub="states co-occurring" />
-            <Stat label="Languages" value={langs.size} sub="reporting on it" />
+            <Stat label="Counterparties" value={<CountUp value={dyads.length} />} sub="states co-occurring" />
+            <Stat label="Languages" value={<CountUp value={langs.size} />} sub="reporting on it" />
           </div>
 
           <section className="grid gap-6 lg:grid-cols-3">

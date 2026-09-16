@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { MapShape } from '@/lib/map';
+import { hotspotPulseDuration } from '@/lib/motion';
 
 export interface MapDatum { iso: string; composite: number; eventCount: number; name: string }
 export interface MapMarker { id: string; name: string; x: number; y: number; heat: number; count: number }
@@ -67,7 +68,8 @@ export function WorldMap({
 
         {markers.map((m) => (
           <g key={m.id} transform={`translate(${m.x},${m.y})`}>
-            <circle r={5} fill="var(--color-accent)" opacity="0.25" className="pulse-ring" />
+            <circle r={5} fill="var(--color-accent)" opacity="0.25" className="pulse-ring"
+              style={{ animationDuration: `${hotspotPulseDuration(m.heat)}s` }} />
             <circle
               r={Math.max(2.5, Math.min(6, 2 + m.heat / 90))}
               fill="var(--color-accent)" stroke="#0a0d13" strokeWidth="0.8"

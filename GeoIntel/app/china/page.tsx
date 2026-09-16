@@ -5,6 +5,7 @@ import { ChineseText } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { Radar, BarList, Ribbon, Sparkline } from '@/components/charts';
 import { Mandala } from '@/components/Mandala';
+import { CountUp } from '@/components/CountUp';
 import { corpus, ladderAlerts, chineseStream, eventsFor, countryName, languageStats, articlesIn } from '@/lib/queries';
 import { countryRisk, dyadTension, VECTORS } from '@/lib/risk';
 import { ESCALATION_LADDER, ZH_GLOSSARY } from '@/data/glossary.zh';
@@ -53,11 +54,11 @@ export default async function ChinaPage() {
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Stat label="Composite risk" value={risk.composite} sub="China as an actor" />
-          <Stat label="Chinese reports" value={zhStats.articles.toLocaleString()} sub="in the corpus" tone="var(--color-zh)" />
-          <Stat label="Events with 中文" value={zhStats.events.toLocaleString()} sub="Chinese-sourced clusters" />
-          <Stat label="Ladder detections" value={ladderAlerts(events, 999).length} sub="official formulae" tone="var(--color-accent)" />
-          <Stat label="Highest rung" value={ladder[0]?.ladderRung ?? '—'} sub={ladder[0]?.ladderEn ?? 'none detected'} tone="var(--color-zh)" />
+          <Stat label="Composite risk" value={<CountUp value={risk.composite} />} sub="China as an actor" />
+          <Stat label="Chinese reports" value={<CountUp value={zhStats.articles} />} sub="in the corpus" tone="var(--color-zh)" />
+          <Stat label="Events with 中文" value={<CountUp value={zhStats.events} />} sub="Chinese-sourced clusters" />
+          <Stat label="Ladder detections" value={<CountUp value={ladderAlerts(events, 999).length} />} sub="official formulae" tone="var(--color-accent)" />
+          <Stat label="Highest rung" value={ladder[0]?.ladderRung != null ? <CountUp value={ladder[0].ladderRung} /> : '—'} sub={ladder[0]?.ladderEn ?? 'none detected'} tone="var(--color-zh)" />
           <Stat label="30-day trend" value={<Trend value={risk.trend} />} sub="vs prior window" />
         </div>
       </section>

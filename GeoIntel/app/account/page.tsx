@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Panel, SectionTitle, Stat, Badge } from '@/components/ui';
+import { CountUp } from '@/components/CountUp';
 import { currentUser, endSession, setPlan } from '@/lib/auth';
 import { billing } from '@/lib/billing';
 import { alertsEnabled, setAlertsEnabled } from '@/lib/alerts/state';
@@ -86,8 +87,8 @@ export default async function AccountPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Plan" value={user.plan === 'pro' ? 'Desk Pro' : 'Analyst Free'} />
-        <Stat label="Analyses used" value={quota.unlimited ? '∞' : quota.used} sub={quota.unlimited ? 'unlimited' : `of ${FREE_LIMIT}`} />
-        <Stat label="Remaining" value={quota.unlimited ? '∞' : quota.remaining}
+        <Stat label="Analyses used" value={quota.unlimited ? '∞' : <CountUp value={quota.used} />} sub={quota.unlimited ? 'unlimited' : `of ${FREE_LIMIT}`} />
+        <Stat label="Remaining" value={quota.unlimited ? '∞' : <CountUp value={quota.remaining} />}
           tone={!quota.unlimited && quota.remaining === 0 ? 'var(--color-high)' : undefined} />
         <Stat label="Metering" value="Account" sub="bound to this login" />
       </div>

@@ -5,6 +5,7 @@ import { EventCard, EventRow } from '@/components/EventCard';
 import { ChineseText, zhTitleMap } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { Sparkline, Ribbon, BarList } from '@/components/charts';
+import { CountUp } from '@/components/CountUp';
 import { worldShapes, project } from '@/lib/map';
 import {
   corpus, countryRisks, topDyads, indiaBoard, ladderAlerts, languageMix,
@@ -70,11 +71,11 @@ export default async function Home() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <Stat label="Events tracked" value={stats.events.toLocaleString()} sub={`from ${stats.articles.toLocaleString()} reports`} />
-          <Stat label="Corroborated" value={stats.corroborated.toLocaleString()} sub="score ≥ 50 across independent outlets" tone="var(--color-verified)" />
-          <Stat label="Chinese-language" value={stats.zh.toLocaleString()} sub="events with PRC/Chinese sourcing" tone="var(--color-zh)" />
-          <Stat label="PRC ladder hits" value={ladderAlerts(events, 999).length} sub="official escalation formulae detected" tone="var(--color-accent)" />
-          <Stat label="Active flashpoints" value={hotspots.length} sub="geographies with current activity" />
+          <Stat label="Events tracked" value={<CountUp value={stats.events} />} sub={`from ${stats.articles.toLocaleString()} reports`} />
+          <Stat label="Corroborated" value={<CountUp value={stats.corroborated} />} sub="score ≥ 50 across independent outlets" tone="var(--color-verified)" />
+          <Stat label="Chinese-language" value={<CountUp value={stats.zh} />} sub="events with PRC/Chinese sourcing" tone="var(--color-zh)" />
+          <Stat label="PRC ladder hits" value={<CountUp value={ladderAlerts(events, 999).length} />} sub="official escalation formulae detected" tone="var(--color-accent)" />
+          <Stat label="Active flashpoints" value={<CountUp value={hotspots.length} />} sub="geographies with current activity" />
         </div>
       </section>
 
