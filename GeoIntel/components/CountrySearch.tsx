@@ -66,7 +66,7 @@ export function CountrySearch({ countries, className = '' }: { countries: Search
         className="w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[12.5px] text-text placeholder:text-faint outline-none focus:border-[color:var(--color-accent-dim)]"
       />
       {open && results.length > 0 && (
-        <ul className="panel absolute z-50 mt-1 w-full overflow-hidden p-1 shadow-2xl">
+        <ul className="panel dropdown-in absolute z-50 mt-1 w-full overflow-hidden p-1 shadow-2xl">
           {results.map((c, i) => (
             <li key={c.iso}>
               <button
