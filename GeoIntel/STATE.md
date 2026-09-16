@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-11.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-16.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 402 passing (`npm test`) |
+| Tests | 430 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 6,348 articles, 3,485 events; drifts with every ingest, so re-measure |
 | Person roster | 122 officials across 39 states; 77 named, 45 silent, 23 seats corpus-confirmed |
@@ -715,6 +715,99 @@ on 2026-09-11); the server itself — Node 24, a service manager, a TLS-terminat
 on `/api/cron`, a nightly database backup; DNS; a spend limit on the Anthropic workspace; and
 `SMTP_PASS`. Whether to launch free or with real billing is still open, and the code is safe
 either way.
+
+## Where 2026-09-16 ended — six rounds of motion/visualization, all shipped
+
+A different track from everything else in this file: not roster accuracy, the UI's visual
+language. Josh asked whether the site could be made "more interesting" with "meaningful
+animations." Six rounds, thirteen features, each one grounded in what the app already
+measures rather than decoration bolted on. **430 tests** (402 → 430, all new ones added this
+session), `tsc --noEmit` clean throughout, every feature verified against real server-rendered
+HTML and, where the browser pane's own state allowed it, watched live.
+
+GeoIntel `main` @ **8a8ef26**, pushed to the private repo throughout (no lag between local
+commits and the push — each round was pushed before the next began). AI_apps `master` @
+**8214cfc**, six PRs merged in order: #62–#68 (odd count because #64 was the unrelated
+`.gitignore` fix below). Both copies verified file-for-file identical after every refresh, the
+same `git archive` discipline as every other refresh in this document.
+
+**The features, in build order:**
+1. **Count-up on refresh** — every numeric Stat tile, site-wide, animates to a new value
+   instead of snapping when LivePulse's `router.refresh()` swaps in fresh data. First render
+   never animates (`prevRef` starts equal to `value`); only a later change does.
+2. **Severity-scaled pulse** — world-map flashpoint markers pulse 1.3s–3.1s by heat instead of
+   a uniform 2.6s; Mandala nodes scoring ≥70 pulse too, which they never did before.
+3. **Tension-timeline event markers** — the dyad page's 90-day chart plots its "defining
+   events" as clickable dots on the day they happened, connecting the curve to the event list
+   already shown below it.
+4. **Draw-in reveal on scroll** — sparklines, the Mandala's spokes, and the network graph's
+   edges draw themselves in the first time a panel scrolls into view.
+5. **World-map fill cross-fade** — a state's risk colour transitions instead of hard-cutting on
+   refresh.
+6. **Animated network walk** — clicking a neighbour highlights the edge just crossed, correctly
+   resolving the walk's previous stop even when it was a person node (reuses `trailNode`, the
+   same lowercase/uppercase fix the roster work needed for mixed walks).
+7. **Risk-radar draw-in** — the six-vector polygon scales in from its own centre; the four
+   static grid rings stay put.
+8. **Progress bars grow in on scroll** — `BarList`, `ConfidenceMeter`, `LadderGauge`'s 13 rungs,
+   all render from zero instead of pre-filled.
+9. **New events flash into the live feed** — a row that arrives after `router.refresh()` gets a
+   brief highlight-fade instead of appearing indistinguishable from what was already there. The
+   diffing is a pure function, `markSeen()` in `lib/newness.ts`, unit-tested on its own.
+10. **Palette-switch colour smoothing** — one zero-specificity `:where(*)` rule fades every
+    drawn colour when the palette changes, instead of hard-cutting the whole app at once.
+11. **Watch star pop** — the pin toggle's star bounces once when it turns on, shared by the
+    signed-in and signed-out paths.
+12. **Search dropdown fade-in** — a plain CSS `@keyframes` on mount, no JS.
+
+**One shared component carries most of this: `components/RevealOnView.tsx`.** It started
+(round 2) as stroke-dashoffset draw-in for `<path>`/`<line>` only, and was generalized (round
+3) to three opt-in surfaces chosen by what the mark already IS — `<path>`/`<line>` stroke-draw,
+`.reveal-scale` for a polygon, `[data-reveal-bar]` for a width-based bar — rather than three
+near-duplicate components repeating the same IntersectionObserver/reduced-motion boilerplate.
+
+**Two real bugs found building this, both worth knowing before touching this file again:**
+
+- **`display: contents` gives an element a zero-size box, and `IntersectionObserver` never
+  reports a zero-size target as intersecting — no matter where it scrolls to.** `RevealOnView`'s
+  wrapper needs `display: contents` so it takes no part in layout, which broke the very
+  mechanism it exists to drive. Fixed by observing `el.firstElementChild` (the actual `<svg>`
+  or panel `<div>`, which has real geometry) instead of the wrapper itself. Verified live: a
+  bare `new IntersectionObserver()` on the same wrapper also never fired: this is standard
+  browser behaviour, not a bug in the observer call.
+- **A plain `useEffect` runs AFTER paint, so the hidden starting state (dasharray, `scale(0)`,
+  `width: 0`) could apply one frame too late** — a reader would see the finished chart flash
+  for a frame, then snap to hidden and re-grow. Fixed by switching to `useLayoutEffect`, which
+  runs before the browser paints. This fixed every chart built in the round before it was
+  found, not just the ones built after — `RevealOnView` is shared, so the fix was retroactive
+  for free.
+
+**The browser pane being backgrounded blocks live verification of anything scroll- or
+visibility-driven, and this cost real time before the cause was found.** `document.hidden` was
+`true` for most of this session's browser checks, and Chromium throttles both
+`IntersectionObserver` callbacks and CSS transitions on hidden documents — confirmed by a bare
+manual observer on the same element also never firing. **`Chrome` (the user's real browser, via
+`claude-in-chrome`) does not have this problem** — every feature that could not be watched
+firing in the built-in pane was later confirmed actually animating end-to-end in a real Chrome
+tab. Prefer Chrome over the built-in pane for anything gated on scroll-into-view or tab
+visibility; use curl plus a proper DOM/attribute check (not a raw-text `grep`, which matches
+Next dev-mode's embedded source maps as false positives) for server-rendered correctness
+instead.
+
+**A stalled peer session left `Output/AI_apps/GeoIntel/.gitignore` edited but uncommitted, in
+this exact working directory, not an isolated worktree as `spawn_task` suggested it would be.**
+Finished directly: the fix was correct (widened the duplicate-file rule for the sync client's
+double-digit counter, `alerts-run.test 10.ts`) but had been made in the AI_apps COPY rather
+than the GeoIntel SOURCE — the wrong place per this file's own established rule, since the next
+`git archive` refresh would have silently reverted it. Redone at the source (GeoIntel main
+commit before 8a8ef26), then re-extracted, verified `git check-ignore` on both the two real
+stray files and a decoy (`42km.ts`, correctly NOT ignored), swept the whole tree (643 junk
+duplicates on disk, 0 leaking as untracked), and merged as AI_apps PR #64 — landing in the
+middle of the animation rounds, hence the numbering gap.
+
+**GateGuard's fact-forcing gate fired on every first touch of a file this session** (dozens of
+times) — present the three facts (importers, affected API, verbatim instruction) and retry;
+it never blocked a second time on the same file.
 
 ## The accessibility pass (2026-09-07)
 
