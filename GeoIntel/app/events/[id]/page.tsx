@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Panel, SectionTitle, Badge, Stat } from '@/components/ui';
 import { ConfidenceMeter } from '@/components/ConfidenceMeter';
 import { LadderGauge } from '@/components/LadderGauge';
+import { CountUp } from '@/components/CountUp';
 import { Paywall } from '@/components/Paywall';
 import { eventDetail, countryName } from '@/lib/queries';
 import { consume } from '@/lib/quota';
@@ -132,10 +133,10 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Stat label="Reports" value={articles.length} />
-                <Stat label="Countries" value={event.countries.length} />
-                <Stat label="Languages" value={event.languages.length} />
-                <Stat label="Escalation" value={event.escalation} tone={esc.color} />
+                <Stat label="Reports" value={<CountUp value={articles.length} />} />
+                <Stat label="Countries" value={<CountUp value={event.countries.length} />} />
+                <Stat label="Languages" value={<CountUp value={event.languages.length} />} />
+                <Stat label="Escalation" value={<CountUp value={event.escalation} />} tone={esc.color} />
               </div>
 
               <Panel className="p-4">

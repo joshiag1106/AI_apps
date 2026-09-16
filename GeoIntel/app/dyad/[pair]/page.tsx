@@ -7,6 +7,7 @@ import { titleGloss } from '@/components/EventCard';
 import { Columns, BarList, Ribbon } from '@/components/charts';
 import { Paywall } from '@/components/Paywall';
 import { WatchToggle } from '@/components/Watchlist';
+import { CountUp } from '@/components/CountUp';
 import { corpus, countryName } from '@/lib/queries';
 import { dyadTension } from '@/lib/risk';
 import { consume } from '@/lib/quota';
@@ -80,24 +81,31 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Tension index" value={d.score} sub="0–100, recency-decayed"
+            <Stat label="Tension index" value={<CountUp value={d.score} />} sub="0–100, recency-decayed"
               tone={d.score >= 55 ? 'var(--color-high)' : undefined} />
             <Stat label="90-day trend" value={<Trend value={d.trend} />} sub="second half vs first" />
-            <Stat label="Shared events" value={d.eventCount} sub="naming both states" />
-            <Stat label="Escalatory" value={escalatory} sub="events above threshold" tone="var(--color-high)" />
-            <Stat label="De-escalatory" value={deEscalatory} sub="talks, agreements, pullbacks" tone="var(--color-low)" />
-            <Stat label="PRC formulae" value={ladderHere.length} sub="official rungs detected"
+            <Stat label="Shared events" value={<CountUp value={d.eventCount} />} sub="naming both states" />
+            <Stat label="Escalatory" value={<CountUp value={escalatory} />} sub="events above threshold" tone="var(--color-high)" />
+            <Stat label="De-escalatory" value={<CountUp value={deEscalatory} />} sub="talks, agreements, pullbacks" tone="var(--color-low)" />
+            <Stat label="PRC formulae" value={<CountUp value={ladderHere.length} />} sub="official rungs detected"
               tone={ladderHere.length ? 'var(--color-zh)' : undefined} />
           </div>
 
           <Panel className="p-4">
             <SectionTitle kicker="Daily escalation × corroboration, 90 days">Tension over time</SectionTitle>
             <Columns data={d.series} height={110}
-              color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-accent)'} />
+              color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-accent)'}
+              markers={d.topEvents.map((e) => ({
+                date: e.lastSeen.slice(0, 10), href: `/events/${e.id}`, label: e.title,
+              }))} />
             <div className="mt-1.5 flex justify-between text-[10px] text-faint">
               <span>{d.series[0]?.date}</span>
               <span>{d.series[Math.floor(d.series.length / 2)]?.date}</span>
               <span>{d.series[d.series.length - 1]?.date}</span>
+            </div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-faint">
+              <i className="h-2 w-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
+              defining event — click to open
             </div>
           </Panel>
 

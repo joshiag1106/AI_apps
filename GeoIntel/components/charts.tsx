@@ -4,6 +4,8 @@
   All of these are server-renderable — they take data and emit static SVG.
 */
 
+import Link from 'next/link';
+
 export function Sparkline({
   data, width = 220, height = 40, color = 'var(--color-accent)', fill = true, label,
 }: { data: number[]; width?: number; height?: number; color?: string; fill?: boolean;
@@ -140,8 +142,13 @@ export function Ribbon({ parts }: { parts: { label: string; value: number; color
   );
 }
 
+/** A day this chart can point at — a defining event, plotted on its own column. */
+export interface ColumnMarker { date: string; href: string; label: string }
+
 /** 90-day column chart for dyad tension. */
-export function Columns({ data, height = 90, color = 'var(--color-high)' }: { data: { date: string; value: number }[]; height?: number; color?: string }) {
+export function Columns({
+  data, height = 90, color = 'var(--color-high)', markers = [],
+}: { data: { date: string; value: number }[]; height?: number; color?: string; markers?: ColumnMarker[] }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const w = 100 / data.length;
   const peak = data.reduce((a, b) => (b.value > a.value ? b : a), data[0] ?? { date: '', value: 0 });
@@ -149,12 +156,33 @@ export function Columns({ data, height = 90, color = 'var(--color-high)' }: { da
     ? `Daily tension, ${data.length} days ending ${data[data.length - 1].date}. `
       + `Peak ${peak.value} on ${peak.date}; latest ${data[data.length - 1].value}.`
     : 'Daily tension. No data in this window.';
+  const indexByDate = new Map(data.map((d, i) => [d.date, i]));
   return (
     <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full" style={{ height }} role="img" aria-label={description}>
       {data.map((d, i) => {
         const h = (d.value / max) * (height - 2);
         return <rect key={d.date} x={i * w} y={height - h} width={w * 0.82} height={Math.max(0.6, h)}
           fill={color} opacity={0.35 + 0.65 * (d.value / max)} />;
+      })}
+      {/*
+        Markers pin the "Defining events" list (below this chart, on /dyad) onto the day
+        each one happened, so a reader can see which day drove a spike instead of reading
+        the curve and the event list as two disconnected things. A date outside the
+        window this chart shows (indexByDate has nothing for it) is silently skipped
+        rather than mis-plotted at the wrong day.
+      */}
+      {markers.map((m) => {
+        const i = indexByDate.get(m.date);
+        if (i === undefined) return null;
+        const barH = (data[i].value / max) * (height - 2);
+        const x = i * w + (w * 0.82) / 2;
+        const y = Math.max(3, height - barH - 4);
+        return (
+          <Link key={`${m.date}-${m.href}`} href={m.href} aria-label={m.label}>
+            <circle cx={x} cy={y} r={1.7} fill="var(--color-accent)" stroke="#0a0d13" strokeWidth="0.5"
+              className="cursor-pointer" />
+          </Link>
+        );
       })}
     </svg>
   );

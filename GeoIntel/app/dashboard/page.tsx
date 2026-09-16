@@ -5,6 +5,7 @@ import { ChineseCompact, chineseTitle } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { WatchlistPanel } from '@/components/Watchlist';
 import { Sparkline, BarList, Ribbon, Radar } from '@/components/charts';
+import { CountUp } from '@/components/CountUp';
 import {
   corpus, countryRisks, topDyads, hotspotActivity, languageMix, domainMix,
   corpusStats, countryName, ladderAlerts,
@@ -60,12 +61,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <WatchlistPanel />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Events" value={stats.events.toLocaleString()} />
-        <Stat label="Reports" value={stats.articles.toLocaleString()} />
-        <Stat label="Corroborated" value={stats.corroborated.toLocaleString()} tone="var(--color-verified)" sub="score ≥ 50" />
-        <Stat label="States tracked" value={risks.length} />
-        <Stat label="Flashpoints" value={hotspots.length} />
-        <Stat label="Needs scrutiny" value={flagged.length} tone="var(--color-elevated)" sub="state-only or disputed" />
+        <Stat label="Events" value={<CountUp value={stats.events} />} />
+        <Stat label="Reports" value={<CountUp value={stats.articles} />} />
+        <Stat label="Corroborated" value={<CountUp value={stats.corroborated} />} tone="var(--color-verified)" sub="score ≥ 50" />
+        <Stat label="States tracked" value={<CountUp value={risks.length} />} />
+        <Stat label="Flashpoints" value={<CountUp value={hotspots.length} />} />
+        <Stat label="Needs scrutiny" value={<CountUp value={flagged.length} />} tone="var(--color-elevated)" sub="state-only or disputed" />
       </div>
 
       <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { countryName } from '@/lib/queries';
+import { severityPulseDuration } from '@/lib/motion';
 
 export interface MandalaNode { iso: string; score: number; eventCount: number; trend: number }
 
@@ -50,6 +51,14 @@ export function Mandala({ focus, nodes, size = 460 }: { focus: string; nodes: Ma
                 aria-label={`${countryName(n.iso)}, tension ${n.score}. `
                   + `Open the ${countryName(focus)}–${countryName(n.iso)} relationship.`}
               >
+                {/* Severe tier only (score >= 70, the same threshold `tone()` already
+                    uses) — a pulse on every node would just be background noise; on
+                    the handful that are genuinely severe it draws the eye there first. */}
+                {n.score >= 70 && (
+                  <circle cx={x} cy={y} r={rad} fill="none" stroke={tone(n.score)} strokeWidth="1.4"
+                    opacity="0.5" className="pulse-ring"
+                    style={{ animationDuration: `${severityPulseDuration(n.score)}s` }} />
+                )}
                 <circle cx={x} cy={y} r={rad}
                   fill={`color-mix(in oklab, ${tone(n.score)} 30%, #10182390)`}
                   stroke={tone(n.score)} strokeWidth="1.4" className="cursor-pointer" />

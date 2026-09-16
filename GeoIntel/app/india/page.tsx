@@ -3,6 +3,7 @@ import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui'
 import { EventCard, EventRow } from '@/components/EventCard';
 import { Sparkline, Radar, BarList, Columns } from '@/components/charts';
 import { Mandala } from '@/components/Mandala';
+import { CountUp } from '@/components/CountUp';
 import { corpus, indiaBoard, eventsFor, hotspotActivity, countryName } from '@/lib/queries';
 import { countryRisk, VECTORS, riskBand } from '@/lib/risk';
 import { timeAgo } from '@/lib/format';
@@ -31,12 +32,12 @@ export default async function IndiaPage() {
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          <Stat label="Composite risk" value={risk.composite} sub={band.label} tone={`var(--color-${band.tone})`} />
-          <Stat label="Events" value={risk.eventCount} sub="involving India" />
+          <Stat label="Composite risk" value={<CountUp value={risk.composite} />} sub={band.label} tone={`var(--color-${band.tone})`} />
+          <Stat label="Events" value={<CountUp value={risk.eventCount} />} sub="involving India" />
           <Stat label="30-day trend" value={<Trend value={risk.trend} />} sub="vs prior window" />
-          <Stat label="China tension" value={china?.score ?? '—'} sub={`${china?.eventCount ?? 0} events`} tone="var(--color-high)" />
+          <Stat label="China tension" value={china ? <CountUp value={china.score} /> : '—'} sub={`${china?.eventCount ?? 0} events`} tone="var(--color-high)" />
           <Stat label="Top domain" value={risk.topDomain ?? '—'} sub="most frequent classification" />
-          <Stat label="Flashpoints" value={hotspots.length} sub="active geographies" />
+          <Stat label="Flashpoints" value={<CountUp value={hotspots.length} />} sub="active geographies" />
         </div>
       </section>
 
