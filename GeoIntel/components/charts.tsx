@@ -5,6 +5,7 @@
 */
 
 import Link from 'next/link';
+import { RevealOnView } from '@/components/RevealOnView';
 
 export function Sparkline({
   data, width = 220, height = 40, color = 'var(--color-accent)', fill = true, label,
@@ -28,16 +29,18 @@ export function Sparkline({
   const description = `${label ?? 'Trend'}: ${direction} over ${data.length} points, `
     + `from ${first} to ${last}. Range ${min} to ${max}.`;
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={description}>
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {fill && <path d={area} fill={`url(#${gid})`} />}
-      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <RevealOnView>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={description}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {fill && <path d={area} fill={`url(#${gid})`} />}
+        <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+    </RevealOnView>
   );
 }
 

@@ -4,8 +4,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { hotspotPulseDuration, severityPulseDuration } from '@/lib/motion';
 import { WorldMap } from '@/components/WorldMap';
 import { Mandala } from '@/components/Mandala';
-import { Columns } from '@/components/charts';
+import { Columns, Sparkline } from '@/components/charts';
 import { CountUp } from '@/components/CountUp';
+import { NetworkGraph } from '@/components/NetworkGraph';
 
 const svg = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 
@@ -100,5 +101,51 @@ describe('CountUp renders the current value on first paint', () => {
 
   it('honours a custom formatter', () => {
     expect(svg(createElement(CountUp, { value: 42, format: (n) => `${n}%` }))).toBe('42%');
+  });
+});
+
+describe('WorldMap country fills cross-fade instead of hard-cutting', () => {
+  it('gives every state path a fill transition', () => {
+    const shapes = [{ name: 'X', d: 'M0 0', iso: 'IND' }];
+    const out = svg(createElement(WorldMap, {
+      shapes, data: [{ iso: 'IND', composite: 60, eventCount: 10, name: 'India' }], markers: [],
+    } as never));
+    expect(out).toContain('transition:fill 700ms ease');
+  });
+});
+
+describe("the network graph highlights the edge the reader just walked", () => {
+  const view = {
+    focus: 'CHN',
+    neighbours: ['IND', 'USA'],
+    edges: [
+      { a: 'CHN', b: 'IND', friction: 50, alignment: 0, events: 5, alignmentEvents: 0, context: [] },
+      { a: 'CHN', b: 'USA', friction: 80, alignment: 0, events: 10, alignmentEvents: 0, context: [] },
+    ],
+    hidden: 0,
+  };
+
+  it('marks no edge as traveled on a fresh visit (a trail of one)', () => {
+    const out = svg(createElement(NetworkGraph, { view, trail: ['CHN'], topEvents: new Map() } as never));
+    expect(out).not.toContain('edge-traveled');
+  });
+
+  it('marks exactly the edge back to where the reader just came from', () => {
+    // The mutant this catches: highlighting every spoke, or the wrong one.
+    const out = svg(createElement(NetworkGraph, { view, trail: ['IND', 'CHN'], topEvents: new Map() } as never));
+    expect((out.match(/edge-traveled/g) ?? []).length).toBe(1);
+  });
+
+  it('marks nothing when the previous stop is not one of this view\'s edges', () => {
+    const out = svg(createElement(NetworkGraph, { view, trail: ['RUS', 'CHN'], topEvents: new Map() } as never));
+    expect(out).not.toContain('edge-traveled');
+  });
+});
+
+describe('RevealOnView wraps charts without swallowing their content', () => {
+  it('sparkline still renders its line through the wrapper', () => {
+    const out = svg(createElement(Sparkline, { data: [1, 5, 2], label: 'Tension' }));
+    expect(out).toContain('<svg');
+    expect(out).toContain('Tension');
   });
 });

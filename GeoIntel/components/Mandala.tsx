@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { countryName } from '@/lib/queries';
 import { severityPulseDuration } from '@/lib/motion';
+import { RevealOnView } from '@/components/RevealOnView';
 
 export interface MandalaNode { iso: string; score: number; eventCount: number; trend: number }
 
@@ -26,6 +27,7 @@ export function Mandala({ focus, nodes, size = 460 }: { focus: string; nodes: Ma
       : s >= 40 ? 'var(--color-elevated)' : s >= 20 ? 'var(--color-guarded)' : 'var(--color-low)';
 
   return (
+    <RevealOnView>
     <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-auto" role="img"
       aria-label={`Relationship mandala centred on ${countryName(focus)}`}>
       {radii.map((r, i) => (
@@ -85,5 +87,6 @@ export function Mandala({ focus, nodes, size = 460 }: { focus: string; nodes: Ma
         inner ring = highest measured tension
       </text>
     </svg>
+    </RevealOnView>
   );
 }

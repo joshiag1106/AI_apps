@@ -55,7 +55,8 @@ export function WorldMap({
               fill={fillColor}
               stroke={isFocus ? 'var(--color-accent)' : 'var(--color-line)'}
               strokeWidth={isFocus ? 1.4 : 0.5}
-              className={d ? 'cursor-pointer transition-[filter]' : ''}
+              className={d ? 'cursor-pointer' : ''}
+              style={{ transition: 'fill 700ms ease' }}
               onMouseEnter={(e) => d && setHover({
                 label: d.name,
                 sub: `Risk ${d.composite} · ${d.eventCount} events`,
