@@ -35,17 +35,33 @@ out
 # a blanket `* [0-9].*`. The blanket rule would also hide an asset named "Figure 1.png", and
 # it would hide it SILENTLY — a junk file with an unexpected extension merely showing up as
 # untracked is the far better failure. No tracked file in this repo has a space in its name.
+#
+# The counter isn't always one digit: on 2026-09-16 the sync client produced
+# "alerts-run.test 10.ts" and "chinese.test 10.ts", which `[0-9]` (exactly one character)
+# doesn't match. Added the two-digit variant per extension rather than switching to
+# `[0-9]*`, which would also match something like "42km.ts" — the same silent-hiding risk
+# the original rule was scoped to avoid.
 * [0-9].ts
+* [0-9][0-9].ts
 * [0-9].tsx
+* [0-9][0-9].tsx
 * [0-9].js
+* [0-9][0-9].js
 * [0-9].mjs
+* [0-9][0-9].mjs
 * [0-9].cjs
+* [0-9][0-9].cjs
 * [0-9].json
+* [0-9][0-9].json
 * [0-9].md
+* [0-9][0-9].md
 * [0-9].css
+* [0-9][0-9].css
 * [0-9].patch
+* [0-9][0-9].patch
 # Extensionless duplicates: the same client produced a bare `.gitignore 2`. Safe to match
 # broadly in a way `* [0-9].*` is not — the asset that rule would have hidden silently,
 # "Figure 1.png", has an extension by definition, and a real file called "Figure 1" with
 # none is not a thing this repository contains.
 * [0-9]
+* [0-9][0-9]
