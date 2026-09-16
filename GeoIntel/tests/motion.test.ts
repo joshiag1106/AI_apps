@@ -9,6 +9,9 @@ import { CountUp } from '@/components/CountUp';
 import { NetworkGraph } from '@/components/NetworkGraph';
 import { ConfidenceMeter } from '@/components/ConfidenceMeter';
 import { LadderGauge } from '@/components/LadderGauge';
+import { EventRow } from '@/components/EventCard';
+import { FlashNewItems } from '@/components/FlashNewItems';
+import type { GeoEvent } from '@/lib/types';
 
 const svg = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 
@@ -93,6 +96,26 @@ describe('Columns plots defining events on the day they happened', () => {
 
   it('draws no markers, and no crash, when none are given', () => {
     expect(svg(createElement(Columns, { data }))).not.toContain('<a');
+  });
+});
+
+describe('the live feed marks each row for FlashNewItems to find', () => {
+  const event: GeoEvent = {
+    id: 'evt-1', title: 'Talks resume', summary: '', firstSeen: '2026-09-01', lastSeen: '2026-09-01',
+    actors: ['IND', 'CHN'], people: [], hotspots: [], domain: 'Diplomatic', escalation: 5, confidence: 60,
+    signals: [], flags: [], articleIds: ['a1'], languages: ['en'], countries: ['IND', 'CHN'],
+    imageUrl: null, videoId: null, ladderRung: null, ladderZh: null, ladderEn: null,
+  };
+
+  it('gives EventRow a data-item-id matching the event, for FlashNewItems to target', () => {
+    const out = svg(createElement(EventRow, { event }));
+    expect(out).toContain('data-item-id="evt-1"');
+  });
+
+  it('FlashNewItems renders its children through on first paint, since SSR never runs an effect', () => {
+    const out = svg(createElement(FlashNewItems, { ids: ['evt-1'], children: createElement(EventRow, { event }) }));
+    expect(out).toContain('data-item-id="evt-1"');
+    expect(out).not.toContain('flash-new'); // never flashes what was already there on load
   });
 });
 
