@@ -219,6 +219,17 @@ body {
   animation: sweep 2.4s ease-in-out infinite;
 }
 
+/* The network graph's "you just walked this edge" highlight — draws once on load
+   (a full page navigation, in this app, IS the moment a reader just arrived), using
+   each edge's own length via --edge-len rather than a shared constant, since edges
+   span very different distances in the radial layout. */
+@keyframes edge-travel {
+  from { stroke-dashoffset: var(--edge-len, 200); }
+  to   { stroke-dashoffset: 0; }
+}
+.edge-traveled { animation: edge-travel 900ms ease-out forwards; }
+
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .sweep::after { animation: none; }
+  .edge-traveled { animation: none; stroke-dashoffset: 0; }
 }

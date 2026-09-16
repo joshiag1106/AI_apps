@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { nodeHref, nodeLabel, personBox, type EgoView } from '@/lib/graph/ego';
+import { nodeHref, nodeLabel, personBox, trailNode, type EgoView } from '@/lib/graph/ego';
 import { countryName } from '@/lib/queries';
 import { radialLayout } from '@/lib/graph/layout';
 import { edgeKey, isPersonNode } from '@/lib/graph/build';
+import { RevealOnView } from '@/components/RevealOnView';
 
 /**
  * An ego view as server-rendered SVG, following components/charts.tsx: no charting
@@ -31,13 +32,25 @@ export function NetworkGraph({ view, trail, topEvents }: {
   const at = new Map(nodes.map((n) => [n.id, n]));
   const maxFriction = Math.max(...view.edges.map((e) => e.friction), 1);
 
+  // The state one step back in the walk, if any — trail always ends with the current
+  // focus (see nextTrail's doc), so the entry before that is where this page's reader
+  // just came from. trailNode resolves the case mismatch parseTrail leaves behind: it
+  // uppercases every token uniformly, but person ids are lowercase, so a walk arriving
+  // from a person would otherwise never match that node's real id below.
+  const cameFrom = trail.length > 1 ? trailNode(trail[trail.length - 2]).id : null;
+
   return (
+    <RevealOnView>
     <svg viewBox={`0 0 ${size} ${size}`} className="h-auto w-full" role="img"
          aria-label={`Network around ${view.focus}, ${view.neighbours.length} connections shown`}>
       {view.edges.map((e) => {
         const p = at.get(e.a); const q = at.get(e.b);
         if (!p || !q) return null;
         const spoke = e.a === view.focus || e.b === view.focus;
+        // The edge just crossed to land on this page — highlighted so a walk reads as a
+        // sequence of steps taken, not just a new picture that happened to appear.
+        const traveled = cameFrom != null && spoke && (e.a === cameFrom || e.b === cameFrom);
+        const edgeLen = traveled ? Math.hypot(q.x - p.x, q.y - p.y) : 0;
         return (
           <g key={`${e.a}|${e.b}`}>
             <line x1={p.x} y1={p.y} x2={q.x} y2={q.y}
@@ -50,6 +63,12 @@ export function NetworkGraph({ view, trail, topEvents }: {
                 stroke="var(--color-verified)" strokeWidth="1.6" strokeDasharray="3 3" strokeOpacity="0.85">
                 <title>{`${e.a}–${e.b}: ${e.alignmentEvents} de-escalatory event${e.alignmentEvents === 1 ? '' : 's'} of ${e.events}`}</title>
               </line>
+            )}
+            {traveled && (
+              <line x1={p.x} y1={p.y} x2={q.x} y2={q.y}
+                stroke="var(--color-accent)" strokeWidth="2.2" strokeLinecap="round"
+                strokeDasharray={edgeLen} className="edge-traveled"
+                style={{ '--edge-len': edgeLen } as React.CSSProperties} />
             )}
           </g>
         );
@@ -119,5 +138,6 @@ export function NetworkGraph({ view, trail, topEvents }: {
         );
       })}
     </svg>
+    </RevealOnView>
   );
 }
