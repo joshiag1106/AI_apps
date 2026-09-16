@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { WatchStar } from '@/components/WatchStar';
 
 /**
  * The device-local watchlist, for readers who have not signed in.
@@ -63,7 +64,7 @@ export function LocalWatchToggle({ item }: { item: WatchItem }) {
           : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
       {/* aria-pressed already carries the state; the star is the same fact drawn twice,
           so announcing it too gives "white star Watch" and no extra information. */}
-      <span aria-hidden>{on ? '★' : '☆'}</span> {on ? 'Watching' : 'Watch'}
+      <WatchStar on={on} /> {on ? 'Watching' : 'Watch'}
     </button>
   );
 }

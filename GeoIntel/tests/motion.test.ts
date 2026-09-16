@@ -11,6 +11,7 @@ import { ConfidenceMeter } from '@/components/ConfidenceMeter';
 import { LadderGauge } from '@/components/LadderGauge';
 import { EventRow } from '@/components/EventCard';
 import { FlashNewItems } from '@/components/FlashNewItems';
+import { WatchStar } from '@/components/WatchStar';
 import type { GeoEvent } from '@/lib/types';
 
 const svg = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
@@ -116,6 +117,13 @@ describe('the live feed marks each row for FlashNewItems to find', () => {
     const out = svg(createElement(FlashNewItems, { ids: ['evt-1'], children: createElement(EventRow, { event }) }));
     expect(out).toContain('data-item-id="evt-1"');
     expect(out).not.toContain('flash-new'); // never flashes what was already there on load
+  });
+});
+
+describe('WatchStar renders the current state with no pop on first paint', () => {
+  it('shows a filled star when already on, unfilled when off — and never star-pop', () => {
+    expect(svg(createElement(WatchStar, { on: true }))).toBe('<span aria-hidden="true">★</span>');
+    expect(svg(createElement(WatchStar, { on: false }))).toBe('<span aria-hidden="true">☆</span>');
   });
 });
 
