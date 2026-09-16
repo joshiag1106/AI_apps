@@ -3,6 +3,7 @@ import { currentUser } from '@/lib/auth';
 import { listWatch, isWatched, type WatchItem } from '@/lib/watchlist/store';
 import { toggleWatchAction, clearWatchAction, adoptWatchAction } from '@/lib/watchlist/actions';
 import { LocalWatchToggle, LocalWatchlistPanel, WatchlistAdopter } from '@/components/WatchlistClient';
+import { WatchStar } from '@/components/WatchStar';
 
 export type { WatchItem };
 
@@ -33,7 +34,7 @@ export async function WatchToggle({ item }: { item: WatchItem }) {
             : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
         {/* aria-pressed already carries the state; the star is the same fact drawn twice,
             so announcing it too gives "white star Watch" and no extra information. */}
-        <span aria-hidden>{on ? '★' : '☆'}</span> {on ? 'Watching' : 'Watch'}
+        <WatchStar on={on} /> {on ? 'Watching' : 'Watch'}
       </button>
     </form>
   );
