@@ -67,11 +67,12 @@ export function Dial({ value, size = 84, label, color }: { value: number; size?:
 export function BarList({ items, max, unit = '' }: { items: { label: string; value: number; tone?: string; href?: string }[]; max?: number; unit?: string }) {
   const top = max ?? Math.max(...items.map((i) => i.value), 1);
   return (
+    <RevealOnView>
     <div className="space-y-1.5">
       {items.map((it) => (
         <div key={it.label} className="grid grid-cols-[1fr_auto] gap-2 items-center">
           <div className="relative h-6 rounded bg-[color:var(--color-line-soft)] overflow-hidden">
-            <div className="absolute inset-y-0 left-0 rounded"
+            <div className="absolute inset-y-0 left-0 rounded" data-reveal-bar
               style={{ width: `${Math.max(2, (it.value / top) * 100)}%`, background: `color-mix(in oklab, ${it.tone ?? 'var(--color-accent)'} 34%, transparent)` }} />
             <span className="absolute inset-y-0 left-2 flex items-center text-[11px] text-text truncate pr-2">{it.label}</span>
           </div>
@@ -79,6 +80,7 @@ export function BarList({ items, max, unit = '' }: { items: { label: string; val
         </div>
       ))}
     </div>
+    </RevealOnView>
   );
 }
 
@@ -97,6 +99,7 @@ export function Radar({ axes, size = 210 }: { axes: { label: string; value: numb
   const description = 'Risk vectors, each scored 0 to 100: '
     + axes.map((ax) => `${ax.label} ${Math.round(ax.value)}`).join(', ') + '.';
   return (
+    <RevealOnView>
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={description}>
       {[0.25, 0.5, 0.75, 1].map((f) => (
         <polygon key={f} points={axes.map((_, i) => pt(i, f).join(',')).join(' ')}
@@ -106,8 +109,10 @@ export function Radar({ axes, size = 210 }: { axes: { label: string; value: numb
         const [x, y] = pt(i, 1);
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--color-line)" strokeWidth="1" />;
       })}
+      {/* Only the data shape scales in — the grid rings above are reference lines,
+          not a measurement, and should just be there. */}
       <polygon points={poly} fill="color-mix(in oklab, var(--color-accent) 22%, transparent)"
-        stroke="var(--color-accent)" strokeWidth="1.5" />
+        stroke="var(--color-accent)" strokeWidth="1.5" className="reveal-scale" />
       {axes.map((ax, i) => {
         const [x, y] = pt(i, 1.26);
         return (
@@ -118,6 +123,7 @@ export function Radar({ axes, size = 210 }: { axes: { label: string; value: numb
         );
       })}
     </svg>
+    </RevealOnView>
   );
 }
 

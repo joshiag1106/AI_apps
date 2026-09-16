@@ -4,9 +4,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { hotspotPulseDuration, severityPulseDuration } from '@/lib/motion';
 import { WorldMap } from '@/components/WorldMap';
 import { Mandala } from '@/components/Mandala';
-import { Columns, Sparkline } from '@/components/charts';
+import { Columns, Sparkline, Radar, BarList } from '@/components/charts';
 import { CountUp } from '@/components/CountUp';
 import { NetworkGraph } from '@/components/NetworkGraph';
+import { ConfidenceMeter } from '@/components/ConfidenceMeter';
+import { LadderGauge } from '@/components/LadderGauge';
 
 const svg = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 
@@ -147,5 +149,44 @@ describe('RevealOnView wraps charts without swallowing their content', () => {
     const out = svg(createElement(Sparkline, { data: [1, 5, 2], label: 'Tension' }));
     expect(out).toContain('<svg');
     expect(out).toContain('Tension');
+  });
+});
+
+describe('the risk radar scales in only its data shape, not the grid', () => {
+  it('marks exactly one polygon reveal-scale — the data shape, not the four grid rings', () => {
+    const out = svg(createElement(Radar, {
+      axes: [{ label: 'Military', value: 62 }, { label: 'Diplomatic', value: 31 }, { label: 'Economic', value: 40 }],
+    }));
+    expect((out.match(/<polygon/g) ?? []).length).toBe(5); // 4 grid rings + 1 data shape
+    expect((out.match(/reveal-scale/g) ?? []).length).toBe(1);
+  });
+});
+
+describe('progress bars grow in from zero instead of rendering pre-filled', () => {
+  it('marks BarList\'s category bars', () => {
+    const out = svg(createElement(BarList, {
+      items: [{ label: 'Diplomatic', value: 424 }, { label: 'Military', value: 172 }],
+    }));
+    expect((out.match(/data-reveal-bar/g) ?? []).length).toBe(2);
+  });
+
+  it('marks ConfidenceMeter\'s overall bar and every scored signal\'s bar', () => {
+    const out = svg(createElement(ConfidenceMeter, {
+      value: 62,
+      signals: [
+        { key: 'a', label: 'Independent outlets', detail: 'x', points: 3, max: 5 },
+        { key: 'b', label: 'Primary source', detail: 'y', points: 0, max: 0 }, // max 0: no bar drawn at all
+      ],
+      flags: [],
+    }));
+    // The overall bar plus signal "a"'s bar (max > 0); signal "b" draws no bar (max is 0).
+    expect((out.match(/data-reveal-bar/g) ?? []).length).toBe(2);
+  });
+
+  it('marks every rung of the escalation ladder', () => {
+    const out = svg(createElement(LadderGauge, { rung: 3, compact: true }));
+    const rungCount = (out.match(/mono-num w-5 text-right/g) ?? []).length;
+    expect(rungCount).toBeGreaterThan(0);
+    expect((out.match(/data-reveal-bar/g) ?? []).length).toBe(rungCount);
   });
 });
