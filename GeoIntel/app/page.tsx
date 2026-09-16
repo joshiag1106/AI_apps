@@ -6,6 +6,7 @@ import { ChineseText, zhTitleMap } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { Sparkline, Ribbon, BarList } from '@/components/charts';
 import { CountUp } from '@/components/CountUp';
+import { FlashNewItems } from '@/components/FlashNewItems';
 import { worldShapes, project } from '@/lib/map';
 import {
   corpus, countryRisks, topDyads, indiaBoard, ladderAlerts, languageMix,
@@ -112,7 +113,9 @@ export default async function Home() {
             <Link href="/events" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">All events →</Link>
           }>Live feed</SectionTitle>
           <Panel className="px-3 py-1.5">
-            {live.map((e) => <EventRow key={e.id} event={e} />)}
+            <FlashNewItems ids={live.map((e) => e.id)}>
+              {live.map((e) => <EventRow key={e.id} event={e} />)}
+            </FlashNewItems>
           </Panel>
         </div>
       </section>

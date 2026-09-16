@@ -82,7 +82,8 @@ export function EventCard({ event, compact = false }: { event: GeoEvent; compact
 export function EventRow({ event }: { event: GeoEvent }) {
   const esc = escalationLabel(event.escalation);
   return (
-    <Link href={`/events/${event.id}`} className="hairline group flex items-center gap-3 py-2 px-1 hover:bg-[color:var(--color-panel-2)] rounded transition-colors">
+    <Link href={`/events/${event.id}`} data-item-id={event.id}
+      className="hairline group flex items-center gap-3 py-2 px-1 hover:bg-[color:var(--color-panel-2)] rounded transition-colors">
       {/* The dot carries escalation level. Colour alone is not an accessible encoding,
           so the label travels with it for screen readers and on hover. */}
       <span className="h-1.5 w-1.5 flex-none rounded-full" style={{ background: esc.color }}

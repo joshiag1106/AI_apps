@@ -229,7 +229,16 @@ body {
 }
 .edge-traveled { animation: edge-travel 900ms ease-out forwards; }
 
+/* A row in the live feed that arrived after the reader was already looking at the
+   page — added and removed by FlashNewItems, never present on first load. */
+@keyframes flash-new {
+  0%   { background: color-mix(in oklab, var(--color-accent) 22%, transparent); }
+  100% { background: transparent; }
+}
+.flash-new { animation: flash-new 1.6s ease-out; }
+
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .sweep::after { animation: none; }
   .edge-traveled { animation: none; stroke-dashoffset: 0; }
+  .flash-new { animation: none; }
 }
