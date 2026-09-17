@@ -126,12 +126,33 @@ That `cp` is required and easy to forget: the standalone bundle does not include
 assets, and without it the site renders unstyled. This repo has no `public/` directory, so
 there is nothing else to copy.
 
+**Check the bundle before shipping it**, because a build made on macOS can contain things
+that cannot run on Linux, and things that should never leave your laptop:
+
 ```bash
-rsync -az --delete .next/standalone/ kautilya@SERVER_IP:/srv/kautilya/
+find .next/standalone -name '*.node'        # native binaries — must be none, or Linux-only
+ls .next/standalone/kautilya.db 2>/dev/null # your LOCAL database, if the build traced it in
 ```
 
-`--delete` is what keeps a stale file from a previous release out of the new one. It is
-safe here precisely because the database lives outside this directory.
+Both have happened. `next build` traced `kautilya.db` into the bundle — the full corpus and
+a real user row, email and password hash — and `@img/sharp-darwin-x64` is a macOS binary
+that Next includes even though nothing here imports `next/image`.
+
+```bash
+rsync -az --delete \
+  --exclude='kautilya.db' \
+  --exclude='node_modules/@img/*darwin*' \
+  --exclude='node_modules/@img/*libvips-darwin*' \
+  .next/standalone/ kautilya@SERVER_IP:/srv/kautilya/
+```
+
+`--delete` keeps a stale file from a previous release out of the new one, and is safe here
+precisely because the database lives outside this directory.
+
+**The `kautilya.db` exclusion is not tidiness.** If that file ships and `KAUTILYA_DB` is
+ever unset, the app finds it and quietly serves a frozen corpus and a stale account table —
+working perfectly, with month-old data and the wrong users. A silent wrong answer is worse
+than a crash.
 
 ---
 
@@ -217,10 +238,37 @@ sign-in silently never sticks.
 
 ## 8. DNS cutover
 
-In hPanel, change the **A records only**:
+**Two things will make a correct DNS edit look like it did nothing. Both have happened
+here, and both cost an hour.**
+
+**First, disable the host's CDN for this domain.** While Hostinger's CDN is enabled it
+manages the records itself and overrides whatever you set: the domain keeps resolving to
+their edge, which proxies to the old site. The tell is a root that returns **two or more
+rotating IPs** and responses carrying `server: hcdn`. Turn the CDN off before editing
+anything.
+
+**Second, delete any stale `AAAA` record.** Let's Encrypt prefers IPv6 when one exists, so
+an AAAA still pointing at the old host makes every certificate challenge fail against the
+wrong server — while your A record is perfectly correct and the error says nothing about
+DNS. The log line to recognise is a challenge failing against an address you do not
+recognise. Delete the AAAA, or point it at the VPS's own IPv6 only if you can verify that
+address is reachable from outside.
+
+Then, in hPanel, change the **A record only**:
 
 - `@` → `SERVER_IP`
-- `www` → `SERVER_IP`
+- `www` → usually a `CNAME` to the root, in which case it follows automatically and you
+  change nothing. If it is a CNAME to a CDN hostname, delete that first.
+
+**Diagnose with the authoritative nameserver, never a public resolver.** This is the single
+query that separates "the edit did not save" from "it is still propagating":
+
+```bash
+dig +norecurse @<your-ns> example.com A +noall +answer
+```
+
+If the authoritative server still shows the old address, nothing is propagating — the edit
+did not take, and waiting will not help.
 
 **Leave the MX records alone.** They point at Hostinger's mail servers, and web traffic
 follows A while mail follows MX — so the cutover does not disturb the alerts mailbox. If
@@ -239,10 +287,18 @@ sudo -u kautilya crontab -e
 ```
 
 ```
-0 * * * * curl -fsS -H "Authorization: Bearer YOUR_CRON_SECRET" http://127.0.0.1:3000/api/cron >/dev/null
+0 * * * * . /etc/kautilya.env && curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron >/dev/null 2>&1
 ```
 
-Hourly is sensible: every cycle hits 73 live publisher feeds for real.
+Sourcing the env file keeps the secret out of the crontab, which is world-readable to
+anyone who can run `crontab -l` as that user and ends up in backups of `/var/spool`.
+
+Hourly is sensible: every cycle hits 73 live publisher feeds for real. A full cycle takes
+about **10 seconds on 1 vCPU**.
+
+**Expect one or two feeds to fail from a datacenter IP that succeed from your laptop.**
+Some publishers block hosting ranges outright — two returned `HTTP 403` on the first
+production run. The ingest reports them and carries on; it is not a misconfiguration.
 
 ---
 
@@ -258,6 +314,7 @@ sudo -u kautilya nano /home/kautilya/backup-db.sh
 
 ```bash
 #!/usr/bin/env bash
+cd /home/kautilya          # cron and sudo can start this in a directory the user cannot read
 set -euo pipefail
 dest="/var/backups/kautilya/kautilya-$(date +%F).db"
 sqlite3 /var/lib/kautilya/kautilya.db ".backup '$dest'"
@@ -289,9 +346,17 @@ each one corresponds to a bug that existed before that date.
 curl -sI https://example.com/ | head -1                    # 200
 curl -sI https://example.com/_next/image?url=x&w=1&q=1     # 400 — the open image proxy is closed
 curl -s  -o /dev/null -w '%{http_code}\n' https://example.com/api/cron   # 401/403 without the secret
-curl -s  -o /dev/null -w '%{http_code}\n' -X POST https://example.com/api/analyse  # 401 when signed out
+curl -s  -X POST https://example.com/api/analyse   # see the note below before reading this one
 curl -s https://example.com/pricing | grep -ci stripe      # 0 — no env var names leak to visitors
 ```
+
+**The `/api/analyse` probe cannot be read until `ANTHROPIC_API_KEY` is set.** Without a key
+the route returns `{"unavailable":"no_key"}` with **HTTP 200**, and that check sits ABOVE the
+sign-in check in `app/api/analyse/route.ts` — so a 200 here means "feature off", not "gate
+open", and the 401 you actually want to see is unreachable. **Re-run this probe the moment
+you add the key**, and confirm it returns 401 signed out: that gate is what stands between an
+anonymous visitor and your Anthropic bill. Set the workspace spend limit before the key goes
+on the server, not after.
 
 Then in a browser: sign up, confirm the session persists across a reload (this is what
 proves HTTPS and the cookie settings are right), and check that a checkout attempt redirects
@@ -333,3 +398,11 @@ The database is untouched because it was never in that directory.
 - **Without `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID`, production closes checkout** and says
   subscriptions are not open yet. That is a supported state — launching free is fine — not
   a broken one.
+- **A build made on macOS ships a macOS binary and your local database.** Both exclusions in
+  step 5 exist because both actually happened on the first deploy.
+- **A host CDN silently overrides your DNS edits**, and a stale `AAAA` silently redirects
+  certificate validation to the old server. Neither announces itself; both look like
+  propagation delay. Query the authoritative nameserver directly — see step 8.
+- **Only `systemd` knows where Node is.** It does not read the shell profile, so the unit
+  file names the nvm binary by absolute path. An `nvm install` of a new major version moves
+  that path and the service will not start until the unit is updated to match.
