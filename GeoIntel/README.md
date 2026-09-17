@@ -128,6 +128,10 @@ without any of it. A production deployment needs three settings — see
 
 ## Deploying
 
+Standing a server up from scratch — user, firewall, Node, systemd, TLS, DNS cutover,
+cron and backups — is `docs/runbooks/vps-deploy.md`. This section is what the app
+itself requires, whichever host you pick.
+
 **Read this before choosing a host.** Storage is a SQLite file. That is a deliberate
 trade — no native module, no external database, one file to back up — but it dictates
 where this can run.
