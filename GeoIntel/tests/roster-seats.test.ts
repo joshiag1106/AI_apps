@@ -35,6 +35,7 @@
 // - "a vice president does not satisfy 总统": switching role matching to substring.
 import { describe, it, expect } from 'vitest';
 import { SEATS, MODIFIERS, findSeatMentions, classifySeat } from '../scripts/roster-seats';
+import { COUNTRIES } from '@/data/countries';
 import { PEOPLE } from '@/data/people';
 import type { Person } from '@/data/people';
 
@@ -97,6 +98,25 @@ describe('the noise the first live run turned up', () => {
     expect(findSeatMentions('加拿大总理重申应对美国贸易战计划')).toEqual([]);
     expect(findSeatMentions('日本外相与伊朗外长举行电话会谈')).toEqual([]);
     expect(findSeatMentions('打破意大利政府总理任期最长记录')).toEqual([]);
+  });
+
+  it('ignores 斥, the verb the 2026-09-17 run tripped on', () => {
+    // 台湾外长斥北京操作“认知战” — "Taiwan's FM rebukes Beijing". 批 was excluded on the first
+    // run, off 印度外长批评; 斥 is its near-synonym and was not, so the identical construction
+    // came back a week later as a mismatch — against a roster the SAME article confirms
+    // thirty characters further on, where it writes 台湾外交部长林佳龙随后驳斥.
+    expect(findSeatMentions('特朗普总统称不担心习近平取消峰会 台湾外长斥北京操作“认知战”')).toEqual([]);
+  });
+
+  it('reports one mention per occurrence, not one per duplicated gazetteer alias', () => {
+    // data/countries.ts listed 台湾, 中国 and 日本 TWICE each — a paste artifact, and
+    // invisible to every OTHER consumer because they all ask .some(), which is idempotent.
+    // This detector ITERATES the alias list, so the three most-covered states in the corpus
+    // had every seat count silently DOUBLED: the 2026-09-17 audit printed "2 articles" for
+    // a Taiwan mismatch that exists in exactly one, and credited Lin Chia-lung with four
+    // confirmations from two sentences. A doubled count is worse than a wrong one — it
+    // reads as corroboration, which is precisely what this section is trusted to supply.
+    expect(findSeatMentions('台湾外交部长林佳龙率团出访太平洋友邦帕劳')).toHaveLength(1);
   });
 
   it('ignores a compound office that merely starts with a seat word', () => {
@@ -182,6 +202,18 @@ describe('the seat map itself', () => {
       for (const role of seat.roles) {
         expect(live.has(role), `${seat.office} -> "${role}" is no longer a role in data/people.ts`).toBe(true);
       }
+    }
+  });
+
+  it('the gazetteer lists no Chinese alias twice', () => {
+    // The defect behind the doubled counts above, pinned at its source rather than only at
+    // its symptom. Every other consumer of COUNTRIES asks .some(), so a repeated alias is
+    // invisible to them and can be pasted in again without anything going red — this
+    // detector is the only code that iterates the list, which makes it the only place the
+    // duplicate can be caught.
+    for (const c of COUNTRIES) {
+      const zh = c.aliases.filter((a) => /^[\u4e00-\u9fff]+$/.test(a));
+      expect(new Set(zh).size, `${c.iso} repeats a Chinese alias: ${zh.join(' ')}`).toBe(zh.length);
     }
   });
 

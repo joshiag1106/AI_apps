@@ -507,6 +507,17 @@ export const PEOPLE: Person[] = [
   // reasons: it is a single story from one outlet, and romanising 黎明兴 from nothing but those
   // characters would be exactly the recall-based guess this file exists to prevent. Re-check when
   // a second source names the office; if it holds, UNLIST this entry rather than invent a spelling.
+  //
+  // RE-CHECKED 2026-09-17, still not changed, but the evidence moved one way. The story is now
+  // carried by two Vietnamese state outlets (cn.qdnd.vn, the army paper's Chinese edition, and
+  // Baolangson.vn) — which is two outlets but still ONE story, identical wire copy, so the
+  // trigger above has NOT fired; corroboration means an independent report, not a reprint.
+  // What is new is a measurement: Pham Minh Chinh matches ZERO of 7,766 articles. That is the
+  // signature this file documents for a seat that has turned over — Ishiba, Iwaya and Nakatani
+  // all matched zero before Japan was corrected, because officials who leave office stop being
+  // written about. Zero is not proof, and a state outlet naming its own head of government is
+  // not a foreign outlet's guess, so the next reviewer should weight this higher than 2026-09-09
+  // did — and still unlist rather than romanise if they act.
   { id: 'pham-minh-chinh', name: 'Pham Minh Chinh', role: 'Prime Minister', home: 'VNM',
     aliases: ['pham minh chinh', 'phạm minh chính'] },
   { id: 'bui-thanh-son', name: 'Bui Thanh Son', role: 'Deputy PM and Foreign Minister', home: 'VNM',
