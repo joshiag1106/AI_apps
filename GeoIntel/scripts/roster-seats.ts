@@ -106,7 +106,7 @@ export const MODIFIERS = ['新', '政府', '现任', '代理', '临时', '首任
  */
 export const NOT_A_NAME_START = new Set(
   ('的了和与及或在于就把被对向从到为是有也还并又曾则都只却仍更最很太等该其此各每另再' +
-   '因但而以所由据关认称表说谈指提强呼宣警访致办尚身出通府批会要应可已未无不没日月年' +
+   '因但而以所由据关认称表说谈指提强呼宣警访致办尚身出通府批斥会要应可已未无不没日月年' +
    '将同其间内外上下前后中大小多少涨重举任国').split(''),
 );
 
@@ -123,9 +123,23 @@ export const COMPOUND_OFFICE = ['特使', '办公', '任期', '选举', '候选'
 
 const HAN = /[一-鿿]/;
 
-/** Chinese aliases from the gazetteer, longest first so 马来西亚 wins over any prefix. */
+/**
+ * Chinese aliases from the gazetteer, longest first so 马来西亚 wins over any prefix.
+ *
+ * Deduplicated PER COUNTRY, because this is the only code in the repo that ITERATES an
+ * alias list rather than asking `.some()` — so a name repeated in data/countries.ts is
+ * harmless everywhere else and silently doubles every count here. It had: 中国, 台湾 and
+ * 日本 were each listed twice, which is the three most-covered states in the corpus, and
+ * the 2026-09-17 audit reported one Taiwan mismatch as "2 articles" and two confirming
+ * sentences as four confirmations. A doubled count is worse than a missing one, because it
+ * reads as corroboration and this section exists to supply exactly that.
+ *
+ * The same alias under two DIFFERENT countries is left alone: that is a real ambiguity the
+ * scan should see from both sides, not a paste artifact.
+ */
 const COUNTRY_ZH: { iso: string; alias: string }[] = COUNTRIES.flatMap((c) =>
-  c.aliases.filter((a) => a.length > 0 && [...a].every((ch) => HAN.test(ch))).map((alias) => ({ iso: c.iso, alias })),
+  [...new Set(c.aliases.filter((a) => a.length > 0 && [...a].every((ch) => HAN.test(ch))))]
+    .map((alias) => ({ iso: c.iso, alias })),
 ).sort((a, b) => b.alias.length - a.alias.length);
 
 /** Offices longest first, so 外交部长 is matched before 外长 and 国防部长 before 防长. */

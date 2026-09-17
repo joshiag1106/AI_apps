@@ -224,6 +224,28 @@ describe('the roster audit detectors', () => {
     expect(FORMER.test('前防长表示')).toBe(true);
   });
 
+  it('keeps the same precision guard for Hindi पूर्व, which means more than "former"', () => {
+    // The Chinese half of this pattern already refuses bare 前 and binds it to an office.
+    // Hindi पूर्व needed the same discipline and never got it: it is "former" before an
+    // office, but also "pre-" (पूर्व शर्त, a PRECONDITION) and "east" (पूर्वी, EASTERN).
+    //
+    // The 2026-09-17 audit flagged Modi off a headline that calls him पीएम मोदी — serving,
+    // in the same clause — because पूर्व शर्त sat twelve characters from his name.
+    //
+    // The guard is deliberately NOT the Chinese one turned around. Binding पूर्व to an
+    // office positively, as 前(总统|首相|…) does, would miss पूर्व विदेश मंत्री and
+    // पूर्व रक्षा मंत्री, where Hindi puts the portfolio BETWEEN the marker and the office —
+    // and those are the compound roles this roster carries most. So the exclusion is
+    // narrow: a following vowel matra means the word is not पूर्व at all, and the one
+    // non-office compound the corpus actually produced is named.
+    expect(FORMER.test('सीमा पर शांति को भारत-चीन संबंधों की पूर्व शर्त बताया')).toBe(false);
+    expect(FORMER.test('पूर्वी लद्दाख में तनाव बरकरार')).toBe(false);
+    // The true positives must survive: 9 of the corpus's 12 पूर्व are these two shapes, and
+    // पूर्व CDS is the sentence that found Anil Chauhan mislabelled in the first place.
+    expect(FORMER.test('पूर्व CDS अनिल चौहान')).toBe(true);
+    expect(FORMER.test('पूर्व सेना प्रमुख ने कहा')).toBe(true);
+  });
+
   // The VOA digest that made proximity necessary. It is one paragraph naming a purge AND
   // three unrelated figures, so a detector that only asks "does this article contain 免职"
   // marks Xi, Trump and the US Treasury Secretary as dismissed. The real sentence is

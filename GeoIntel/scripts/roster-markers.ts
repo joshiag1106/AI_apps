@@ -21,12 +21,32 @@
  * read once a month at most. Chinese bare 前 is excluded because it is a preposition in
  * 目前 and 之前 and would fire on nearly everything; only 前 bound to an office is matched.
  *
+ * Hindi पूर्व needed the same discipline and went four audits without it (fixed 2026-09-17).
+ * It is "former" before an office, but it is also "pre-" and "east", and the corpus produced
+ * both: पूर्व शर्त is a PRECONDITION — which flagged Modi off a headline calling him
+ * पीएम मोदी, serving, in the same clause — and पूर्वी is EASTERN, which in Indian defence
+ * copy sits beside a name constantly (पूर्वी लद्दाख).
+ *
+ * The guard is NOT the Chinese one turned around, and the asymmetry is the point. Binding
+ * पूर्व positively to an office, as 前(总统|首相|…) does, would miss पूर्व विदेश मंत्री and
+ * पूर्व रक्षा मंत्री, because Hindi puts the PORTFOLIO between the marker and the office —
+ * and compound roles are most of what this roster carries. Chinese can be bound positively
+ * only because its office words are a short closed set that sits flush against 前. So the
+ * Hindi exclusion is negative and narrow: a following vowel matra means the word is not
+ * पूर्व at all (this covers पूर्वी and पूर्वोत्तर generically), plus the one non-office
+ * compound the corpus actually printed. Of the 12 पूर्व in a 7,766-article corpus, 9 are
+ * true — 8 of them पूर्व CDS, the sentence that caught Anil Chauhan.
+ *
+ * Leaving that list short is the safe direction, and in the opposite way to the seat
+ * detector's. There, a missing stopword costs a false FLAG; here, an over-eager exclusion
+ * would SUPPRESS a real one. So add a compound only once the corpus has printed it.
+ *
  * It CANNOT bind the word to the name, so it flags a headline where someone else is the
  * former one — Lula, beside "former Brazil military chief". That is why the count is printed
  * as a ratio and the headline is printed with it: 5 of 7 is a finding, 1 of 1 is a sentence
  * to read. Judging that is the reviewer's job, and this tool never edits the roster.
  */
-export const FORMER = /\b(former|ex|outgoing|erstwhile)\b|\bex-|पूर्व|前(总统|首相|总理|部长|防长|外长|主席)|卸任/i;
+export const FORMER = /\b(former|ex|outgoing|erstwhile)\b|\bex-|पूर्व(?![\u093E-\u094D])(?!\s*शर्त)|前(总统|首相|总理|部长|防长|外长|主席)|卸任/i;
 
 /**
  * Words that say a person was REMOVED from the office, rather than merely labelled ex-.

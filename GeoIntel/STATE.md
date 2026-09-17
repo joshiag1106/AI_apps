@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-16.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-17.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,10 +21,10 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 430 passing (`npm test`) |
+| Tests | 434 passing (`npm test`) |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | 6,348 articles, 3,485 events; drifts with every ingest, so re-measure |
-| Person roster | 122 officials across 39 states; 77 named, 45 silent, 23 seats corpus-confirmed |
+| Corpus at last run | 7,766 articles, 4,267 events; drifts with every ingest, so re-measure |
+| Person roster | 122 officials across 39 states; 79 named, 43 silent, 24 seats corpus-confirmed |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
 There is one real account in the local database (the one created while testing the
@@ -808,6 +808,67 @@ middle of the animation rounds, hence the numbering gap.
 **GateGuard's fact-forcing gate fired on every first touch of a file this session** (dozens of
 times) — present the three facts (importers, affected API, verbatim instruction) and retry;
 it never blocked a second time on the same file.
+
+## Where 2026-09-17 ended — the audit's first unattended run, and three detector bugs
+
+The first roster audit since 2026-09-10. Seven days of drift, a corpus grown from 6,348 to
+7,766 articles, and **four flags where the baseline had four — but two of them were new, and
+both were the detector's fault, not the roster's.** Nothing in `data/people.ts` was wrong.
+434 tests (430 -> 434), `tsc --noEmit` clean, TDD throughout: each of the four new tests was
+watched failing against the old code first.
+
+**1. `斥` was missing from `NOT_A_NAME_START`.** 台湾外长斥北京操作"认知战" — "Taiwan's FM
+rebukes Beijing" — put a verb where the run-capture expects a name, so Lin Chia-lung came back
+as a SEAT MISMATCH. 批 was already excluded, off 印度外长批评 in the first live run; 斥 is its
+near-synonym and simply had not appeared yet. **The same article confirms the roster thirty
+characters further on**, where it writes 台湾外交部长林佳龙随后驳斥 — so the detector flagged
+and vindicated the same seat from one sentence, and printed only the flag.
+
+**2. Hindi पूर्व was never bound to an office, and Chinese 前 always was.** पूर्व शर्त is a
+PRECONDITION; the audit read it as "former" and flagged **Modi** off a headline that calls him
+पीएम मोदी — serving — in the same clause. पूर्वी (EASTERN) is the same failure waiting in every
+Indian defence story. Measuring first was what made the fix safe: **12 occurrences of पूर्व in
+the whole corpus, 9 of them true, 8 being पूर्व CDS** — the sentence that originally caught
+Anil Chauhan.
+
+**The fix is deliberately NOT the Chinese guard turned around, and the asymmetry is worth
+keeping.** 前 can be bound POSITIVELY to an office because Chinese office words are a short
+closed set sitting flush against it. Hindi puts the portfolio in between — पूर्व विदेश मंत्री,
+पूर्व रक्षा मंत्री — so a positive binding would silently lose exactly the compound roles this
+roster carries most. So Hindi gets a NEGATIVE guard: a following vowel matra means the word is
+not पूर्व at all (covers पूर्वी and पूर्वोत्तर generically), plus the one non-office compound
+the corpus actually printed. **And the safe direction inverts between the two detectors** — a
+missing stopword in the seat detector costs a false FLAG, but an over-eager exclusion in FORMER
+SUPPRESSES a real one. Add a Hindi compound only once the corpus has printed it.
+
+**3. Three gazetteer aliases were listed twice, and every count for them was doubled.**
+`data/countries.ts` repeated 中国, 台湾 and 日本 in their own alias arrays — a paste artifact
+next to the Korean alias in each. Harmless to every other consumer, because they all ask
+`.some()`, which is idempotent. **`scripts/roster-seats.ts` is the only code in the repo that
+ITERATES an alias list**, so the three most-covered states in the corpus had every seat count
+silently doubled: one Taiwan mismatch printed as "2 articles", two confirming sentences printed
+as four confirmations for Lin Chia-lung. **A doubled count is worse than a wrong one, because
+it reads as corroboration** — and corroboration is the one thing this section exists to supply.
+Fixed at the source AND defensively in `COUNTRY_ZH`, with a test that pins the gazetteer itself,
+since that is the only place the next paste can be caught.
+
+**After the fixes the audit returns exactly the 2026-09-10 baseline**, which is the result to
+want: CONTRADICTED 1 (Lula, known noise), DISMISSED 1 (Xi, known noise — he is doing the
+purging), SEAT MISMATCH 1 (Vietnam, genuine), UNCLAIMED SEAT 1 (PRK, deliberately empty).
+
+**Vietnam moved, and was still not acted on.** 越南政府总理黎明兴 is now carried by two
+Vietnamese state outlets — but it is the same wire copy twice, and the note's own trigger asks
+for a second SOURCE, which a reprint is not. What is new is a measurement: **Pham Minh Chinh
+matches ZERO of 7,766 articles.** That is the signature this document already records for a
+turned-over seat — Ishiba, Iwaya and Nakatani all matched zero before Japan was corrected.
+Recorded in `data/people.ts`, still unchanged, and the standing instruction holds: **unlist
+rather than romanise 黎明兴 from its characters.**
+
+**The general lesson, and it is the one to carry forward: a detector left unrun for a week does
+not go stale, it goes WRONG in new ways, because the corpus keeps producing constructions the
+exclusion lists have never seen.** Every one of the three bugs above was latent on 2026-09-10
+and needed only a sentence nobody had written yet. Run the audit on a schedule, and read the
+NEW flags as suspect-detector-first — two of two were this time.
 
 ## The accessibility pass (2026-09-07)
 
