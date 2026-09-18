@@ -49,7 +49,7 @@ export default function Splash() {
         }}
       />
 
-      <div className="splash-fade-in pointer-events-none absolute inset-0 opacity-[0.22]" style={{ animationDelay: '150ms' }}>
+      <div className="splash-map-fade pointer-events-none absolute inset-0" style={{ animationDelay: '150ms' }}>
         <WorldMap shapes={shapes} data={mapData} markers={markers} width={1100} height={520} legend={false} />
       </div>
 
@@ -67,6 +67,14 @@ export default function Splash() {
         <div className="splash-fade-up mb-2 text-[12px] uppercase tracking-[0.28em] text-faint" style={{ animationDelay: '260ms' }}>
           Kautilya
         </div>
+        {/* The category line the splash otherwise has none of: Nav carries "Geopolitical
+            Risk Intelligence" as its own subtitle everywhere else on the site, and the
+            splash renders no Nav — see app/layout.tsx's isSplash branch. So this is the
+            only place on the whole page that names what the product actually is. */}
+        <div className="splash-fade-up mb-4 text-[13px] font-medium uppercase tracking-[0.16em] text-[color:var(--color-accent)]"
+          style={{ animationDelay: '300ms' }}>
+          Geopolitical Intelligence · Threat &amp; Risk Analysis
+        </div>
         <h1 className="splash-fade-up max-w-2xl text-[32px] font-semibold leading-tight tracking-tight text-text sm:text-[40px]"
           style={{ animationDelay: '340ms' }}>
           Reporting read in the language it was written in
@@ -76,13 +84,21 @@ export default function Splash() {
           clustered into {stats.events.toLocaleString()} events and scored for corroboration — not asserted as truth.
         </p>
 
+        {/* The reason to click, distinct from the stats paragraph above — grounded in what
+            the engine actually does (the escalation-ladder detector reads an official
+            posture shift the day it is published) rather than a generic hype line, matching
+            the site's own anti-hype voice ("scored — not asserted as truth", two lines up). */}
+        <p className="splash-fade-up mt-5 text-[15px] font-medium text-text" style={{ animationDelay: '500ms' }}>
+          See the risk before the headlines catch up.
+        </p>
+
         {/* A plain, fully server-renderable link — no onClick. This page has no
             'use client' directive, and a Server Component cannot hand a function to an
             element it renders; components/MarkEntered.tsx, mounted on /board, is what
             actually remembers this visitor arrived. See tests/splash.test.ts. */}
         <Link
           href="/board"
-          className="splash-fade-up mt-9 rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
+          className="splash-fade-up mt-6 rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
           style={{ animationDelay: '560ms' }}
         >
           Enter →
