@@ -210,7 +210,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             </Panel>
           )}
 
-          {!gate.unlimited && (
+          {!gate.unlimited && !gate.previewUnlimited && (
             <p className="text-center text-[13px] text-faint">
               {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
               <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>

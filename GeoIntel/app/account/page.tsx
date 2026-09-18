@@ -87,9 +87,13 @@ export default async function AccountPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Plan" value={user.plan === 'pro' ? 'Desk Pro' : 'Analyst Free'} />
-        <Stat label="Analyses used" value={quota.unlimited ? '∞' : <CountUp value={quota.used} />} sub={quota.unlimited ? 'unlimited' : `of ${FREE_LIMIT}`} />
-        <Stat label="Remaining" value={quota.unlimited ? '∞' : <CountUp value={quota.remaining} />}
-          tone={!quota.unlimited && quota.remaining === 0 ? 'var(--color-high)' : undefined} />
+        <Stat label="Analyses used" value={<CountUp value={quota.used} />}
+          sub={quota.unlimited ? 'unlimited' : quota.previewUnlimited ? 'no limit (preview)' : `of ${FREE_LIMIT}`} />
+        {/* previewUnlimited is folded in here too: with nothing enforced, `remaining` keeps
+            counting down to 0 and staying there after five uses, which would otherwise show
+            a red "0" while access is in fact completely open — see lib/quota's QUOTA_ENFORCED. */}
+        <Stat label="Remaining" value={(quota.unlimited || quota.previewUnlimited) ? '∞' : <CountUp value={quota.remaining} />}
+          tone={!quota.unlimited && !quota.previewUnlimited && quota.remaining === 0 ? 'var(--color-high)' : undefined} />
         <Stat label="Metering" value="Account" sub="bound to this login" />
       </div>
 

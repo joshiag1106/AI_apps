@@ -7,7 +7,7 @@ import type { EventAnalysis } from '@/lib/llm/analyse';
 type State =
   | { k: 'idle' }
   | { k: 'loading' }
-  | { k: 'done'; a: EventAnalysis; cached: boolean; remaining?: number; unlimited?: boolean }
+  | { k: 'done'; a: EventAnalysis; cached: boolean; remaining?: number; unlimited?: boolean; previewUnlimited?: boolean }
   | { k: 'blocked'; why: 'no_key' | 'signin' | 'quota' | 'refused' | 'error'; detail?: string };
 
 /** Back to this event after signing in; the login page accepts same-site paths only. */
@@ -63,7 +63,7 @@ export function FramingAnalysis({ eventId, initial, enabled, signedIn }: {
       if (data.unavailable === 'no_key') return setState({ k: 'blocked', why: 'no_key' });
       if (data.unavailable) return setState({ k: 'blocked', why: data.unavailable, detail: data.detail });
       if (!data.analysis) return setState({ k: 'blocked', why: 'error', detail: 'No analysis returned.' });
-      setState({ k: 'done', a: data.analysis, cached: !!data.cached, remaining: data.remaining, unlimited: data.unlimited });
+      setState({ k: 'done', a: data.analysis, cached: !!data.cached, remaining: data.remaining, unlimited: data.unlimited, previewUnlimited: data.previewUnlimited });
     } catch (e) {
       setState({ k: 'blocked', why: 'error', detail: e instanceof Error ? e.message : String(e) });
     }
@@ -183,7 +183,7 @@ export function FramingAnalysis({ eventId, initial, enabled, signedIn }: {
             <span className="uppercase tracking-wider">Caveat: </span>{state.a.caveat}
           </p>
 
-          {state.remaining !== undefined && !state.unlimited && (
+          {state.remaining !== undefined && !state.unlimited && !state.previewUnlimited && (
             <p className="text-[13px] text-faint">{state.remaining} of 5 free analyses remaining.</p>
           )}
         </div>

@@ -162,7 +162,7 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
             </div>
           </section>
 
-          {!gate.unlimited && (
+          {!gate.unlimited && !gate.previewUnlimited && (
             <p className="text-center text-[13px] text-faint">
               {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
               <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
