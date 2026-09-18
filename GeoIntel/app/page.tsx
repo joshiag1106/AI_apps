@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { WorldMap } from '@/components/WorldMap';
 import { corpus, corpusStats, countryRisks, hotspotActivity, countryName } from '@/lib/queries';
 import { worldShapes, project } from '@/lib/map';
@@ -92,22 +91,35 @@ export default function Splash() {
           See the risk before the headlines catch up.
         </p>
 
-        {/* A plain, fully server-renderable link — no onClick. This page has no
-            'use client' directive, and a Server Component cannot hand a function to an
-            element it renders; components/MarkEntered.tsx, mounted on /board, is what
-            actually remembers this visitor arrived. See tests/splash.test.ts. */}
-        <Link
+        {/*
+          * Plain <a> tags, DELIBERATELY not next/link's <Link> — both of these once broke
+          * because they were. / is the only route with no Nav/footer (app/layout.tsx's
+          * isSplash), and Next's client-side router specifically REUSES a layout shared by
+          * the from- and to-route rather than re-rendering it on a <Link> navigation — the
+          * entire point of the App Router's shared-layout model. Since every route shares
+          * this one root layout, clicking either link here carried /'s chrome-suppressed
+          * state straight over to wherever it went, and only a manual reload fixed it for
+          * that visit. A bare <a> gets no client-side interception, so the browser gives it
+          * an ordinary full page load instead — a fresh server round-trip, fresh middleware,
+          * a freshly evaluated root layout, the same as typing the URL. See
+          * tests/splash.test.ts, which pins both links, not only Enter.
+          *
+          * No onClick either, for the unrelated reason this page has no 'use client' and a
+          * Server Component cannot hand a function to an element it renders — the write to
+          * localStorage is components/MarkEntered.tsx, mounted on /board.
+          */}
+        <a
           href="/board"
           className="splash-fade-up mt-6 rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
           style={{ animationDelay: '560ms' }}
         >
           Enter →
-        </Link>
+        </a>
 
-        <Link href="/about" className="splash-fade-up mt-6 text-[13px] text-faint underline decoration-dotted hover:text-muted"
+        <a href="/about" className="splash-fade-up mt-6 text-[13px] text-faint underline decoration-dotted hover:text-muted"
           style={{ animationDelay: '620ms' }}>
           Why Kautilya
-        </Link>
+        </a>
       </div>
     </div>
   );

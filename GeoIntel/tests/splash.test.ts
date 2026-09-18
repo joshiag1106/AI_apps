@@ -12,11 +12,51 @@ import { readFileSync } from 'node:fs';
 describe('the splash page', () => {
   const src = readFileSync('app/page.tsx', 'utf8');
 
-  it('renders a real <Link> to /board, not a client-only onClick', () => {
+  it('links Enter to /board with a genuine href, not a JS-only handler', () => {
     // The redirect-if-already-visited behaviour is progressive enhancement, layered on top
     // of an Enter control that is a genuine navigable link. A visitor with JavaScript off,
     // or the localStorage read blocked by a privacy mode, must still be able to get in.
-    expect(src).toMatch(/<Link\s+href="\/board"/);
+    expect(src).toMatch(/href="\/board"/);
+  });
+
+  /*
+   * Reported 2026-09-18: clicking Enter landed on /board with no Nav and no footer — the
+   * chrome that /board is supposed to have. Reproduced in a real browser: URL correctly
+   * read /board, but document.querySelector('header'/'footer') both came back null.
+   *
+   * The cause is Next's App Router client-side router, not a caching problem. app/layout.tsx
+   * decides isSplash by reading a per-request `x-pathname` header, which is only freshly
+   * evaluated on a genuine server round-trip. But / and /board share the SAME root layout,
+   * and Next's client-side navigation (what a <Link> click does) is specifically built to
+   * REUSE a layout that is common to the from- and to-route rather than re-render it — that
+   * is the whole point of the App Router's shared-layout model. So clicking Enter carried
+   * the splash's chrome-suppressed layout state straight over to /board, and only a manual
+   * reload fixed it for that visit. A typed URL, a bookmark, or a refresh were never
+   * affected, because those are genuine server round-trips with fresh middleware and a
+   * freshly evaluated root layout — confirmed by curling /board directly and by a hard
+   * location.replace() in a real browser, both of which correctly showed the chrome.
+   *
+   * / is the only route where chrome is ever suppressed, so the Enter link is the ONLY
+   * transition in the whole app that crosses that boundary via a client-side navigation.
+   * Fixed by keeping it a plain, uninterpreted anchor — Next's Link component intercepts
+   * clicks specifically to perform that soft, layout-reusing navigation; a bare <a> does
+   * not, and the browser gives it an ordinary full page load instead, the same as typing
+   * the URL. That closes the one vulnerable path without touching how the rest of the site
+   * navigates.
+   */
+  it.each([
+    ['/board', 'Enter'],
+    ['/about', 'Why Kautilya'],
+  ])('%s (%s) is a plain anchor, not next/link\'s <Link> — every link off the splash needs this', (href) => {
+    // Not only the Enter button. / is the ONLY route where chrome is suppressed, so ANY
+    // client-side navigation whose FROM route is / carries that suppressed layout state to
+    // wherever it goes next — the Why Kautilya link to /about is exactly as exposed as the
+    // Enter link to /board, and was fixed alongside it for the same reason.
+    const at = src.indexOf(`href="${href}"`);
+    expect(at, `href="${href}" not found in app/page.tsx`).toBeGreaterThan(-1);
+    const block = src.slice(Math.max(0, at - 40), at + 20);
+    expect(block, `the ${href} link must not be a <Link>, which soft-navigates and would keep the chrome suppressed`)
+      .not.toMatch(/<Link\b/);
   });
 
   it('checks localStorage before paint, not after, and never blocks on it failing', () => {
