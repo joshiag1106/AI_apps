@@ -314,9 +314,29 @@ body {
 }
 .splash-fade-in { animation: fade-in 900ms ease-out backwards; }
 
+/*
+ * The splash's map sits behind the headline at a QUIETED opacity (0.22), not full — so its
+ * entrance cannot reuse fade-in above, which ends at 1. Reported 2026-09-18: it originally
+ * carried fade-in (ending at 1) PLUS a static opacity-[0.22] utility on the same element.
+ * While the animation ran, the animated value won and the map visibly brightened to FULL
+ * opacity; the instant the animation's active period ended — no `forwards` to hold it —
+ * the element reverted to the static 0.22 underneath. That revert is a hard, instant snap
+ * DOWN in brightness happening right after the fade UP, which read exactly like "faded in,
+ * then immediately faded back out": visually a second, opposite fade with nothing to soften
+ * it. `forwards` here is what stops it reverting to anything once the animation completes.
+ */
+@keyframes map-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 0.22; }
+}
+.splash-map-fade { animation: map-fade-in 900ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .sweep::after { animation: none; }
   .splash-bar, .splash-fade-up, .splash-fade-in { animation: none; opacity: 1; transform: none; }
+  /* Rests at the QUIETED level (0.22), not full brightness — this element's resting
+     opacity is never 1, animated or not, so it must not share the line above. */
+  .splash-map-fade { animation: none; opacity: 0.22; }
   .edge-traveled { animation: none; stroke-dashoffset: 0; }
   .flash-new { animation: none; }
   .star-pop { animation: none; }

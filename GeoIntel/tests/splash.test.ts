@@ -86,3 +86,94 @@ describe('the moved Threat Board', () => {
     expect(src).toMatch(/title:\s*'Threat Board'/);
   });
 });
+
+describe("the splash's quiet map, and why it briefly looked like it was fading back out", () => {
+  // Reported 2026-09-18: the map faded in, then immediately appeared to fade back OUT.
+  //
+  // The cause was two rules fighting over the same property. The map's wrapper carried
+  // BOTH a static opacity-[0.22] utility (the "quieted" resting level) AND an animation
+  // that keyframed opacity 0 -> 1 with no `forwards` fill-mode. While the animation is
+  // running, the animated value wins over the static one — so the map visibly brightened
+  // to FULL opacity, not 0.22. The instant the animation's active period ended, its effect
+  // stopped applying (no `forwards` to hold the end state) and the element reverted to the
+  // underlying cascade value: the static 0.22. That revert is a hard, instant snap DOWN in
+  // brightness happening right after the fade UP — which reads exactly like "faded in, then
+  // immediately faded back out", because visually it is a second, opposite fade with no
+  // transition softening it.
+  //
+  // The same bug had a second face under prefers-reduced-motion: the override for this
+  // class set opacity to 1 (full), so with Reduce Motion on the map would have sat at full
+  // brightness PERMANENTLY — the opposite of quieted — rather than at rest at 0.22.
+  const css = readFileSync('app/globals.css', 'utf8');
+  const splashSrc = readFileSync('app/page.tsx', 'utf8');
+
+  it('never puts a static opacity utility on the same element as its own fade animation', () => {
+    // The regression itself: this exact conflict must not recur on the map wrapper.
+    expect(splashSrc, 'a static opacity-[...] class fighting an opacity keyframe animation is the bug this test exists to catch')
+      .not.toMatch(/splash-map-fade[^"]*opacity-\[/);
+  });
+
+  it("holds its animation's end state instead of snapping back to a default", () => {
+    const m = css.match(/\.splash-map-fade\s*\{[^}]*\}/);
+    expect(m, 'app/globals.css must define .splash-map-fade').not.toBeNull();
+    // `forwards` alone or `both` (which includes forwards' hold-after-completion behaviour,
+    // plus holding the pre-animation state during animation-delay — needed because this
+    // element also has a delay before it starts) both satisfy "does not snap back".
+    expect(m![0], 'without forwards (or both), the element reverts the instant the animation ends')
+      .toMatch(/\b(forwards|both)\b/);
+  });
+
+  it('animates TO the quieted opacity, not to fully visible', () => {
+    // [^}]* stops at the FIRST closing brace, which here is the inner `from { ... }` block's
+    // own — the exact class of bug the reduced-motion test above already learned from once
+    // today. This keyframe's outer brace is the one alone on its own line, so match up to
+    // THAT rather than to any `}`.
+    const m = css.match(/@keyframes\s+map-fade-in\s*\{[\s\S]*?\n\}/);
+    expect(m, 'app/globals.css must define @keyframes map-fade-in').not.toBeNull();
+    expect(m![0]).toMatch(/to\s*\{\s*opacity:\s*0\.22/);
+  });
+
+  it('rests at the quieted opacity under reduced motion too, not full brightness', () => {
+    const { blocks } = (function reducedMotionBlocks(source: string) {
+      const needle = '@media (prefers-reduced-motion: reduce)';
+      let blocks = '';
+      let cursor = 0;
+      for (let i = source.indexOf(needle); i !== -1; i = source.indexOf(needle, cursor)) {
+        const open = source.indexOf('{', i);
+        let depth = 1, j = open + 1;
+        for (; j < source.length && depth > 0; j++) {
+          if (source[j] === '{') depth++; else if (source[j] === '}') depth--;
+        }
+        blocks += source.slice(open + 1, j - 1);
+        cursor = j;
+      }
+      return { blocks };
+    })(css);
+    const m = blocks.match(/\.splash-map-fade\s*\{[^}]*\}/);
+    expect(m, 'the reduced-motion override for .splash-map-fade is missing').not.toBeNull();
+    expect(m![0], 'reduced motion must rest the map at 0.22, not full opacity')
+      .toMatch(/opacity:\s*0\.22/);
+  });
+});
+
+describe('the splash names what it is and gives a reason to click Enter', () => {
+  // Josh: mention geointelligence / threat and risk analysis, and a catchy line that makes
+  // someone want to press Enter — the page had real value (live corpus stats) but nothing
+  // that named the category or made the click feel urgent.
+  const splashSrc = readFileSync('app/page.tsx', 'utf8');
+
+  it('names the category — geopolitical intelligence, threat and risk analysis', () => {
+    expect(splashSrc).toMatch(/geopolitical intelligence/i);
+    expect(splashSrc).toMatch(/threat/i);
+    expect(splashSrc).toMatch(/risk/i);
+  });
+
+  it('gives the Enter button a reason above it, distinct from the stats paragraph', () => {
+    // Not just restating "5 languages, 990 events" again — a punchy, separate line whose
+    // only job is to make clicking feel worth it.
+    const enterAt = splashSrc.indexOf('href="/board"');
+    expect(enterAt, 'Enter link not found').toBeGreaterThan(-1);
+    const before = splashSrc.slice(0, enterAt);
+    expect(before).toMatch(/headlines catch up/i);
+  });
+});
