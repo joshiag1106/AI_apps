@@ -128,9 +128,17 @@ describe("the splash's quiet map, and why it briefly looked like it was fading b
     // own — the exact class of bug the reduced-motion test above already learned from once
     // today. This keyframe's outer brace is the one alone on its own line, so match up to
     // THAT rather than to any `}`.
+    //
+    // 0.5, not the original 0.22: Josh reported the map "still not much visible" even after
+    // the snap-back was fixed. Measured why: every shape already carries a stroke
+    // (var(--color-line), #1f2b3d — already a subtle border colour at FULL strength, used
+    // everywhere else in the app at 100%) plus a risk-scaled fill that trends toward
+    // near-black for a low-risk country. The wrapper's opacity dims BOTH together, so at
+    // 0.22 even the outlines of an otherwise ordinary country were close to imperceptible
+    // against the near-black background, not only the risk colouring.
     const m = css.match(/@keyframes\s+map-fade-in\s*\{[\s\S]*?\n\}/);
     expect(m, 'app/globals.css must define @keyframes map-fade-in').not.toBeNull();
-    expect(m![0]).toMatch(/to\s*\{\s*opacity:\s*0\.22/);
+    expect(m![0]).toMatch(/to\s*\{\s*opacity:\s*0\.5/);
   });
 
   it('rests at the quieted opacity under reduced motion too, not full brightness', () => {
@@ -151,8 +159,8 @@ describe("the splash's quiet map, and why it briefly looked like it was fading b
     })(css);
     const m = blocks.match(/\.splash-map-fade\s*\{[^}]*\}/);
     expect(m, 'the reduced-motion override for .splash-map-fade is missing').not.toBeNull();
-    expect(m![0], 'reduced motion must rest the map at 0.22, not full opacity')
-      .toMatch(/opacity:\s*0\.22/);
+    expect(m![0], 'reduced motion must rest the map at the same 0.5 it animates to, not full opacity')
+      .toMatch(/opacity:\s*0\.5/);
   });
 });
 
