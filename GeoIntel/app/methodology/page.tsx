@@ -11,10 +11,10 @@ import { TREND_SERIES_DAYS } from '@/lib/risk';
 export const metadata = { title: 'Methodology' };
 
 function H({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-9 mb-2.5 text-[17px] font-semibold tracking-tight text-text">{children}</h2>;
+  return <h2 className="mt-9 mb-2.5 text-[19px] font-semibold tracking-tight text-text">{children}</h2>;
 }
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 max-w-3xl text-[13.5px] leading-relaxed text-muted">{children}</p>;
+  return <p className="mb-3 max-w-3xl text-[16px] leading-relaxed text-muted">{children}</p>;
 }
 
 export default function MethodologyPage() {
@@ -23,7 +23,7 @@ export default function MethodologyPage() {
 
   return (
     <div className="max-w-4xl">
-      <div className="text-[10px] uppercase tracking-[0.22em] text-faint">Methodology</div>
+      <div className="text-[12px] uppercase tracking-[0.22em] text-faint">Methodology</div>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">How this engine works, and where it fails</h1>
       <P>
         Every number on this site is computed from rules written down here. Nothing is a black box,
@@ -32,8 +32,8 @@ export default function MethodologyPage() {
       </P>
 
       <Panel className="my-6 border-l-2 border-l-[color:var(--color-accent)] p-4">
-        <div className="text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-accent)]">The central caveat</div>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-text">
+        <div className="text-[13px] uppercase tracking-[0.16em] text-[color:var(--color-accent)]">The central caveat</div>
+        <p className="mt-2 text-[16px] leading-relaxed text-text">
           This engine measures <strong>corroboration and provenance</strong>. It does not, and cannot,
           determine truth. A claim repeated by many independent outlets scores highly whether or not it
           is correct; a correct exclusive scores low because it is, by definition, uncorroborated.
@@ -118,13 +118,13 @@ export default function MethodologyPage() {
       <Panel className="my-4 p-4">
         <div className="space-y-1">
           {ESCALATION_LADDER.map((r) => (
-            <div key={r.rung} className="flex flex-wrap items-baseline gap-3 text-[12px]">
+            <div key={r.rung} className="flex flex-wrap items-baseline gap-3 text-[14px]">
               <span className="mono-num w-5 text-right text-faint">{r.rung}</span>
               <span className="w-40 flex-none">
                 <ChineseText text={r.zh} size="small" accent clamp={false} />
               </span>
               <span className="w-52 flex-none text-muted">{r.en}</span>
-              <span className="mono-num text-[10.5px] text-faint">sev {r.severity}</span>
+              <span className="mono-num text-[13px] text-faint">sev {r.severity}</span>
             </div>
           ))}
         </div>
@@ -158,10 +158,10 @@ export default function MethodologyPage() {
           ['Contradiction penalty', '−10', 'Sources in the cluster assert and deny the same claim.'],
         ].map(([label, max, detail]) => (
           <div key={label} className="flex gap-4 py-2.5">
-            <span className="mono-num w-10 flex-none text-right text-[12px] text-[color:var(--color-accent)]">{max}</span>
+            <span className="mono-num w-10 flex-none text-right text-[14px] text-[color:var(--color-accent)]">{max}</span>
             <div>
-              <div className="text-[12.5px] text-text">{label}</div>
-              <div className="text-[11.5px] leading-snug text-muted">{detail}</div>
+              <div className="text-[15px] text-text">{label}</div>
+              <div className="text-[14px] leading-snug text-muted">{detail}</div>
             </div>
           </div>
         ))}
@@ -345,7 +345,7 @@ export default function MethodologyPage() {
       </P>
 
       <H>12. Known limitations</H>
-      <ol className="mb-3 max-w-3xl list-decimal space-y-2 pl-5 text-[13.5px] leading-relaxed text-muted">
+      <ol className="mb-3 max-w-3xl list-decimal space-y-2 pl-5 text-[16px] leading-relaxed text-muted">
         <li><strong className="text-text">Corroboration is not truth.</strong> Widely-repeated false claims score well. Ownership and country diversity are a partial mitigation, not a cure.</li>
         <li><strong className="text-text">PRC domestic coverage is partial.</strong> Ministry feeds are unavailable; Chinese material arrives via aggregator queries, which under-represent domestic-only outlets.</li>
         <li><strong className="text-text">Lexicon scoring is shallow.</strong> Keyword weights do not understand negation, sarcasm or hypotheticals. &ldquo;Rules out invasion&rdquo; scores as escalatory.</li>
@@ -356,8 +356,8 @@ export default function MethodologyPage() {
       </ol>
 
       <div className="mt-8 flex gap-3">
-        <Link href="/" className="text-[12px] text-muted hover:text-[color:var(--color-accent)]">← Threat board</Link>
-        <Link href="/pricing" className="text-[12px] text-muted hover:text-[color:var(--color-accent)]">Plans →</Link>
+        <Link href="/" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">← Threat board</Link>
+        <Link href="/pricing" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">Plans →</Link>
       </div>
     </div>
   );

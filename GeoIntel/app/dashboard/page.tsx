@@ -41,14 +41,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   return (
     <div className="space-y-7">
       <section>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">Analyst dashboard</div>
+        <div className="text-[12px] uppercase tracking-[0.22em] text-faint">Analyst dashboard</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Comparative view</h1>
         <div className="mt-1.5 flex flex-wrap items-end justify-between gap-3">
-          <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
+          <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
             The whole corpus, sortable. Everything here derives from the same scored events —
             use it to find where to look, then open an event for its source-by-source evidence.
           </p>
-          <span className="flex items-center gap-2 text-[11px] text-faint">
+          <span className="flex items-center gap-2 text-[13px] text-faint">
             Export corpus
             <a href="/api/export?format=csv"
               className="rounded border border-[color:var(--color-line)] px-2 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">CSV</a>
@@ -75,7 +75,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <div className="flex gap-1.5">
               {[['risk', 'Risk'], ['events', 'Events'], ['trend', 'Trend']].map(([k, label]) => (
                 <Link key={k} href={`/dashboard?sort=${k}`}
-                  className={`rounded-full border px-2 py-0.5 text-[10.5px] ${
+                  className={`rounded-full border px-2 py-0.5 text-[13px] ${
                     sort === k ? 'border-[color:var(--color-accent)] text-[color:var(--color-accent)]'
                       : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
                   {label}
@@ -85,8 +85,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           }>Country risk table</SectionTitle>
 
           <div className="max-h-[520px] overflow-y-auto">
-            <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-[color:var(--color-panel)] text-[10px] uppercase tracking-wider text-faint">
+            <table className="w-full text-[14px]">
+              <thead className="sticky top-0 bg-[color:var(--color-panel)] text-[12px] uppercase tracking-wider text-faint">
                 <tr>
                   <th className="py-1.5 text-left font-normal">State</th>
                   <th className="py-1.5 text-right font-normal">Risk</th>
@@ -107,8 +107,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </Link>
                       </td>
                       <td className="mono-num py-1.5 text-right" style={{ color: `var(--color-${band.tone})` }}>{r.composite}</td>
-                      <td className="py-1.5 text-right text-[10.5px]" style={{ color: `var(--color-${band.tone})` }}>{band.label}</td>
-                      <td className="hidden py-1.5 text-right text-[10.5px] text-muted sm:table-cell">{r.topDomain ?? '—'}</td>
+                      <td className="py-1.5 text-right text-[13px]" style={{ color: `var(--color-${band.tone})` }}>{band.label}</td>
+                      <td className="hidden py-1.5 text-right text-[13px] text-muted sm:table-cell">{r.topDomain ?? '—'}</td>
                       <td className="mono-num py-1.5 text-right text-muted">{r.eventCount}</td>
                       <td className="py-1.5 text-right"><Trend value={r.trend} /></td>
                     </tr>
@@ -126,12 +126,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               {dyads.map((d) => (
                 <Link key={d.key} href={`/dyad/${d.a}-${d.b}`}
                   className="flex items-center gap-2.5 py-1.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
-                  <span className="flex-1 truncate text-[11.5px] text-text">
+                  <span className="flex-1 truncate text-[14px] text-text">
                     {countryName(d.a)} — {countryName(d.b)}
                   </span>
                   <Sparkline data={d.series.map((s) => s.value)} width={56} height={18}
                     color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-guarded)'} />
-                  <span className="mono-num w-7 text-right text-[12px]"
+                  <span className="mono-num w-7 text-right text-[14px]"
                     style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
                   <Trend value={d.trend} />
                 </Link>
@@ -160,7 +160,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </Panel>
         <Panel className="p-4">
           <SectionTitle kicker="Events flagged for a reader’s attention" action={
-            <Link href="/methodology" className="text-[10.5px] text-faint hover:text-muted">Why? →</Link>
+            <Link href="/methodology" className="text-[13px] text-faint hover:text-muted">Why? →</Link>
           }>Needs scrutiny</SectionTitle>
           {flagged.length ? (
             <div className="max-h-[220px] overflow-y-auto">
@@ -172,7 +172,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       <section>
         <SectionTitle kicker="Every PRC official formula currently detected" action={
-          <Link href="/china" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">China Watch →</Link>
+          <Link href="/china" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">China Watch →</Link>
         }>Escalation ladder log</SectionTitle>
         <Panel className="p-3.5">
           {ladderAlerts(events, 24).map((e) => (
@@ -180,16 +180,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               className="hairline flex items-center gap-3 py-1.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
               <Badge tone="var(--color-zh)">{e.ladderRung}</Badge>
               {/* Fixed-width column in a scannable table: romanisation rides on hover. */}
-              <span className="zh-text w-32 flex-none text-[12px]"
+              <span className="zh-text w-32 flex-none text-[14px]"
                 title={chineseTitle(e.ladderZh!, e.ladderEn)}>
                 <ChineseCompact text={e.ladderZh!} english={e.ladderEn} />
               </span>
-              <span className="hidden w-44 flex-none truncate text-[11px] text-muted sm:block">{e.ladderEn}</span>
-              <span className="flex-1 truncate text-[11.5px] text-text"
+              <span className="hidden w-44 flex-none truncate text-[13px] text-muted sm:block">{e.ladderEn}</span>
+              <span className="flex-1 truncate text-[14px] text-text"
                 title={chineseTitle(e.title, titleGloss(e.title))}>
                 <ChineseCompact text={e.title} english={titleGloss(e.title)} />
               </span>
-              <span className="mono-num w-14 flex-none text-right text-[10px] text-faint">{timeAgo(e.lastSeen)}</span>
+              <span className="mono-num w-14 flex-none text-right text-[12px] text-faint">{timeAgo(e.lastSeen)}</span>
             </Link>
           ))}
         </Panel>

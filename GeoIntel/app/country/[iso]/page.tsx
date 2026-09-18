@@ -52,8 +52,8 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
     <div className="space-y-8">
       <section>
         <div className="flex flex-wrap items-baseline gap-3">
-          <div className="text-[10px] uppercase tracking-[0.22em] text-faint">{country.region}</div>
-          <span className="mono-num text-[10px] text-faint">{country.iso}</span>
+          <div className="text-[12px] uppercase tracking-[0.22em] text-faint">{country.region}</div>
+          <span className="mono-num text-[12px] text-faint">{country.iso}</span>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{country.name}</h1>
@@ -61,9 +61,9 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {country.aliases.filter((a) => !/^[\x20-\x7F]+$/.test(a)).slice(0, 6).map((a) => (
-            <span key={a} className="rounded border border-[color:var(--color-line)] px-1.5 py-0.5 text-[11px] text-muted">{a}</span>
+            <span key={a} className="rounded border border-[color:var(--color-line)] px-1.5 py-0.5 text-[13px] text-muted">{a}</span>
           ))}
-          <span className="self-center text-[10.5px] text-faint">— native-script forms matched during ingestion</span>
+          <span className="self-center text-[13px] text-faint">— native-script forms matched during ingestion</span>
         </div>
       </section>
 
@@ -112,10 +112,10 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
                     return (
                       <Link key={d.key} href={`/dyad/${iso}-${other}`}
                         className="flex items-center gap-2.5 py-2 transition-colors hover:bg-[color:var(--color-panel-2)]">
-                        <span className="w-24 flex-none truncate text-[12px] text-text">{countryName(other)}</span>
+                        <span className="w-24 flex-none truncate text-[14px] text-text">{countryName(other)}</span>
                         <Sparkline data={d.series.map((s) => s.value)} width={70} height={20}
                           color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-guarded)'} />
-                        <span className="mono-num ml-auto text-[12.5px]"
+                        <span className="mono-num ml-auto text-[15px]"
                           style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
                         <Trend value={d.trend} />
                       </Link>
@@ -135,7 +135,7 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
 
           <section>
             <SectionTitle kicker={`Events naming ${country.name}`} action={
-              <Link href={`/events?actor=${iso}`} className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">Full feed →</Link>
+              <Link href={`/events?actor=${iso}`} className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">Full feed →</Link>
             }>Recent activity</SectionTitle>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {mine.slice(0, 12).map((e) => <EventCard key={e.id} event={e} />)}
@@ -143,7 +143,7 @@ export default async function CountryPage({ params }: { params: Promise<{ iso: s
           </section>
 
           {!gate.unlimited && (
-            <p className="text-center text-[11px] text-faint">
+            <p className="text-center text-[13px] text-faint">
               {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
               <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
             </p>

@@ -146,6 +146,72 @@ export const SOURCES: SourceMeta[] = [
   { match: ['china-global south'], name: 'China-Global South Project', country: 'ZZZ', language: 'en', ownership: 'analysis', tier: 2 },
   { match: ['carnegie', 'brookings', 'chatham house', 'rand corporation', 'stimson', 'idsa', 'manohar parrikar'], name: 'Policy research institute', country: 'ZZZ', language: 'en', ownership: 'analysis', tier: 1 },
   { match: ['indo-pacific defense forum'], name: 'Indo-Pacific Defense FORUM (USINDOPACOM)', country: 'USA', language: 'en', ownership: 'state', tier: 2 },
+  /*
+   * Added 2026-09-18, after measuring the production database: 387 distinct outlets were
+   * resolving to ZZZ. Unplaced outlets are excluded from the independent-country count in
+   * lib/verify/confidence.ts, so each one was contributing nothing to corroboration. These
+   * are the ones identifiable with confidence; the rest stay unplaced deliberately.
+   *
+   * NOT added, and this is the important half: Head Topics, facebook.com, Yahoo!ニュース,
+   * ｄメニューニュース and similar. They republish rather than report, so placing them as
+   * independent would manufacture corroboration out of one story echoed — the exact failure
+   * the ownership column exists to prevent. ZZZ already means "does not count", which is
+   * the correct treatment for an aggregator.
+   */
+  { match: ['patrika'], name: 'Rajasthan Patrika', country: 'IND', language: 'hi', ownership: 'independent', tier: 3 },
+  { match: ['tv9'], name: 'TV9', country: 'IND', language: 'hi', ownership: 'independent', tier: 3 },
+  { match: ['newindianexpress', 'new indian express'], name: 'The New Indian Express', country: 'IND', language: 'en', ownership: 'independent', tier: 2 },
+  { match: ['rediff'], name: 'Rediff', country: 'IND', language: 'en', ownership: 'independent', tier: 3 },
+  { match: ['theweek.in'], name: 'The Week (India)', country: 'IND', language: 'en', ownership: 'independent', tier: 2 },
+  { match: ['prabhatkhabar'], name: 'Prabhat Khabar', country: 'IND', language: 'hi', ownership: 'independent', tier: 3 },
+  { match: ['bhaskarhindi', 'dainik bhaskar'], name: 'Dainik Bhaskar', country: 'IND', language: 'hi', ownership: 'independent', tier: 3 },
+  { match: ['4pm.co.in'], name: '4PM News', country: 'IND', language: 'hi', ownership: 'independent', tier: 3 },
+  // Doordarshan is the state broadcaster. A .gov.in outlet is a primary government source,
+  // never independent corroboration of the government that runs it.
+  { match: ['ddnews'], name: 'DD News', country: 'IND', language: 'en', ownership: 'state', tier: 2 },
+
+  { match: ['ynet'], name: 'Ynet', country: 'ISR', language: 'en', ownership: 'independent', tier: 2 },
+  { match: ['times of israel'], name: 'The Times of Israel', country: 'ISR', language: 'en', ownership: 'independent', tier: 2 },
+
+  // 'the kyiv independent' must be matched by a LONGER key than 'the independent', or the
+  // longest-match rule would place a Ukrainian outlet in Britain and let the two corroborate
+  // each other as separate countries.
+  { match: ['kyiv independent'], name: 'The Kyiv Independent', country: 'UKR', language: 'en', ownership: 'independent', tier: 2 },
+  { match: ['ua.news'], name: 'UA.NEWS', country: 'UKR', language: 'uk', ownership: 'independent', tier: 3 },
+  // United24 is an official Ukrainian government platform, not a newsroom.
+  { match: ['united24'], name: 'United24 Media', country: 'UKR', language: 'en', ownership: 'state_affiliated', tier: 3 },
+
+  { match: ['taipei times'], name: 'Taipei Times', country: 'TWN', language: 'en', ownership: 'independent', tier: 2 },
+  { match: ['三立'], name: 'SET News', country: 'TWN', language: 'zh', ownership: 'independent', tier: 3 },
+  { match: ['on.cc', '東網'], name: 'Oriental Daily (on.cc)', country: 'HKG', language: 'zh', ownership: 'tabloid', tier: 3 },
+  { match: ['星島'], name: 'Sing Tao', country: 'HKG', language: 'zh', ownership: 'independent', tier: 3 },
+  // China News Service is the second state wire after Xinhua, run by the United Front Work
+  // Department. State, not merely state-affiliated.
+  { match: ['chinanews'], name: 'China News Service', country: 'CHN', language: 'zh', ownership: 'state', tier: 2 },
+
+  { match: ['朝鮮日報', 'chosun'], name: 'Chosun Ilbo', country: 'KOR', language: 'zh', ownership: 'independent', tier: 2 },
+  { match: ['아시아경제'], name: 'Asia Economy', country: 'KOR', language: 'ko', ownership: 'independent', tier: 3 },
+  { match: ['매일경제'], name: 'Maeil Business', country: 'KOR', language: 'ko', ownership: 'independent', tier: 3 },
+  // World Journal is US-published Chinese-language press, not a PRC outlet. Placing it in
+  // CHN would let it corroborate Beijing's own wires on the country count.
+  { match: ['世界新聞網'], name: 'World Journal', country: 'USA', language: 'zh', ownership: 'independent', tier: 3 },
+  { match: ['sin chew'], name: 'Sin Chew Daily', country: 'MYS', language: 'zh', ownership: 'independent', tier: 3 },
+  { match: ['orientaldaily.com.my'], name: 'Oriental Daily (Malaysia)', country: 'MYS', language: 'zh', ownership: 'independent', tier: 3 },
+
+  { match: ['vietnam.vn'], name: 'Vietnam.vn', country: 'VNM', language: 'vi', ownership: 'state', tier: 3 },
+
+  { match: ['department of defense', 'defense.gov'], name: 'US Department of Defense', country: 'USA', language: 'en', ownership: 'state', tier: 1 },
+  { match: ['pbs'], name: 'PBS', country: 'USA', language: 'en', ownership: 'public', tier: 2 },
+  { match: ['the independent'], name: 'The Independent', country: 'GBR', language: 'en', ownership: 'independent', tier: 2 },
+  // Academic commentary, never a witness to an event.
+  { match: ['the conversation'], name: 'The Conversation', country: 'AUS', language: 'en', ownership: 'analysis', tier: 2 },
+  /*
+   * Iran International is London-based and Persian-language, and its funding has been the
+   * subject of public dispute. Placing it in IRN would be wrong twice: it is not Iranian
+   * state media, and treating it as an Iranian domestic source would let it corroborate
+   * Tehran's own outlets on a count that exists to measure independence.
+   */
+  { match: ['iran international'], name: 'Iran International', country: 'GBR', language: 'fa', ownership: 'independent', tier: 3 },
 ];
 
 const UNKNOWN: SourceMeta = {
@@ -179,11 +245,28 @@ export function resolveSource(outletRaw: string, url = ''): SourceMeta {
     // Not a parseable URL; fall back to the outlet name alone.
   }
   const hay = `${outletRaw} ${host}`.toLowerCase();
+  /*
+   * A second, punctuation-blind view of the same string. Feeds give the outlet as a
+   * masthead ("Times of India") or as a bare hostname ("timesofindia.indiatimes.com"), and
+   * a key written in one shape cannot see the other: "times of india" does not occur in the
+   * hostname, and neither does "toi". That left the largest Indian daily unplaced — and so
+   * contributing nothing to corroboration — despite being registered here from the start.
+   *
+   * This is an ADDITIONAL pass, never a replacement, so it can only add a match. Collapsing
+   * separators does not merge distinct mastheads that share a word: "theindependent" still
+   * does not occur inside "thekyivindependent", which is the collision worth worrying about
+   * because it would place a Ukrainian outlet in Britain and let the two corroborate each
+   * other as separate countries. tests/provenance.test.ts pins exactly that case.
+   */
+  const flat = hay.replace(/[^a-z0-9\u00c0-\uffff]/g, '');
   let best: SourceMeta | null = null;
   let bestLen = 0;
   for (const s of SOURCES) {
     for (const m of s.match) {
-      if (hay.includes(m.toLowerCase()) && m.length > bestLen) {
+      const key = m.toLowerCase();
+      const flatKey = key.replace(/[^a-z0-9\u00c0-\uffff]/g, '');
+      const hit = hay.includes(key) || (flatKey.length >= 6 && flat.includes(flatKey));
+      if (hit && m.length > bestLen) {
         best = s;
         bestLen = m.length;
       }

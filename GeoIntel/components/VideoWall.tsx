@@ -76,10 +76,10 @@ export function VideoWall({ events, titles }: {
           </div>
           <div className="p-3">
             <Link href={`/events/${e.id}`}
-              className="text-[12.5px] leading-snug text-text hover:text-[color:var(--color-accent)]">
+              className="text-[15px] leading-snug text-text hover:text-[color:var(--color-accent)]">
               {titles?.[e.id] ?? e.title}
             </Link>
-            <div className="mt-1.5 flex items-center gap-2 text-[10.5px] text-faint">
+            <div className="mt-1.5 flex items-center gap-2 text-[13px] text-faint">
               <span>{e.domain}</span>
               <span className="ml-auto">{timeAgo(e.lastSeen)}</span>
             </div>

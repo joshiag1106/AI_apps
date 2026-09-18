@@ -21,7 +21,7 @@ import { BY_ISO } from '@/data/countries';
  * This file's job is only to gate, wire up the walk trail, and render what it is handed.
  *
  * Note: unlike its own template, this page does not wrap its return in a second
- * `<main className="mx-auto max-w-[1400px] px-4 py-6">`. app/layout.tsx:51 already
+ * `<main className="mx-auto max-w-[1760px] px-4 py-6">`. app/layout.tsx:51 already
  * supplies that wrapper for every page (see app/country/[iso]/page.tsx and
  * app/dyad/[pair]/page.tsx, neither of which re-wraps); nesting it here would double the
  * padding and was not intentional in the source this page was adapted from.
@@ -116,7 +116,7 @@ export default async function NetworkPage({
     <div className="space-y-4">
       <SectionTitle level={1}>{country.name} — network</SectionTitle>
 
-        <nav aria-label="Walk" className="flex flex-wrap items-center gap-1 text-[11px] text-muted">
+        <nav aria-label="Walk" className="flex flex-wrap items-center gap-1 text-[13px] text-muted">
           {trail.map((t, i) => {
             // A trail token may name either kind, and the two live on different routes —
             // see trailNode for why a person needs resolving back out of parseTrail's
@@ -138,7 +138,7 @@ export default async function NetworkPage({
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
           <Panel>
             <NetworkGraph view={panel.view} trail={trail} topEvents={graph.topEvents} />
-            <p className="px-4 pb-4 text-[11px] leading-snug text-muted">
+            <p className="px-4 pb-4 text-[13px] leading-snug text-muted">
               Line thickness is friction. Dashed lines mark the{' '}
               <span className="text-[color:var(--color-verified)]">de-escalatory signal</span>, which
               across the whole corpus rests on a small number of events and is an overlay rather
@@ -161,7 +161,7 @@ export default async function NetworkPage({
           have to go looking for the receipt.
         */}
         {!gate.unlimited && (
-          <p className="text-center text-[11px] text-faint">
+          <p className="text-center text-[13px] text-faint">
             {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
             <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
           </p>

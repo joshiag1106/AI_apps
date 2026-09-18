@@ -15,10 +15,10 @@ export function ConfidenceMeter({ value, signals, flags }: { value: number; sign
     <div className="panel p-4">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.16em] text-faint">Corroboration score</div>
+          <div className="text-[12px] uppercase tracking-[0.16em] text-faint">Corroboration score</div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="mono-num text-3xl leading-none" style={{ color: band.color }}>{value}</span>
-            <span className="text-[13px]" style={{ color: band.color }}>{band.label}</span>
+            <span className="text-[15px]" style={{ color: band.color }}>{band.label}</span>
           </div>
         </div>
         <div className="flex flex-wrap justify-end gap-1.5 max-w-[55%]">
@@ -36,7 +36,7 @@ export function ConfidenceMeter({ value, signals, flags }: { value: number; sign
       <div className="mt-4 space-y-2.5">
         {signals.map((s) => (
           <div key={s.key}>
-            <div className="flex items-center justify-between gap-3 text-[11.5px]">
+            <div className="flex items-center justify-between gap-3 text-[14px]">
               <span className="text-text">{s.label}</span>
               <span className="mono-num text-faint">
                 <span style={{ color: s.points < 0 ? 'var(--color-high)' : s.points > 0 ? 'var(--color-text)' : 'var(--color-faint)' }}>
@@ -51,12 +51,12 @@ export function ConfidenceMeter({ value, signals, flags }: { value: number; sign
                   style={{ width: `${Math.max(0, (s.points / s.max) * 100)}%`, background: 'var(--color-accent)', opacity: 0.75 }} />
               </div>
             )}
-            <p className="mt-1 text-[11px] leading-snug text-muted">{s.detail}</p>
+            <p className="mt-1 text-[13px] leading-snug text-muted">{s.detail}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-4 border-t border-[color:var(--color-line-soft)] pt-3 text-[10.5px] leading-relaxed text-faint">
+      <p className="mt-4 border-t border-[color:var(--color-line-soft)] pt-3 text-[13px] leading-relaxed text-faint">
         This score measures how well an event is <em>reported</em> — how many genuinely independent
         outlets, in how many countries and languages, and whether a primary source is present.
         It is not a judgement of whether the claim is true. A widely repeated falsehood can score

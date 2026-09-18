@@ -48,7 +48,7 @@ export function ChineseText({
   if (!py) return <>{text}</>;
 
   const en = pickEnglish(english);
-  const sub = size === 'small' ? 'text-[10px]' : 'text-[11px]';
+  const sub = size === 'small' ? 'text-[12px]' : 'text-[13px]';
   // Clamping is per line, not on the wrapper: clamping the stack would cut the English
   // off to make room for the pinyin, which defeats the point of showing both.
   const cut = clamp ? 'line-clamp-2' : '';
@@ -91,7 +91,7 @@ export function ChineseCompact({ text, english }: {
   const py = toPinyin(text);
   if (!py) return <>{text}</>;
   const en = pickEnglish(english);
-  const responsive = 'not-sr-only sm:sr-only block text-[10px] italic text-faint';
+  const responsive = 'not-sr-only sm:sr-only block text-[12px] italic text-faint';
 
   return (
     <>

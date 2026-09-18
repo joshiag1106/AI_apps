@@ -46,15 +46,15 @@ export default async function PeopleIndexPage() {
           level 1 — a reader navigating by heading, which is how screen reader users skim,
           found the page had no top. The eyebrow-plus-h1 pairing matches /events. */}
       <div>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">Roster</div>
+        <div className="text-[12px] uppercase tracking-[0.22em] text-faint">Roster</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">People</h1>
       </div>
-      <p className="max-w-3xl text-[12.5px] leading-relaxed text-muted">
+      <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
         Senior officials the engine recognises by name, and the states each is named
         alongside. An edge is a reporting relationship — the two appeared in the same
         clustered event — not a claim that a person acted toward a state.
       </p>
-      <p className="max-w-3xl text-[11.5px] leading-relaxed text-faint">
+      <p className="max-w-3xl text-[14px] leading-relaxed text-faint">
         {seen} of {PEOPLE.length} on the roster appear in the current corpus. Coverage is
         exactly the roster: an official who is not listed is invisible here, so an absence is
         never evidence that someone was uninvolved. Roster last reviewed {ROSTER_REVIEWED}.
@@ -66,13 +66,13 @@ export default async function PeopleIndexPage() {
             <div className="min-w-0 flex-1">
               {connections > 0
                 ? <Link href={`/person/${person.id}`}
-                        className="text-[13px] text-text hover:text-[color:var(--color-accent)]">{person.name}</Link>
-                : <span className="text-[13px] text-muted">{person.name}</span>}
-              <div className="text-[11px] text-muted">
+                        className="text-[15px] text-text hover:text-[color:var(--color-accent)]">{person.name}</Link>
+                : <span className="text-[15px] text-muted">{person.name}</span>}
+              <div className="text-[13px] text-muted">
                 {person.role}, {BY_ISO.get(person.home)?.name ?? person.home}
               </div>
             </div>
-            <div className="mono-num flex-none text-right text-[12px]">
+            <div className="mono-num flex-none text-right text-[14px]">
               {connections > 0 ? (
                 <>
                   <span className="text-text">{connections}</span>
@@ -88,10 +88,10 @@ export default async function PeopleIndexPage() {
       </Panel>
 
       <div className="flex gap-3">
-        <Link href="/network/CHN" className="text-[12px] text-muted hover:text-[color:var(--color-accent)]">
+        <Link href="/network/CHN" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">
           State network →
         </Link>
-        <Link href="/methodology" className="text-[12px] text-muted hover:text-[color:var(--color-accent)]">
+        <Link href="/methodology" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">
           Methodology →
         </Link>
       </div>

@@ -41,7 +41,8 @@
 // rule it renders 772.08px / 571.92px, which is 1.35:1. /dashboard at 1440 was byte-identical
 // before and after.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 describe('narrow-viewport overflow', () => {
   const css = readFileSync('app/globals.css', 'utf8');
@@ -80,5 +81,100 @@ describe('the escalation ladder table on /methodology', () => {
     expect(row, '/methodology should still render the ladder rows as a baseline-aligned flex row').not.toBeNull();
     expect(row![0], 'the ladder row needs flex-wrap; its children are fixed-width and flex-none')
       .toMatch(/flex-wrap/);
+  });
+});
+
+describe('legibility on a large screen', () => {
+  // Both of these came from Josh reading the live site on a 3072x1920 Retina panel: wide
+  // empty margins either side, and type too small to read comfortably.
+  //
+  // The type was never a deliberate choice. The accessibility pass covered headings, contrast
+  // and ARIA and explicitly notes that what it fixed "is not font size", so nothing here is
+  // being overturned — it was an unexamined default. Measured before the change: 282
+  // hard-coded sizes, of which 167 (59%) were 11px or smaller, including 53 at 10px and 28 at
+  // 10.5px. Browser default body text is 16px, so a third of the interface sat under
+  // two-thirds of that.
+  //
+  // The uplift merged 13 ragged sizes into 8 integers and removed every half-pixel, none of
+  // which anyone had chosen on purpose:
+  //     9.5, 10 -> 12    11.5, 12 -> 14    13.5, 14 -> 16    17 -> 19
+  //     10.5, 11 -> 13   12.5, 13 -> 15    15       -> 17    18 -> 20
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? files(join(dir, e.name)) : /\.tsx?$/.test(e.name) ? [join(dir, e.name)] : []);
+  const sources = [...files('app'), ...files('components')];
+
+  it('sets no type smaller than 12px anywhere', () => {
+    // A guard on the guard: if the walk stops finding files the loop passes vacuously.
+    expect(sources.length).toBeGreaterThanOrEqual(30);
+    const tooSmall: string[] = [];
+    for (const f of sources) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/text-\[([0-9.]+)px\]/g)) {
+        if (parseFloat(m[1]) < 12) tooSmall.push(`${f}: ${m[0]}`);
+      }
+    }
+    expect(tooSmall, `type below 12px is hard to read on a high-DPI screen:\n${tooSmall.join('\n')}`)
+      .toEqual([]);
+  });
+
+  it('uses whole-pixel sizes, so the scale stays a scale', () => {
+    const halves: string[] = [];
+    for (const f of sources) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/text-\[([0-9.]+)px\]/g)) {
+        if (!Number.isInteger(parseFloat(m[1]))) halves.push(`${f}: ${m[0]}`);
+      }
+    }
+    expect(halves, `half-pixel type sizes, which nobody chose deliberately:\n${halves.join('\n')}`)
+      .toEqual([]);
+  });
+
+  it('lets the shell use a wide screen instead of boxing it to 1400px', () => {
+    // The prose caps (max-w-2xl/3xl/4xl, 23 of them) are separate and untouched, which is why
+    // widening the shell does not stretch paragraphs into unreadable lines.
+    const layout = readFileSync('app/layout.tsx', 'utf8');
+    expect(layout).toMatch(/max-w-\[1760px\]/);
+  });
+
+  it('gives the header the SAME width as the page, everywhere it is set', () => {
+    // This test is deliberately wider than the one above, because the narrow version passed
+    // while the site was still visibly wrong. The shell width lives in THREE places — main
+    // and the footer in app/layout.tsx, and the sticky header in components/Nav.tsx — and
+    // only the first two were changed. The header stayed at 1400px, so the menu sat in a
+    // narrower column than everything beneath it and the old margins were still there at the
+    // top of every page. Checking one file could never have caught that; checking all of them
+    // is the only version of this test that means anything.
+    const stale: string[] = [];
+    for (const f of sources) {
+      const src = readFileSync(f, 'utf8');
+      if (/max-w-\[1400px\]/.test(src)) stale.push(f);
+    }
+    expect(stale, `these still box content to the old 1400px shell:\n${stale.join('\n')}`)
+      .toEqual([]);
+  });
+});
+
+describe('the footer', () => {
+  // A footer exists to be a map of the site, so a link in it that 404s is worse than no
+  // footer at all — it is the one place a reader trusts to be complete. Next gives no
+  // compile-time guarantee that an href matches a route, so this walks app/ for real
+  // page.tsx files and checks every internal link in the layout against them.
+  const routes = (dir: string, prefix = ''): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      if (!e.isDirectory()) return e.name === 'page.tsx' ? [prefix || '/'] : [];
+      return routes(join(dir, e.name), `${prefix}/${e.name}`);
+    });
+
+  it('links only to routes that exist', () => {
+    const real = new Set(routes('app'));
+    // A guard on the guard: a broken walk would make the check below pass vacuously.
+    expect(real.size).toBeGreaterThanOrEqual(16);
+
+    const layout = readFileSync('app/layout.tsx', 'utf8');
+    const footer = layout.slice(layout.indexOf('<footer'));
+    const hrefs = [...footer.matchAll(/href="(\/[^"#?]*)"/g)].map((m) => m[1]);
+    expect(hrefs.length, 'the footer should link somewhere').toBeGreaterThan(5);
+
+    const dead = hrefs.filter((h) => !real.has(h === '/' ? '/' : h.replace(/\/$/, '')));
+    expect(dead, `footer links with no page.tsx behind them:\n${dead.join('\n')}`).toEqual([]);
   });
 });

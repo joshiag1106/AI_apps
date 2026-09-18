@@ -28,7 +28,7 @@ export async function WatchToggle({ item }: { item: WatchItem }) {
   return (
     <form action={toggleWatchAction.bind(null, item, !on)}>
       <button type="submit" aria-pressed={on}
-        className={`rounded-md border px-2.5 py-1 text-[11.5px] transition-colors ${
+        className={`rounded-md border px-2.5 py-1 text-[14px] transition-colors ${
           on
             ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/12 text-[color:var(--color-accent)]'
             : 'border-[color:var(--color-line)] text-muted hover:border-[color:var(--color-accent-dim)]'}`}>
@@ -53,19 +53,19 @@ export async function WatchlistPanel() {
 
       <div className="flex items-end justify-between gap-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-faint">Pinned to your account</div>
-          <h2 className="mt-0.5 text-[15px] font-semibold tracking-tight">Watchlist</h2>
+          <div className="text-[12px] uppercase tracking-[0.18em] text-faint">Pinned to your account</div>
+          <h2 className="mt-0.5 text-[17px] font-semibold tracking-tight">Watchlist</h2>
         </div>
         {items.length > 0 && (
           <form action={clearWatchAction}>
             <button type="submit"
-              className="text-[10.5px] text-faint hover:text-[color:var(--color-high)]">Clear all</button>
+              className="text-[13px] text-faint hover:text-[color:var(--color-high)]">Clear all</button>
           </form>
         )}
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+        <p className="mt-2.5 text-[14px] leading-relaxed text-muted">
           Nothing pinned yet. Open a{' '}
           <Link href="/country/IND" className="text-[color:var(--color-accent)] hover:underline">country</Link> or{' '}
           <Link href="/dyad/IND-CHN" className="text-[color:var(--color-accent)] hover:underline">relationship</Link>{' '}
@@ -76,7 +76,7 @@ export async function WatchlistPanel() {
         <div className="mt-3 flex flex-wrap gap-1.5">
           {items.map((it) => (
             <span key={`${it.kind}:${it.id}`}
-              className="group inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-line)] py-1 pl-2.5 pr-1.5 text-[11.5px]">
+              className="group inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-line)] py-1 pl-2.5 pr-1.5 text-[14px]">
               <Link href={it.kind === 'country' ? `/country/${it.id}` : `/dyad/${it.id}`}
                 className="text-text hover:text-[color:var(--color-accent)]">
                 {it.label}

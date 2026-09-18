@@ -26,7 +26,7 @@ export function NetworkGraph({ view, trail, topEvents }: {
 }) {
   const { nodes, size } = radialLayout(view);
   if (!nodes.length) {
-    return <p className="p-6 text-[12px] text-muted">No connections recorded for this state in the current corpus.</p>;
+    return <p className="p-6 text-[14px] text-muted">No connections recorded for this state in the current corpus.</p>;
   }
 
   const at = new Map(nodes.map((n) => [n.id, n]));

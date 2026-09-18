@@ -35,14 +35,14 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-faint">Ask the corpus</p>
+        <p className="text-[12px] uppercase tracking-[0.2em] text-faint">Ask the corpus</p>
         {/* tabIndex={-1} for the same reason <main> carries it: this heading is a focus
             target, and an id alone moves the scroll position without moving focus. */}
         <h1 id="ask-heading" tabIndex={-1}
           className="mt-2 max-w-3xl text-2xl font-semibold leading-snug tracking-tight">
           {question || 'Ask a question about what is being reported'}
         </h1>
-        <p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-muted">
+        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
           Answers are computed from the scored corpus, not generated. Every figure below is
           traceable to the events that produced it, and the reading of your question is shown
           alongside the answer so a wrong result can be told apart from a thin corpus.
@@ -54,11 +54,11 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
 
       {!answer && (
         <Panel className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-faint">Try one of these</p>
+          <p className="text-[13px] uppercase tracking-wider text-faint">Try one of these</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {EXAMPLES.map((e) => (
               <Link key={e} href={`/ask?q=${encodeURIComponent(e)}`}
-                className="rounded border border-[color:var(--color-line-soft)] px-2.5 py-1.5 text-[12px] text-muted transition-colors hover:border-[color:var(--color-accent-dim)] hover:text-text">
+                className="rounded border border-[color:var(--color-line-soft)] px-2.5 py-1.5 text-[14px] text-muted transition-colors hover:border-[color:var(--color-accent-dim)] hover:text-text">
                 {e}
               </Link>
             ))}
@@ -69,10 +69,10 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
       {answer && (
         <>
           <Panel className="border-l-2 border-l-[color:var(--color-accent)] p-4">
-            <p className="text-[14px] leading-relaxed text-text">{answer.headline}</p>
+            <p className="text-[16px] leading-relaxed text-text">{answer.headline}</p>
             {answer.readAs.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-faint">Read as</span>
+                <span className="text-[12px] uppercase tracking-wider text-faint">Read as</span>
                 {answer.readAs.map((r) => (
                   <Badge key={`${r.label}-${r.value}`} tone="var(--color-muted)">
                     {r.label}: {r.value}
@@ -81,7 +81,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
               </div>
             )}
             {answer.readAs.length === 0 && (
-              <p className="mt-3 text-[11.5px] text-faint">
+              <p className="mt-3 text-[14px] text-faint">
                 Nothing in that question matched a state, flashpoint, domain or time window this
                 engine tracks, so it was answered on your words alone.
               </p>
@@ -112,7 +112,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
               </div>
             )}
             {answer.total > answer.matched.length && (
-              <p className="mt-3 text-[11.5px] text-faint">
+              <p className="mt-3 text-[14px] text-faint">
                 Showing the strongest {answer.matched.length} of {answer.total}.
               </p>
             )}
