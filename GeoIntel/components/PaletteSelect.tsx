@@ -57,7 +57,7 @@ export function PaletteSelect() {
       <select
         value={value || 'default'}
         onChange={(e) => choose(e.target.value)}
-        className="rounded border border-[color:var(--color-line)] bg-transparent px-1.5 py-0.5 text-[11px] text-muted hover:text-text"
+        className="rounded border border-[color:var(--color-line)] bg-transparent px-1.5 py-0.5 text-[13px] text-muted hover:text-text"
       >
         {OPTIONS.map((o) => (
           <option key={o.value} value={o.value} className="bg-[color:var(--color-panel)]">

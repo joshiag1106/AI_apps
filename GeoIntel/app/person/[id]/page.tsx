@@ -79,12 +79,12 @@ export default async function PersonPage({
   return (
     <div className="space-y-4">
       <SectionTitle level={1}>{person.name} — network</SectionTitle>
-      <p className="text-[11px] text-muted">
+      <p className="text-[13px] text-muted">
         {person.role}, {homeName} ·{' '}
         <Link href="/person" className="hover:text-[color:var(--color-accent)]">All people</Link>
       </p>
 
-      <nav aria-label="Walk" className="flex flex-wrap items-center gap-1 text-[11px] text-muted">
+      <nav aria-label="Walk" className="flex flex-wrap items-center gap-1 text-[13px] text-muted">
         {trail.map((t, i) => {
           // parseTrail uppercases every token and roster ids are lowercase, so a person
           // must be resolved back before it can be named or linked — see trailNode.
@@ -106,12 +106,12 @@ export default async function PersonPage({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Panel>
           <NetworkGraph view={panel.view} trail={trail} topEvents={graph.topEvents} />
-          <p className="px-4 pb-4 text-[11px] leading-snug text-muted">
+          <p className="px-4 pb-4 text-[13px] leading-snug text-muted">
             An edge means {person.name} and that node were named in the same clustered event —
             a reporting relationship, not a claim that either acted toward the other. The tie
             to {homeName} is affiliation and is left out of the friction total.
           </p>
-          <p className="px-4 pb-4 text-[11px] leading-snug text-muted">
+          <p className="px-4 pb-4 text-[13px] leading-snug text-muted">
             <strong className="text-text">A line to another official is not a meeting.</strong>{' '}
             It says only that the two were named in the same event: not a call, an agreement or
             a dispute, and the engine cannot tell which. Headlines rarely help — a report that
@@ -119,7 +119,7 @@ export default async function PersonPage({
             carries an action. The states on an edge are what the reporting was{' '}
             <em>about</em>, not where anyone was.
           </p>
-          <p className="px-4 pb-4 text-[11px] leading-snug text-muted">
+          <p className="px-4 pb-4 text-[13px] leading-snug text-muted">
             This view sees only the officials on the roster, and{' '}
             <span className="mono-num">{present}</span> of the{' '}
             <span className="mono-num">{listed}</span> listed appear in the current corpus at
@@ -137,7 +137,7 @@ export default async function PersonPage({
       </div>
 
       {!gate.unlimited && (
-        <p className="text-center text-[11px] text-faint">
+        <p className="text-center text-[13px] text-faint">
           {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
           <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
         </p>

@@ -55,7 +55,7 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
   return (
     <div className="space-y-7">
       <section>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">Relationship analysis</div>
+        <div className="text-[12px] uppercase tracking-[0.22em] text-faint">Relationship analysis</div>
         <h1 className="mt-1 flex flex-wrap items-baseline gap-2.5 text-2xl font-semibold tracking-tight">
           <Link href={`/country/${a.iso}`} className="hover:text-[color:var(--color-accent)]">{a.name}</Link>
           <span className="text-faint">—</span>
@@ -98,12 +98,12 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
               markers={d.topEvents.map((e) => ({
                 date: e.lastSeen.slice(0, 10), href: `/events/${e.id}`, label: e.title,
               }))} />
-            <div className="mt-1.5 flex justify-between text-[10px] text-faint">
+            <div className="mt-1.5 flex justify-between text-[12px] text-faint">
               <span>{d.series[0]?.date}</span>
               <span>{d.series[Math.floor(d.series.length / 2)]?.date}</span>
               <span>{d.series[d.series.length - 1]?.date}</span>
             </div>
-            <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-faint">
+            <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-faint">
               <i className="h-2 w-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
               defining event — click to open
             </div>
@@ -120,7 +120,7 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
               <Ribbon parts={[...langs.entries()].sort((x, y) => y[1] - x[1]).slice(0, 6).map(([l, n]) => ({
                 label: LANGUAGE_LABEL[l] ?? l, value: n, color: LANG_COLORS[l] ?? '#5b697d',
               }))} />
-              <p className="mt-3 text-[11px] leading-relaxed text-faint">
+              <p className="mt-3 text-[13px] leading-relaxed text-faint">
                 A relationship reported only from one side&apos;s media is a weaker read than one
                 picked up across languages. Language spread feeds directly into every event&apos;s
                 corroboration score.
@@ -137,9 +137,9 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
                         <div className="flex items-center gap-2">
                           <Badge tone="var(--color-zh)">rung {e.ladderRung}</Badge>
                           <ChineseText text={e.ladderZh!} english={e.ladderEn} size="small"
-                            accent clamp={false} className="text-[13px]" />
+                            accent clamp={false} className="text-[15px]" />
                         </div>
-                        <div className="mt-1 text-[11px] leading-snug text-muted">
+                        <div className="mt-1 text-[13px] leading-snug text-muted">
                           <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss size="small" />
                         </div>
                       </Link>
@@ -147,7 +147,7 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
                   })}
                 </div>
               ) : (
-                <p className="text-[12px] leading-relaxed text-muted">
+                <p className="text-[14px] leading-relaxed text-muted">
                   No PRC official escalation formula detected on this pair in the current corpus.
                   {a.iso !== 'CHN' && b.iso !== 'CHN' && ' This detector applies only to relationships involving China.'}
                 </p>
@@ -163,7 +163,7 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
           </section>
 
           {!gate.unlimited && (
-            <p className="text-center text-[11px] text-faint">
+            <p className="text-center text-[13px] text-faint">
               {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
               <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
             </p>

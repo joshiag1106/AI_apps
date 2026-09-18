@@ -22,16 +22,16 @@ export function NetworkMetrics({ rows, degree }: { rows: MetricRow[]; degree: nu
   return (
     <div className="space-y-3">
       {caveat && (
-        <p className="rounded border border-[color:var(--color-line)] px-3 py-2 text-[11px] text-muted">
+        <p className="rounded border border-[color:var(--color-line)] px-3 py-2 text-[13px] text-muted">
           {caveat}
         </p>
       )}
       <dl className="grid gap-3 sm:grid-cols-2">
         {rows.map((r) => (
           <div key={r.label} className="rounded border border-[color:var(--color-line)] p-3">
-            <dt className="text-[10px] uppercase tracking-wider text-faint">{r.label}</dt>
-            <dd className="mono-num mt-0.5 text-[18px] text-text">{r.value}</dd>
-            <dd className="mt-1 text-[11px] leading-snug text-muted">{r.reading}</dd>
+            <dt className="text-[12px] uppercase tracking-wider text-faint">{r.label}</dt>
+            <dd className="mono-num mt-0.5 text-[20px] text-text">{r.value}</dd>
+            <dd className="mt-1 text-[13px] leading-snug text-muted">{r.reading}</dd>
           </div>
         ))}
       </dl>

@@ -90,7 +90,7 @@ export function LivePulse({ initialVersion }: { initialVersion: string }) {
       <span role="status" className="sr-only">{spoken}</span>
       <span
         aria-hidden
-        className="hidden items-center gap-1.5 text-[10.5px] text-faint sm:inline-flex"
+        className="hidden items-center gap-1.5 text-[13px] text-faint sm:inline-flex"
         title={live
           ? 'Watching for corpus refreshes. The page updates itself when new reporting lands.'
           : 'Cannot reach the server; the reporting below may be out of date.'}>

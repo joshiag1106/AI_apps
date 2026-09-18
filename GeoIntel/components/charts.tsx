@@ -74,9 +74,9 @@ export function BarList({ items, max, unit = '' }: { items: { label: string; val
           <div className="relative h-6 rounded bg-[color:var(--color-line-soft)] overflow-hidden">
             <div className="absolute inset-y-0 left-0 rounded" data-reveal-bar
               style={{ width: `${Math.max(2, (it.value / top) * 100)}%`, background: `color-mix(in oklab, ${it.tone ?? 'var(--color-accent)'} 34%, transparent)` }} />
-            <span className="absolute inset-y-0 left-2 flex items-center text-[11px] text-text truncate pr-2">{it.label}</span>
+            <span className="absolute inset-y-0 left-2 flex items-center text-[13px] text-text truncate pr-2">{it.label}</span>
           </div>
-          <span className="mono-num text-[11px] text-muted w-12 text-right">{it.value}{unit}</span>
+          <span className="mono-num text-[13px] text-muted w-12 text-right">{it.value}{unit}</span>
         </div>
       ))}
     </div>
@@ -140,7 +140,7 @@ export function Ribbon({ parts }: { parts: { label: string; value: number; color
       </div>
       <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
         {parts.map((p) => (
-          <span key={p.label} className="inline-flex items-center gap-1.5 text-[11px] text-muted">
+          <span key={p.label} className="inline-flex items-center gap-1.5 text-[13px] text-muted">
             <i className="h-2 w-2 rounded-full" style={{ background: p.color }} />
             {p.label}
             <span className="mono-num text-faint">{p.value}</span>

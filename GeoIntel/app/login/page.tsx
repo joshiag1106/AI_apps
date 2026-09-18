@@ -56,7 +56,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="mx-auto max-w-sm py-8">
       <div className="text-center">
-        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">
+        <div className="text-[12px] uppercase tracking-[0.22em] text-faint">
           {register ? 'Create account' : 'Sign in'}
         </div>
         <h1 className="mt-1 text-xl font-semibold tracking-tight">
@@ -70,31 +70,31 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <input type="hidden" name="next" value={safeRedirect(sp.next)} />
 
           <label className="block">
-            <span className="text-[11px] uppercase tracking-wider text-faint">Email</span>
+            <span className="text-[13px] uppercase tracking-wider text-faint">Email</span>
             <input name="email" type="email" required autoComplete="email"
-              className="mt-1 w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-3 py-2 text-[13px] outline-none focus:border-[color:var(--color-accent-dim)]" />
+              className="mt-1 w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-3 py-2 text-[15px] outline-none focus:border-[color:var(--color-accent-dim)]" />
           </label>
 
           <label className="block">
-            <span className="text-[11px] uppercase tracking-wider text-faint">Password</span>
+            <span className="text-[13px] uppercase tracking-wider text-faint">Password</span>
             <input name="password" type="password" required minLength={8}
               autoComplete={register ? 'new-password' : 'current-password'}
-              className="mt-1 w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-3 py-2 text-[13px] outline-none focus:border-[color:var(--color-accent-dim)]" />
-            {register && <span className="mt-1 block text-[10.5px] text-faint">At least 8 characters.</span>}
+              className="mt-1 w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-3 py-2 text-[15px] outline-none focus:border-[color:var(--color-accent-dim)]" />
+            {register && <span className="mt-1 block text-[13px] text-faint">At least 8 characters.</span>}
           </label>
 
           {loginErrorMessage(sp.error) && (
-            <p className="rounded border border-[color:var(--color-high)]/40 bg-[color:var(--color-high)]/10 px-3 py-2 text-[12px] text-[color:var(--color-high)]">
+            <p className="rounded border border-[color:var(--color-high)]/40 bg-[color:var(--color-high)]/10 px-3 py-2 text-[14px] text-[color:var(--color-high)]">
               {loginErrorMessage(sp.error)}
             </p>
           )}
 
-          <button className="w-full rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[13px] font-medium text-[#0a0d13] hover:opacity-90">
+          <button className="w-full rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[15px] font-medium text-[#0a0d13] hover:opacity-90">
             {register ? 'Create account' : 'Sign in'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-[12px] text-muted">
+        <p className="mt-4 text-center text-[14px] text-muted">
           {register ? (
             <>Already have an account? <Link href="/login" className="text-[color:var(--color-accent)] hover:underline">Sign in</Link></>
           ) : (
@@ -103,7 +103,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </p>
       </Panel>
 
-      <p className="mt-4 text-center text-[10.5px] leading-relaxed text-faint">
+      <p className="mt-4 text-center text-[13px] leading-relaxed text-faint">
         Accounts exist to make the free allowance meaningful and to carry a subscription.
         Passwords are hashed with bcrypt; no email is sent anywhere.
       </p>

@@ -15,6 +15,7 @@ const LINKS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/network/CHN', label: 'Network' },
   { href: '/person', label: 'People' },
+  { href: '/about', label: 'Why Kautilya' },
   { href: '/methodology', label: 'Methodology' },
 ];
 
@@ -24,16 +25,16 @@ export async function Nav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--color-line)] bg-[color:var(--color-ink)]/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5">
+      <div className="mx-auto flex max-w-[1760px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5">
         <Link href="/" className="flex items-baseline gap-2">
-          <span className="text-[15px] font-semibold tracking-tight text-text">Kautilya</span>
-          <span className="hidden text-[9.5px] uppercase tracking-[0.2em] text-faint sm:inline">Geopolitical Risk Intelligence</span>
+          <span className="text-[17px] font-semibold tracking-tight text-text">Kautilya</span>
+          <span className="hidden text-[12px] uppercase tracking-[0.2em] text-faint sm:inline">Geopolitical Risk Intelligence</span>
         </Link>
 
         <nav className="order-3 flex flex-wrap items-center gap-x-4 gap-y-1 md:order-none">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href}
-              className="text-[12px] text-muted transition-colors hover:text-[color:var(--color-accent)]">
+              className="text-[14px] text-muted transition-colors hover:text-[color:var(--color-accent)]">
               {l.label}
             </Link>
           ))}
@@ -43,16 +44,16 @@ export async function Nav() {
           <LivePulse initialVersion={getMeta('last_ingest') ?? 'never'} />
           <CountrySearch countries={searchList} className="w-44 sm:w-60" />
           {quota.unlimited ? (
-            <span className="hidden rounded border border-[color:var(--color-accent-dim)] px-2 py-1 text-[10px] uppercase tracking-wider text-[color:var(--color-accent)] sm:inline">Pro</span>
+            <span className="hidden rounded border border-[color:var(--color-accent-dim)] px-2 py-1 text-[12px] uppercase tracking-wider text-[color:var(--color-accent)] sm:inline">Pro</span>
           ) : (
-            <Link href="/pricing" className="hidden whitespace-nowrap text-[11px] text-muted hover:text-[color:var(--color-accent)] sm:inline">
+            <Link href="/pricing" className="hidden whitespace-nowrap text-[13px] text-muted hover:text-[color:var(--color-accent)] sm:inline">
               <span className="mono-num text-[color:var(--color-accent)]">{quota.remaining}</span>/{quota.limit} free
             </Link>
           )}
           {user ? (
-            <Link href="/account" className="text-[11.5px] text-muted hover:text-text">Account</Link>
+            <Link href="/account" className="text-[14px] text-muted hover:text-text">Account</Link>
           ) : (
-            <Link href="/login" className="text-[11.5px] text-muted hover:text-text">Sign in</Link>
+            <Link href="/login" className="text-[14px] text-muted hover:text-text">Sign in</Link>
           )}
         </div>
       </div>

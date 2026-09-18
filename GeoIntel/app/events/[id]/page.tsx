@@ -82,19 +82,19 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/events" className="text-[11px] text-faint hover:text-muted">← All events</Link>
+        <Link href="/events" className="text-[13px] text-faint hover:text-muted">← All events</Link>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <Badge tone={esc.color}>{esc.label}</Badge>
           <Badge tone="var(--color-muted)">{event.domain}</Badge>
           {event.hotspots.map((h) => <Badge key={h} tone="var(--color-accent)">{h.toUpperCase()}</Badge>)}
-          <span className="ml-1 text-[11px] text-faint">{timeAgo(event.lastSeen)}</span>
+          <span className="ml-1 text-[13px] text-faint">{timeAgo(event.lastSeen)}</span>
         </div>
         <h1 className="mt-2 max-w-4xl text-2xl font-semibold leading-snug tracking-tight">
           <ChineseText text={event.title} clamp={false}
             english={translationFor(event.title) ?? titleGloss(event.title)}
             englishIsGloss={!translationFor(event.title)} />
         </h1>
-        {event.summary && <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-muted">{event.summary}</p>}
+        {event.summary && <p className="mt-2 max-w-3xl text-[16px] leading-relaxed text-muted">{event.summary}</p>}
 
         {event.videoId ? (
           <div className="mt-4 max-w-2xl">
@@ -106,7 +106,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             {/* Publisher's own feed image. Nothing is fabricated or generated. */}
             <img src={event.imageUrl} alt="" loading="lazy"
               className="w-full rounded-lg object-cover ring-1 ring-[color:var(--color-line)]" />
-            <figcaption className="mt-1.5 text-[10.5px] text-faint">
+            <figcaption className="mt-1.5 text-[13px] text-faint">
               Image supplied by the publisher&apos;s feed.
             </figcaption>
           </figure>
@@ -114,7 +114,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         <div className="mt-3 flex flex-wrap gap-2">
           {event.actors.map((a) => (
             <Link key={a} href={`/country/${a}`}
-              className="rounded border border-[color:var(--color-line)] px-2 py-0.5 text-[11px] text-muted hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">
+              className="rounded border border-[color:var(--color-line)] px-2 py-0.5 text-[13px] text-muted hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">
               {countryName(a)}
             </Link>
           ))}
@@ -143,7 +143,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 <SectionTitle
                   kicker="Every report in this cluster, in order of publication"
                   action={
-                    <span className="flex items-center gap-2 text-[10.5px] text-faint">
+                    <span className="flex items-center gap-2 text-[13px] text-faint">
                       Export
                       <a href={`/api/export?event=${encodeURIComponent(id)}&format=csv`}
                         className="rounded border border-[color:var(--color-line)] px-1.5 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">CSV</a>
@@ -161,15 +161,15 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <Badge tone={OWNERSHIP_TONE[a.ownership]} title={`Ownership class: ${OWNERSHIP_LABEL[a.ownership]}`}>
                           {OWNERSHIP_LABEL[a.ownership] ?? a.ownership}
                         </Badge>
-                        <span className="text-[11.5px] font-medium text-text">{a.outlet}</span>
-                        <span className="text-[10.5px] text-faint">{a.sourceCountry}</span>
-                        <span className="text-[10.5px] text-faint">{LANGUAGE_LABEL[a.language] ?? a.language}</span>
+                        <span className="text-[14px] font-medium text-text">{a.outlet}</span>
+                        <span className="text-[13px] text-faint">{a.sourceCountry}</span>
+                        <span className="text-[13px] text-faint">{LANGUAGE_LABEL[a.language] ?? a.language}</span>
                         {a.isPrimary && <Badge tone="var(--color-verified)">Primary</Badge>}
                         {a.ladderRung && <Badge tone="var(--color-zh)">rung {a.ladderRung}</Badge>}
-                        <span className="mono-num ml-auto text-[10.5px] text-faint">{fmtDate(a.publishedAt)}</span>
+                        <span className="mono-num ml-auto text-[13px] text-faint">{fmtDate(a.publishedAt)}</span>
                       </div>
                       <a href={a.url} target="_blank" rel="noopener noreferrer"
-                        className={`block text-[13px] leading-snug hover:underline ${a.language === 'zh' ? '' : 'text-text'}`}>
+                        className={`block text-[15px] leading-snug hover:underline ${a.language === 'zh' ? '' : 'text-text'}`}>
                         <ChineseText text={a.title} clamp={false} accent={a.language === 'zh'}
                           english={translationFor(a.title) ?? titleGloss(a.title) ?? a.titleEn}
                           englishIsGloss={!translationFor(a.title)} />
@@ -192,17 +192,17 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 {glossHits.map((t) => (
                   <div key={t.zh} className="rounded-md border border-[color:var(--color-line-soft)] p-2.5">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[15px]">
+                      <span className="text-[17px]">
                         <ChineseText text={t.zh} size="small" accent clamp={false} />
                       </span>
-                      <span className="text-[12px] text-text">{t.en}</span>
+                      <span className="text-[14px] text-text">{t.en}</span>
                       <Badge tone={t.category === 'framing' ? 'var(--color-elevated)' : 'var(--color-faint)'}>{t.category}</Badge>
                     </div>
-                    {t.note && <p className="mt-1.5 text-[11px] leading-snug text-muted">{t.note}</p>}
+                    {t.note && <p className="mt-1.5 text-[13px] leading-snug text-muted">{t.note}</p>}
                   </div>
                 ))}
               </div>
-              <p className="mt-3 border-t border-[color:var(--color-line-soft)] pt-2.5 text-[10.5px] leading-relaxed text-faint">
+              <p className="mt-3 border-t border-[color:var(--color-line-soft)] pt-2.5 text-[13px] leading-relaxed text-faint">
                 Terms flagged <em>framing</em> are not neutral vocabulary — their use is itself a
                 position. An outlet writing 藏南 rather than a neutral name for Arunachal Pradesh
                 has taken a sovereignty stance in the act of naming.
@@ -211,7 +211,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
           )}
 
           {!gate.unlimited && (
-            <p className="text-center text-[11px] text-faint">
+            <p className="text-center text-[13px] text-faint">
               {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
               <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
             </p>

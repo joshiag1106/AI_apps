@@ -60,11 +60,11 @@ export default async function Home() {
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.22em] text-faint">Global Threat Board</div>
+            <div className="text-[12px] uppercase tracking-[0.22em] text-faint">Global Threat Board</div>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
               What the world is reporting, in the languages it reports in
             </h1>
-            <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-muted">
+            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
               {stats.articles.toLocaleString()} reports from {stats.countries} countries in {stats.languages} languages,
               clustered into {stats.events.toLocaleString()} events and scored for corroboration and provenance.
             </p>
@@ -83,7 +83,7 @@ export default async function Home() {
       <section>
         <Panel className="p-4">
           <SectionTitle kicker="Composite risk by state" action={
-            <Link href="/dashboard" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">Open dashboard →</Link>
+            <Link href="/dashboard" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">Open dashboard →</Link>
           }>
             Global risk surface
           </SectionTitle>
@@ -110,7 +110,7 @@ export default async function Home() {
 
         <div>
           <SectionTitle kicker="Newest first" action={
-            <Link href="/events" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">All events →</Link>
+            <Link href="/events" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">All events →</Link>
           }>Live feed</SectionTitle>
           <Panel className="px-3 py-1.5">
             <FlashNewItems ids={live.map((e) => e.id)}>
@@ -123,18 +123,18 @@ export default async function Home() {
       <section className="grid gap-6 lg:grid-cols-3">
         <div>
           <SectionTitle kicker="India in focus" action={
-            <Link href="/india" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">India board →</Link>
+            <Link href="/india" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">India board →</Link>
           }>Bilateral tension</SectionTitle>
           <Panel className="divide-y divide-[color:var(--color-line-soft)]">
             {india.map((d) => (
               <Link key={d.key} href={`/dyad/IND-${d.b === 'IND' ? d.a : d.b}`}
                 className="flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
-                <span className="w-24 flex-none truncate text-[12.5px] text-text">
+                <span className="w-24 flex-none truncate text-[15px] text-text">
                   {countryName(d.a === 'IND' ? d.b : d.a)}
                 </span>
                 <Sparkline data={d.series.map((s) => s.value)} width={90} height={22}
                   color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-guarded)'} />
-                <span className="mono-num ml-auto text-[13px]"
+                <span className="mono-num ml-auto text-[15px]"
                   style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
                 <Trend value={d.trend} />
               </Link>
@@ -144,7 +144,7 @@ export default async function Home() {
 
         <div>
           <SectionTitle kicker="Detected in Chinese-language sources" action={
-            <Link href="/china" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">China Watch →</Link>
+            <Link href="/china" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">China Watch →</Link>
           }>PRC official rhetoric</SectionTitle>
           {ladder.length ? (
             <Panel className="divide-y divide-[color:var(--color-line-soft)]">
@@ -153,10 +153,10 @@ export default async function Home() {
                   <div className="flex items-center gap-2">
                     <Badge tone="var(--color-zh)">rung {e.ladderRung}</Badge>
                     <ChineseText text={e.ladderZh!} size="small" accent clamp={false}
-                      className="text-[13px]" />
-                    <span className="ml-auto text-[10px] text-faint">{timeAgo(e.lastSeen)}</span>
+                      className="text-[15px]" />
+                    <span className="ml-auto text-[12px] text-faint">{timeAgo(e.lastSeen)}</span>
                   </div>
-                  <div className="mt-1 text-[11.5px] leading-snug text-muted">
+                  <div className="mt-1 text-[14px] leading-snug text-muted">
                     {e.ladderEn} — <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss />
                   </div>
                 </Link>
@@ -203,13 +203,13 @@ export default async function Home() {
             <Link key={d.key} href={`/dyad/${d.a}-${d.b}`}
               className="panel block p-3.5 transition-colors hover:border-[color:var(--color-accent-dim)]">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[12.5px] text-text">{countryName(d.a)} — {countryName(d.b)}</span>
+                <span className="text-[15px] text-text">{countryName(d.a)} — {countryName(d.b)}</span>
                 <Trend value={d.trend} />
               </div>
               <div className="mt-2 flex items-end gap-2">
                 <span className="mono-num text-2xl leading-none"
                   style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
-                <span className="mb-0.5 text-[10px] text-faint">{d.eventCount} events</span>
+                <span className="mb-0.5 text-[12px] text-faint">{d.eventCount} events</span>
               </div>
               <div className="mt-2">
                 <Sparkline data={d.series.map((s) => s.value)} width={200} height={26}

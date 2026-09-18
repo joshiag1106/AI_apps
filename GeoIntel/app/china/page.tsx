@@ -43,11 +43,11 @@ export default async function ChinaPage() {
   return (
     <div className="space-y-8">
       <section>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">China Watch</div>
+        <div className="text-[12px] uppercase tracking-[0.22em] text-faint">China Watch</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
           PRC posture, read in Chinese
         </h1>
-        <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-muted">
+        <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-muted">
           {zhStats.articles.toLocaleString()} Chinese-language reports parsed against a curated
           geopolitical glossary and the PRC official escalation ladder. What Beijing says in Chinese
           and what it says in English are not always the same statement — this page reads the former.
@@ -74,18 +74,18 @@ export default async function ChinaPage() {
                 const hit = rungCounts.find((x) => x.rung === r.rung);
                 return (
                   <div key={r.rung} className="flex items-center gap-2.5">
-                    <span className="mono-num w-5 text-right text-[10px] text-faint">{r.rung}</span>
-                    <span className="w-[10.5rem] flex-none text-[12.5px]"
+                    <span className="mono-num w-5 text-right text-[12px] text-faint">{r.rung}</span>
+                    <span className="w-[10.5rem] flex-none text-[15px]"
                       style={{ opacity: hit ? 1 : 0.35 }}>
                       <ChineseText text={r.zh} size="small" accent clamp={false} />
                     </span>
-                    <span className="hidden flex-1 truncate text-[11px] text-muted sm:block"
+                    <span className="hidden flex-1 truncate text-[13px] text-muted sm:block"
                       style={{ opacity: hit ? 1 : 0.4 }}>{r.en}</span>
                     <div className="relative h-3.5 w-24 flex-none overflow-hidden rounded-sm bg-[color:var(--color-line-soft)]">
                       <div className="absolute inset-y-0 left-0"
                         style={{ width: `${r.severity}%`, background: hit ? 'var(--color-zh)' : 'var(--color-line)' }} />
                     </div>
-                    <span className="mono-num w-7 text-right text-[11px]"
+                    <span className="mono-num w-7 text-right text-[13px]"
                       style={{ color: hit ? 'var(--color-zh)' : 'var(--color-faint)' }}>
                       {hit ? hit.count : '·'}
                     </span>
@@ -93,7 +93,7 @@ export default async function ChinaPage() {
                 );
               })}
             </div>
-            <p className="mt-3 border-t border-[color:var(--color-line-soft)] pt-2.5 text-[10.5px] leading-relaxed text-faint">
+            <p className="mt-3 border-t border-[color:var(--color-line-soft)] pt-2.5 text-[13px] leading-relaxed text-faint">
               Bars show each rung&apos;s severity; the number is how many events in the current corpus
               carry that formula. Movement <em>up</em> the ladder on a given file matters more than
               raw volume anywhere on it.
@@ -108,16 +108,16 @@ export default async function ChinaPage() {
               <div className="space-y-1.5">
                 {topTerms.map((t) => (
                   <div key={t.en} className="flex items-center gap-2.5">
-                    <span className="w-32 flex-none text-[13px]">
+                    <span className="w-32 flex-none text-[15px]">
                       <ChineseText text={t.zh} size="small" accent clamp={false} />
                     </span>
-                    <span className="flex-1 truncate text-[11.5px] text-muted">{t.en}</span>
+                    <span className="flex-1 truncate text-[14px] text-muted">{t.en}</span>
                     {t.cat === 'framing' && <Badge tone="var(--color-elevated)">framing</Badge>}
                     <div className="relative h-3 w-20 flex-none overflow-hidden rounded-sm bg-[color:var(--color-line-soft)]">
                       <div className="absolute inset-y-0 left-0 bg-[color:var(--color-zh)] opacity-70"
                         style={{ width: `${(t.n / topTerms[0].n) * 100}%` }} />
                     </div>
-                    <span className="mono-num w-7 text-right text-[10.5px] text-faint">{t.n}</span>
+                    <span className="mono-num w-7 text-right text-[13px] text-faint">{t.n}</span>
                   </div>
                 ))}
               </div>
@@ -145,16 +145,16 @@ export default async function ChinaPage() {
                 <div className="flex items-center gap-2">
                   <Badge tone="var(--color-zh)" solid>rung {e.ladderRung}</Badge>
                   <ChineseText text={e.ladderZh!} size="small" accent clamp={false}
-                    className="text-[14px]" />
-                  <span className="ml-auto text-[10px] text-faint">{timeAgo(e.lastSeen)}</span>
+                    className="text-[16px]" />
+                  <span className="ml-auto text-[12px] text-faint">{timeAgo(e.lastSeen)}</span>
                 </div>
-                <div className="mt-1 text-[11px] text-muted">{e.ladderEn}</div>
-                <h3 className="mt-2 text-[12.5px] leading-snug text-text">
+                <div className="mt-1 text-[13px] text-muted">{e.ladderEn}</div>
+                <h3 className="mt-2 text-[15px] leading-snug text-text">
                   <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss />
                 </h3>
                 <div className="mt-2 flex items-center gap-2">
                   <ConfidenceChip value={e.confidence} />
-                  <span className="text-[10.5px] text-faint">{e.actors.slice(0, 3).map(countryName).join(' · ')}</span>
+                  <span className="text-[13px] text-faint">{e.actors.slice(0, 3).map(countryName).join(' · ')}</span>
                 </div>
               </Link>
             ))}
@@ -171,7 +171,7 @@ export default async function ChinaPage() {
         </div>
         <div>
           <SectionTitle kicker="Newest Chinese-language clusters" action={
-            <Link href="/events?lang=zh" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">Filter feed →</Link>
+            <Link href="/events?lang=zh" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">Filter feed →</Link>
           }>中文 stream</SectionTitle>
           <Panel className="px-3 py-1.5">
             {zhEvents.slice(0, 16).map((e) => <EventRow key={e.id} event={e} />)}

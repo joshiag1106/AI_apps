@@ -84,7 +84,7 @@ export function WorldMap({
 
       {hover && (
         <div
-          className="pointer-events-none absolute z-20 panel px-2.5 py-1.5 text-[11px] shadow-lg"
+          className="pointer-events-none absolute z-20 panel px-2.5 py-1.5 text-[13px] shadow-lg"
           style={{ left: `${(hover.x / width) * 100}%`, top: `${(hover.y / height) * 100}%`, transform: 'translate(10px, -50%)' }}
         >
           <div className="font-medium text-text">{hover.label}</div>
@@ -92,7 +92,7 @@ export function WorldMap({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-[10px] text-faint">
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px] text-faint">
         <span className="uppercase tracking-[0.16em]">Composite risk</span>
         <span className="flex items-center gap-1.5">
           {[10, 30, 50, 70, 90].map((v) => (

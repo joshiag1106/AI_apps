@@ -31,7 +31,7 @@ export function ConfidenceChip({ value }: { value: number }) {
       <span className="relative h-1.5 w-12 rounded-full bg-[color:var(--color-line)] overflow-hidden">
         <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${value}%`, background: band.color }} />
       </span>
-      <span className="mono-num text-[11px]" style={{ color: band.color }}>{value}</span>
+      <span className="mono-num text-[13px]" style={{ color: band.color }}>{value}</span>
     </span>
   );
 }
@@ -62,14 +62,14 @@ export function EventCard({ event, compact = false }: { event: GeoEvent; compact
             ))}
           </div>
 
-          <h3 className="text-[13.5px] leading-snug text-text group-hover:text-[color:var(--color-accent)]">
+          <h3 className="text-[16px] leading-snug text-text group-hover:text-[color:var(--color-accent)]">
             <ChineseText text={event.title} english={titleGloss(event.title)} englishIsGloss />
           </h3>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-faint">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-faint">
             <ConfidenceChip value={event.confidence} />
             <span className="mono-num">{event.articleIds.length} source{event.articleIds.length > 1 ? 's' : ''}</span>
-            {event.languages.includes('zh') && <span className="zh-text text-[11px]">中文</span>}
+            {event.languages.includes('zh') && <span className="zh-text text-[13px]">中文</span>}
             <span>{actors.join(' · ')}</span>
             <time dateTime={event.lastSeen} className="ml-auto">{timeAgo(event.lastSeen)}</time>
           </div>
@@ -91,14 +91,14 @@ export function EventRow({ event }: { event: GeoEvent }) {
       <span className="sr-only">{esc.label} escalation.</span>
       {/* One line by design, so the romanisation and meaning ride on hover instead of
           stacking and tripling the row height. */}
-      <span className="min-w-0 flex-1 truncate text-[12.5px] text-text group-hover:text-[color:var(--color-accent)]"
+      <span className="min-w-0 flex-1 truncate text-[15px] text-text group-hover:text-[color:var(--color-accent)]"
         title={chineseTitle(event.title, titleGloss(event.title))}>
         <ChineseCompact text={event.title} english={titleGloss(event.title)} />
       </span>
-      {event.languages.includes('zh') && <span className="zh-text text-[10px] flex-none">中</span>}
+      {event.languages.includes('zh') && <span className="zh-text text-[12px] flex-none">中</span>}
       <ConfidenceChip value={event.confidence} />
       <time dateTime={event.lastSeen}
-        className="mono-num w-14 flex-none text-right text-[10.5px] text-faint">{timeAgo(event.lastSeen)}</time>
+        className="mono-num w-14 flex-none text-right text-[13px] text-faint">{timeAgo(event.lastSeen)}</time>
     </Link>
   );
 }

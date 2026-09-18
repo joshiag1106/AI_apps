@@ -133,3 +133,112 @@ describe('analysis outlets are not corroboration', () => {
     expect(resolveSource('香港01').country).toBe('HKG');
   });
 });
+
+describe('outlets the live corpus could not place', () => {
+  /*
+   * Measured on the production database 2026-09-18: 387 DISTINCT outlets resolved to ZZZ.
+   * That is not cosmetic. lib/verify/confidence.ts deliberately excludes ZZZ from the
+   * independent-country count, so every article from an unplaced outlet contributes NOTHING
+   * to the corroboration score — the number this whole product rests on. Placing a real
+   * publisher is therefore a direct, immediate improvement to scoring across the corpus.
+   *
+   * Only outlets identifiable with confidence are added. The rest stay ZZZ on purpose:
+   * aggregators and social hosts (Head Topics, facebook.com, Yahoo!ニュース) must NEVER be
+   * placed, because they republish. Placing them as `independent` would manufacture
+   * corroboration out of the same story echoed — precisely the failure the ownership column
+   * exists to prevent. Unplaced already means "does not count", which is the right answer
+   * for them.
+   */
+  it.each([
+    ['Patrika News', 'IND'],
+    ['tv9hindi.com', 'IND'],
+    ['newindianexpress.com', 'IND'],
+    ['Rediff', 'IND'],
+    ['theweek.in', 'IND'],
+    ['prabhatkhabar.com', 'IND'],
+    ['bhaskarhindi.com', 'IND'],
+    ['Ynetnews', 'ISR'],
+    ['The Times of Israel', 'ISR'],
+    ['The Kyiv Independent', 'UKR'],
+    ['united24media.com', 'UKR'],
+    ['Taipei Times', 'TWN'],
+    ['三立新聞', 'TWN'],
+    ['on.cc東網', 'HKG'],
+    ['星島頭條', 'HKG'],
+    ['chinanews.com.cn', 'CHN'],
+    ['朝鮮日報中文版', 'KOR'],
+    ['아시아경제', 'KOR'],
+    ['매일경제', 'KOR'],
+    ['Sin Chew Daily', 'MYS'],
+    ['orientaldaily.com.my', 'MYS'],
+    ['Vietnam.vn', 'VNM'],
+    ['PBS', 'USA'],
+    ['The Independent', 'GBR'],
+  ])('places %s in %s', (outlet, iso) => {
+    expect(resolveSource(outlet).country).toBe(iso);
+  });
+
+  it('records government outlets as state, not independent', () => {
+    // These are primary government sources. Counting them as independent corroboration
+    // would let a ministry corroborate itself.
+    expect(resolveSource('ddnews.gov.in').ownership).toBe('state');
+    expect(resolveSource('US Department of Defense').ownership).toBe('state');
+    expect(resolveSource('chinanews.com.cn').ownership).toBe('state');
+    expect(resolveSource('Vietnam.vn').ownership).toBe('state');
+  });
+
+  it('leaves aggregators and social hosts unplaced, because they republish', () => {
+    // The whole point of the ZZZ bucket. An aggregator carrying a wire story is not a
+    // second witness to it, and placing one would inflate every cluster it touches.
+    expect(resolveSource('Head Topics').country).toBe('ZZZ');
+    expect(resolveSource('facebook.com').country).toBe('ZZZ');
+    expect(resolveSource('Yahoo!ニュース').country).toBe('ZZZ');
+  });
+
+  it('does not let The Kyiv Independent collide with The Independent', () => {
+    // "the kyiv independent" contains "independent". A short match key here would place a
+    // Ukrainian outlet in Britain, and the two would then corroborate each other as though
+    // they were separate countries.
+    expect(resolveSource('The Kyiv Independent').country).toBe('UKR');
+    expect(resolveSource('The Independent').country).toBe('GBR');
+  });
+
+  it('places Iran International where it operates, not where it broadcasts to', () => {
+    // London-based and Persian-language. Placing it in IRN would be wrong twice over: it is
+    // not Iranian state media, and treating it as an Iranian domestic source would make it
+    // corroborate Tehran's own outlets on the country count.
+    expect(resolveSource('Iran International').country).toBe('GBR');
+    expect(resolveSource('Iran International').ownership).not.toBe('state');
+  });
+});
+
+describe('outlet names that arrive as bare hostnames', () => {
+  /*
+   * A whole CLASS of unplaced outlet, found 2026-09-18 while placing the long tail: feeds
+   * sometimes give the outlet as a hostname rather than a masthead, and a name-shaped match
+   * key cannot see it. "times of india" does not appear in "timesofindia.indiatimes.com" —
+   * the spaces are gone — and neither does "toi". So the single largest Indian daily was
+   * resolving to ZZZ and contributing nothing to corroboration, despite having been
+   * registered in this table since the beginning.
+   *
+   * Fixed by ALSO comparing with punctuation and whitespace stripped from both sides, as an
+   * additional pass rather than a replacement — it can only add matches, never remove one.
+   */
+  it('places a registered masthead given as a hostname', () => {
+    expect(resolveSource('timesofindia.indiatimes.com').country).toBe('IND');
+    expect(resolveSource('timesofindia.indiatimes.com').name).toBe('The Times of India');
+  });
+
+  it('still does not confuse two mastheads that share a word', () => {
+    // The collision this normalisation could plausibly introduce. Stripping spaces makes
+    // "the independent" into "theindependent", which must still not be found inside
+    // "thekyivindependent".
+    expect(resolveSource('The Kyiv Independent').country).toBe('UKR');
+    expect(resolveSource('The Independent').country).toBe('GBR');
+  });
+
+  it('does not start placing aggregators by accident', () => {
+    expect(resolveSource('Head Topics').country).toBe('ZZZ');
+    expect(resolveSource('facebook.com').country).toBe('ZZZ');
+  });
+});

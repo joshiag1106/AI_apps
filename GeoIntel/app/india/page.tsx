@@ -23,9 +23,9 @@ export default async function IndiaPage() {
   return (
     <div className="space-y-8">
       <section>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-faint">India Focus</div>
+        <div className="text-[12px] uppercase tracking-[0.22em] text-faint">India Focus</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">India — security environment</h1>
-        <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-muted">
+        <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-muted">
           The neighbourhood as measured, not as declared. Ring position and tension scores come
           from observed reporting volume, escalation vocabulary and corroboration — including
           Chinese-, Urdu- and Hindi-language sources that English-only monitoring misses.
@@ -47,7 +47,7 @@ export default async function IndiaPage() {
           <Mandala focus="IND" nodes={board.map((d) => ({
             iso: d.a === 'IND' ? d.b : d.a, score: d.score, eventCount: d.eventCount, trend: d.trend,
           }))} />
-          <p className="mt-2 text-[11px] leading-relaxed text-faint">
+          <p className="mt-2 text-[13px] leading-relaxed text-faint">
             Kautilya&apos;s mandala placed neighbours in circles of friend and rival. Here the rings
             are computed rather than assumed: inner ring means highest current friction, whatever
             the formal relationship says.
@@ -73,12 +73,12 @@ export default async function IndiaPage() {
                 return (
                   <Link key={d.key} href={`/dyad/IND-${other}`}
                     className="flex items-center gap-3 py-2 transition-colors hover:bg-[color:var(--color-panel-2)]">
-                    <span className="w-28 flex-none truncate text-[12.5px] text-text">{countryName(other)}</span>
+                    <span className="w-28 flex-none truncate text-[15px] text-text">{countryName(other)}</span>
                     <Sparkline data={d.series.map((s) => s.value)} width={100} height={22}
                       color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-guarded)'} />
-                    <span className="mono-num ml-auto w-8 text-right text-[13px]"
+                    <span className="mono-num ml-auto w-8 text-right text-[15px]"
                       style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
-                    <span className="mono-num w-10 text-right text-[10px] text-faint">{d.eventCount}ev</span>
+                    <span className="mono-num w-10 text-right text-[12px] text-faint">{d.eventCount}ev</span>
                     <Trend value={d.trend} />
                   </Link>
                 );
@@ -91,16 +91,16 @@ export default async function IndiaPage() {
       {china && (
         <section>
           <SectionTitle kicker="The primary strategic relationship" action={
-            <Link href="/dyad/IND-CHN" className="text-[11px] text-muted hover:text-[color:var(--color-accent)]">Full dyad analysis →</Link>
+            <Link href="/dyad/IND-CHN" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">Full dyad analysis →</Link>
           }>India — China, 90 days</SectionTitle>
           <Panel className="p-4">
             <div className="mb-3 flex items-end gap-4">
               <div>
                 <div className="mono-num text-3xl leading-none" style={{ color: 'var(--color-high)' }}>{china.score}</div>
-                <div className="mt-1 text-[10px] uppercase tracking-wider text-faint">tension index</div>
+                <div className="mt-1 text-[12px] uppercase tracking-wider text-faint">tension index</div>
               </div>
               <div className="mb-1"><Trend value={china.trend} /></div>
-              <div className="mb-1 text-[11px] text-muted">{china.eventCount} events tracked</div>
+              <div className="mb-1 text-[13px] text-muted">{china.eventCount} events tracked</div>
             </div>
             <Columns data={china.series} height={80} />
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -126,11 +126,11 @@ export default async function IndiaPage() {
               <Link key={h.id} href={`/events?q=${encodeURIComponent(h.name.split(' ')[0])}`}
                 className="block px-3.5 py-2.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12.5px] text-text">{h.name}</span>
+                  <span className="text-[15px] text-text">{h.name}</span>
                   <Badge tone="var(--color-muted)">{h.domain}</Badge>
-                  <span className="mono-num ml-auto text-[12px] text-[color:var(--color-accent)]">{h.heat}</span>
+                  <span className="mono-num ml-auto text-[14px] text-[color:var(--color-accent)]">{h.heat}</span>
                 </div>
-                <div className="mt-0.5 text-[10.5px] text-faint">
+                <div className="mt-0.5 text-[13px] text-faint">
                   {h.parties.map(countryName).join(' · ')} — {h.count} events
                   {h.latest && <> · latest {timeAgo(h.latest.lastSeen)}</>}
                 </div>

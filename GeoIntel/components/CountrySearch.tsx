@@ -63,7 +63,7 @@ export function CountrySearch({ countries, className = '' }: { countries: Search
         }}
         placeholder="Search a country — India, 中国, भारत…"
         aria-label="Search countries"
-        className="w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[12.5px] text-text placeholder:text-faint outline-none focus:border-[color:var(--color-accent-dim)]"
+        className="w-full rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[15px] text-text placeholder:text-faint outline-none focus:border-[color:var(--color-accent-dim)]"
       />
       {open && results.length > 0 && (
         <ul className="panel dropdown-in absolute z-50 mt-1 w-full overflow-hidden p-1 shadow-2xl">
@@ -72,11 +72,11 @@ export function CountrySearch({ countries, className = '' }: { countries: Search
               <button
                 onMouseEnter={() => setCursor(i)}
                 onClick={() => go(c.iso)}
-                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12.5px] ${i === cursor ? 'bg-[color:var(--color-panel-2)] text-[color:var(--color-accent)]' : 'text-text'}`}
+                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[15px] ${i === cursor ? 'bg-[color:var(--color-panel-2)] text-[color:var(--color-accent)]' : 'text-text'}`}
               >
-                <span className="mono-num text-[10px] text-faint">{c.iso}</span>
+                <span className="mono-num text-[12px] text-faint">{c.iso}</span>
                 <span className="flex-1 truncate">{c.name}</span>
-                <span className="text-[10px] text-faint">{c.region}</span>
+                <span className="text-[12px] text-faint">{c.region}</span>
               </button>
             </li>
           ))}

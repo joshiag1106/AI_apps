@@ -84,24 +84,70 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         */}
         <a
           href="#main"
-          className="skip-link rounded border border-[color:var(--color-line)] bg-[color:var(--color-bg)] px-4 py-2 text-[13px] text-text"
+          className="skip-link rounded border border-[color:var(--color-line)] bg-[color:var(--color-bg)] px-4 py-2 text-[15px] text-text"
         >
           Skip to main content
         </a>
         <Nav />
-        <main id="main" tabIndex={-1} className="mx-auto max-w-[1400px] px-4 py-6">
+        <main id="main" tabIndex={-1} className="mx-auto max-w-[1760px] px-4 py-6">
           {empty && <div className="mb-6"><EmptyCorpus /></div>}
           {children}
         </main>
 
         <footer className="mt-16 border-t border-[color:var(--color-line)]">
-          <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[11px] text-faint">
-            <span className="text-muted">Kautilya</span>
-            <span>Corroboration and provenance analysis — not a determination of truth.</span>
-            <Link href="/methodology" className="hover:text-muted">Methodology &amp; limitations</Link>
-            <Link href="/pricing" className="hover:text-muted">Plans</Link>
-            {ingested && <span className="mono-num">Corpus refreshed {timeAgo(ingested)}</span>}
-            <PaletteSelect />
+          {/*
+            * Four columns on a wide screen, stacking to two and then one as it narrows. Every
+            * href here is checked against a real page.tsx by tests/layout.test.ts: a footer is
+            * the one place a reader trusts to be a complete map of the site, so a link that
+            * 404s is worse than no footer at all.
+            */}
+          <div className="mx-auto grid max-w-[1760px] grid-cols-2 gap-x-8 gap-y-7 px-4 pt-10 pb-7 sm:grid-cols-4">
+            <div>
+              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Explore</div>
+              <ul className="space-y-1.5 text-[14px]">
+                <li><Link href="/" className="text-muted hover:text-[color:var(--color-accent)]">Threat board</Link></li>
+                <li><Link href="/events" className="text-muted hover:text-[color:var(--color-accent)]">Events</Link></li>
+                <li><Link href="/dashboard" className="text-muted hover:text-[color:var(--color-accent)]">Dashboard</Link></li>
+                <li><Link href="/person" className="text-muted hover:text-[color:var(--color-accent)]">People</Link></li>
+                <li><Link href="/ask" className="text-muted hover:text-[color:var(--color-accent)]">Ask</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Focus</div>
+              <ul className="space-y-1.5 text-[14px]">
+                <li><Link href="/india" className="text-muted hover:text-[color:var(--color-accent)]">India focus</Link></li>
+                <li><Link href="/china" className="text-muted hover:text-[color:var(--color-accent)]">China watch</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Understand</div>
+              <ul className="space-y-1.5 text-[14px]">
+                <li><Link href="/about" className="text-muted hover:text-[color:var(--color-accent)]">About Kautilya</Link></li>
+                <li><Link href="/methodology" className="text-muted hover:text-[color:var(--color-accent)]">Methodology &amp; limitations</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Account</div>
+              <ul className="space-y-1.5 text-[14px]">
+                <li><Link href="/pricing" className="text-muted hover:text-[color:var(--color-accent)]">Plans</Link></li>
+                <li><Link href="/account" className="text-muted hover:text-[color:var(--color-accent)]">Your account</Link></li>
+                <li><Link href="/contact" className="text-muted hover:text-[color:var(--color-accent)]">Contact</Link></li>
+                <li><Link href="/privacy" className="text-muted hover:text-[color:var(--color-accent)]">Privacy</Link></li>
+                <li><Link href="/terms" className="text-muted hover:text-[color:var(--color-accent)]">Terms</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-[color:var(--color-line)]">
+            <div className="mx-auto flex max-w-[1760px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-5 text-[13px] text-faint">
+              <span className="text-muted">Kautilya</span>
+              <span>Corroboration and provenance analysis — not a determination of truth.</span>
+              {ingested && <span className="mono-num">Corpus refreshed {timeAgo(ingested)}</span>}
+              <div className="ml-auto"><PaletteSelect /></div>
+            </div>
           </div>
         </footer>
       </body>

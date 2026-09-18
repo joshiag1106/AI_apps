@@ -32,7 +32,7 @@ export function AskBox({ initial = '', className = '', autoFocus = false }: {
         autoFocus={autoFocus}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Ask — what is China doing in the South China Sea?"
-        className="w-full rounded border border-[color:var(--color-line)] bg-[color:var(--color-panel)] px-3 py-2 text-[13px] text-text placeholder:text-faint focus:border-[color:var(--color-accent-dim)] focus:outline-none"
+        className="w-full rounded border border-[color:var(--color-line)] bg-[color:var(--color-panel)] px-3 py-2 text-[15px] text-text placeholder:text-faint focus:border-[color:var(--color-accent-dim)] focus:outline-none"
       />
     </form>
   );
