@@ -118,7 +118,7 @@ export default function MethodologyPage() {
       <Panel className="my-4 p-4">
         <div className="space-y-1">
           {ESCALATION_LADDER.map((r) => (
-            <div key={r.rung} className="flex items-baseline gap-3 text-[12px]">
+            <div key={r.rung} className="flex flex-wrap items-baseline gap-3 text-[12px]">
               <span className="mono-num w-5 text-right text-faint">{r.rung}</span>
               <span className="w-40 flex-none">
                 <ChineseText text={r.zh} size="small" accent clamp={false} />

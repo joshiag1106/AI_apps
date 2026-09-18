@@ -141,6 +141,29 @@
   transition: background-color 300ms ease, border-color 300ms ease,
     color 300ms ease, fill 300ms ease, stroke 300ms ease;
 }
+/*
+ * Grid items default to `min-width: auto`, which refuses to shrink an item below its
+ * content's MIN-CONTENT width. This app truncates headlines with Tailwind's `truncate`,
+ * which sets `white-space: nowrap`, and a nowrap Chinese headline has no break opportunity
+ * anywhere in it — so its min-content width is the entire string. The item then refuses to
+ * be narrower than a whole headline, the track grows to match, every descendant inherits
+ * that width, and `truncate` never gets the chance to truncate.
+ *
+ * Measured on a real iPhone viewport (393px) before this rule existed: 406px of horizontal
+ * overflow on /, 920px on /dashboard, 272px on /china. With it, all three are exactly 393.
+ *
+ * It also makes the home page's declared `lg:grid-cols-[1.35fr_1fr]` actually happen — it
+ * had been rendering 560.93 / 783.07 at 1440px, the ratio inverted by the same min-content
+ * floor, and now renders 772.08 / 571.92.
+ *
+ * `minmax(0, 1fr)` is the same escape and is used on /person and /network, but it only
+ * applies where its `lg:` prefix does; at phone width the grid falls back to a single
+ * implicit auto track, so it does nothing there. This covers every breakpoint.
+ *
+ * tests/layout.test.ts pins this rule and records how to re-measure it.
+ */
+.grid > * { min-width: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   :where(*) { transition: none; }
 }

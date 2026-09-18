@@ -22,6 +22,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
 | Tests | 434 passing (`npm test`) |
+| Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 7,766 articles, 4,267 events; drifts with every ingest, so re-measure |
 | Person roster | 122 officials across 39 states; 79 named, 43 silent, 24 seats corpus-confirmed |
@@ -869,6 +870,85 @@ not go stale, it goes WRONG in new ways, because the corpus keeps producing cons
 exclusion lists have never seen.** Every one of the three bugs above was latent on 2026-09-10
 and needed only a sentence nobody had written yet. Run the audit on a schedule, and read the
 NEW flags as suspect-detector-first — two of two were this time.
+
+## The first real deployment (2026-09-17) — it is live
+
+Kautilya runs on a VPS, served over HTTPS with a valid certificate, on the production domain.
+**This document names neither the domain nor the server address**, for the reason recorded
+above: it is published to a public repository. Both are in the operator's hands and in
+`.env.local`; `docs/runbooks/vps-deploy.md` uses `example.com` and `SERVER_IP` throughout.
+
+**The box:** Hostinger KVM 1 (1 vCPU, 4 GB RAM, 50 GB NVMe), Ubuntu 24.04.4 LTS, India region,
+12-month term. The previous plan — Single Web Hosting, shared PHP — could not have run this at
+all: no Node runtime, no long-running process, no controlled writes outside the app folder.
+
+**The shape that matters, and it is the one the runbook leads with:** `/srv/kautilya` is
+disposable and replaced by every deploy, `/var/lib/kautilya` holds the database and is never
+touched. The app never builds on the server — the build happens locally and the standalone
+output is shipped — so a failed build cannot take the site down. Node 24.21 via nvm (the
+distro version then stops mattering), systemd, Caddy terminating TLS, hourly cron on
+`/api/cron`, nightly `sqlite3 .backup` **verified by restoring one**. Boot is 170 ms, an
+ingest is ~10 s on 1 vCPU, and the server's corpus came up at 1,176 articles / 782 events.
+
+**Three things the deployment taught that no amount of reading would have:**
+
+1. **`next build` traces `kautilya.db` into the standalone bundle** — the whole corpus and a
+   real user row, email and bcrypt hash included. It shipped on the first rsync before being
+   caught. The danger is not the 16 MB: if that file lands in the deploy directory and
+   `KAUTILYA_DB` is ever unset, the app finds it and serves a frozen corpus and a stale
+   account table, **working perfectly and wrongly**. A silent wrong answer beats a crash only
+   in the sense that it is harder to notice. `rsync` now excludes it, along with
+   `@img/sharp-darwin-x64` — a macOS binary Next includes although nothing imports
+   `next/image`.
+2. **A host CDN silently overrides DNS edits.** While it was enabled the A record looked saved
+   and nothing moved; the tell was a root returning two or more *rotating* addresses and
+   responses carrying `server: hcdn`.
+3. **A stale `AAAA` record breaks certificate issuance while the `A` record is perfectly
+   correct.** Let's Encrypt prefers IPv6, so every challenge was validated against the OLD
+   server and 404'd, and nothing in the error mentions DNS. Deleting the AAAA fixed it in one
+   restart; certificates issued for both apex and `www` within seconds.
+
+**The diagnostic that separates all three from ordinary propagation is one query:**
+`dig +norecurse @<authoritative-ns> <domain> A`. A public resolver tells you what is cached;
+only the authoritative server tells you what is *true*. Every wrong turn this evening came
+from reading a cached answer as if it were the source.
+
+**Verified in production:** HTTPS 200 with a valid certificate, `http` → 308, `/_next/image`
+→ 400 (the open image proxy stays closed), `/api/cron` → 401 without its secret, no `STRIPE_*`
+names on `/pricing`, and port 3000 unreachable from outside — the app binds to loopback and is
+reachable only through the proxy.
+
+**`/api/analyse` cannot be probed yet, and this is a trap worth knowing.** Without
+`ANTHROPIC_API_KEY` the route returns `{"unavailable":"no_key"}` with **HTTP 200**, and that
+branch sits ABOVE the sign-in check in `app/api/analyse/route.ts`. So a 200 there means
+"feature off", not "gate open", and the 401 that stands between an anonymous visitor and the
+Anthropic bill is **unreachable until the key exists**. Re-run that probe the moment the key
+goes on, and set the workspace spend limit first.
+
+**Two feeds return HTTP 403 from the datacenter address that succeed from a laptop** — the
+server's corpus will run slightly narrower than a local one. The ingest reports them and
+carries on; it is not a misconfiguration.
+
+### Left unfinished on 2026-09-17
+
+- **DNS is not converged.** The record is correct at the source, but Hostinger's authoritative
+  pool is inconsistent: twenty samples across both nameservers returned the new address 6
+  times and the old one 14, with the SAME SOA serial, and repeated queries to the same
+  nameserver flap between the two. This is neither a reversion nor ordinary propagation — some
+  pool members simply have a stale zone. Public resolvers held the correct value from cache
+  while that was measured. **Re-measure before doing anything.** If it is still majority-old,
+  the fix is to move the domain's nameservers to a DNS provider the operator controls and
+  recreate the A and MX records there, rather than another round in the host's panel.
+- **`SMTP_PASS` still empty**, so alert mail has still never been delivered. `SMTP_HOST`
+  already defaults to the right provider for this mailbox.
+- **The MX records were deliberately never touched** through the whole cutover, and were
+  re-checked after every DNS change. The alerts mailbox may be bundled with the old shared
+  hosting plan, so **do not cancel that plan until that is confirmed**.
+- **A weekly scheduled roster audit now exists** — Wednesdays 20:00 local. It may open PRs for
+  detector fixes and is forbidden from editing `data/people.ts` or merging anything. Its first
+  test run wedged on a permission prompt and never ingested, which is itself the finding: an
+  unattended run can park indefinitely and look scheduled. A command allowlist was added to the
+  workspace settings; **whether it actually prevents the stall is still unverified.**
 
 ## The accessibility pass (2026-09-07)
 
