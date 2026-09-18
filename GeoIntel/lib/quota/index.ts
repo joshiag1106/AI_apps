@@ -5,6 +5,15 @@ import { currentSubject } from '@/lib/auth';
 export const FREE_LIMIT = 5;
 
 /**
+ * The free-preview switch. Added 2026-09-18: Kautilya has nothing to sell yet, so nothing
+ * should be metered while it is being evaluated. This is the ONE line to flip back to true
+ * when Stripe billing goes live — everything else in this file, and every page that reads
+ * quotaState(), keeps working exactly as designed the moment it does, because they all gate
+ * on the state this module returns rather than on a number of their own.
+ */
+export const QUOTA_ENFORCED = false;
+
+/**
  * Metered actions are the analytical ones — the work the engine does on demand.
  * Browsing headlines, the methodology page and search stay free, because a paywall
  * in front of "what is this site" helps nobody.
@@ -24,7 +33,15 @@ export interface QuotaState {
   used: number;
   limit: number;
   remaining: number;
+  /** A paid Pro plan. Never true because of the free-preview period — see previewUnlimited. */
   unlimited: boolean;
+  /**
+   * Nothing is capped right now, but ONLY because QUOTA_ENFORCED is off, not because this
+   * visitor paid for anything. Kept distinct from `unlimited` so a page can say "free while
+   * in preview" without also claiming "you are on Pro" — the pricing and account pages read
+   * this instead of `unlimited` for exactly that reason.
+   */
+  previewUnlimited: boolean;
   kind: 'user' | 'device';
   signedIn: boolean;
 }
@@ -38,7 +55,8 @@ export async function quotaState(): Promise<QuotaState> {
   const used = Number(row?.n ?? 0);
   return {
     used, limit: FREE_LIMIT, remaining: Math.max(0, FREE_LIMIT - used),
-    unlimited, kind: subject.kind, signedIn: !!subject.user,
+    unlimited, previewUnlimited: !unlimited && !QUOTA_ENFORCED,
+    kind: subject.kind, signedIn: !!subject.user,
   };
 }
 
@@ -56,7 +74,7 @@ export async function consume(action: MeteredAction, target: string): Promise<Qu
   const seen = db.prepare('SELECT 1 AS x FROM usage WHERE subject = ? AND action = ? AND target = ?')
     .get(subject.id, action, target);
 
-  if (!seen && !unlimited) {
+  if (!seen && !unlimited && QUOTA_ENFORCED) {
     const state = await quotaState();
     if (state.remaining <= 0) return { ...state, allowed: false, fresh: true };
   }

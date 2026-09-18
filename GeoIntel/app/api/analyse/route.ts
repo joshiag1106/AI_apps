@@ -45,5 +45,5 @@ export async function POST(req: Request) {
   }
 
   const result = await analyseEvent(detail.event, detail.articles);
-  return NextResponse.json({ ...result, remaining: gate.remaining, unlimited: gate.unlimited });
+  return NextResponse.json({ ...result, remaining: gate.remaining, unlimited: gate.unlimited, previewUnlimited: gate.previewUnlimited });
 }

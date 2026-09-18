@@ -7,12 +7,11 @@ import { billing } from '@/lib/billing';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Plans' };
 
-const FREE = [
+const FREE_BASE = [
   'Global threat board and world risk map',
   'Full live event feed with filters',
   'Country and language search',
   'Complete methodology and limitations',
-  `${FREE_LIMIT} deep analyses`,
 ];
 
 const PRO = [
@@ -47,10 +46,18 @@ export default async function PricingPage() {
           </div>
           <div className="mono-num mt-2 text-3xl">₹0</div>
           <p className="mt-1 text-[14px] text-muted">
-            {quota.unlimited ? 'Included in Pro' : `${quota.remaining} of ${quota.limit} analyses remaining`}
+            {quota.unlimited
+              ? 'Included in Pro'
+              : quota.previewUnlimited
+                // Nothing is metered yet, and this card must not say Pro — say what is true.
+                ? 'Free while Kautilya is in preview'
+                : `${quota.remaining} of ${quota.limit} analyses remaining`}
           </p>
           <ul className="mt-4 space-y-2">
-            {FREE.map((f) => (
+            {/* The last bullet is decided at request time, not at module load, because
+                whether it should say a number or "unlimited" depends on quotaState() —
+                see lib/quota's QUOTA_ENFORCED. */}
+            {[...FREE_BASE, quota.unlimited || quota.previewUnlimited ? 'Unlimited analyses, for now' : `${FREE_LIMIT} deep analyses`].map((f) => (
               <li key={f} className="flex gap-2 text-[15px] text-muted">
                 <span className="text-[color:var(--color-low)]">✓</span>{f}
               </li>

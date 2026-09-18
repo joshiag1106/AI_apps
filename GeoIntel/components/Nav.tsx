@@ -45,6 +45,10 @@ export async function Nav() {
           <CountrySearch countries={searchList} className="w-44 sm:w-60" />
           {quota.unlimited ? (
             <span className="hidden rounded border border-[color:var(--color-accent-dim)] px-2 py-1 text-[12px] uppercase tracking-wider text-[color:var(--color-accent)] sm:inline">Pro</span>
+          ) : quota.previewUnlimited ? (
+            // Free-preview period: nothing is capped, but this visitor has not paid for
+            // anything, so this must not say "Pro" — see lib/quota's QUOTA_ENFORCED.
+            <Link href="/pricing" className="hidden whitespace-nowrap text-[12px] uppercase tracking-wider text-faint hover:text-muted sm:inline">Free preview</Link>
           ) : (
             <Link href="/pricing" className="hidden whitespace-nowrap text-[13px] text-muted hover:text-[color:var(--color-accent)] sm:inline">
               <span className="mono-num text-[color:var(--color-accent)]">{quota.remaining}</span>/{quota.limit} free

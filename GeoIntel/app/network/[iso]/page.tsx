@@ -160,7 +160,7 @@ export default async function NetworkPage({
           balance too, but a reader looking at the thing they just paid for should not
           have to go looking for the receipt.
         */}
-        {!gate.unlimited && (
+        {!gate.unlimited && !gate.previewUnlimited && (
           <p className="text-center text-[13px] text-faint">
             {gate.remaining} of {gate.limit} free analyses remaining ·{' '}
             <Link href="/pricing" className="underline decoration-dotted hover:text-muted">See plans</Link>
