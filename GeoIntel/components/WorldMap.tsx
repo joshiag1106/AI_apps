@@ -31,8 +31,12 @@ function describeMap(data: MapDatum[]): string {
 }
 
 export function WorldMap({
-  shapes, data, markers, width = 960, height = 400, focus,
-}: { shapes: MapShape[]; data: MapDatum[]; markers: MapMarker[]; width?: number; height?: number; focus?: string }) {
+  shapes, data, markers, width = 960, height = 400, focus, legend = true,
+}: { shapes: MapShape[]; data: MapDatum[]; markers: MapMarker[]; width?: number; height?: number; focus?: string;
+  /** Off for a caller outside the dashboard — the splash, so far — where the risk-scale key
+   * and its two links to /dashboard and /methodology would read as unexplained furniture
+   * rather than a legend. Defaults on, so every existing caller is unaffected. */
+  legend?: boolean }) {
   const [hover, setHover] = useState<{ label: string; sub: string; x: number; y: number } | null>(null);
   const byIso = new Map(data.map((d) => [d.iso, d]));
 
@@ -92,6 +96,7 @@ export function WorldMap({
         </div>
       )}
 
+      {legend && (
       <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px] text-faint">
         <span className="uppercase tracking-[0.16em]">Composite risk</span>
         <span className="flex items-center gap-1.5">
@@ -112,6 +117,7 @@ export function WorldMap({
           How these are computed
         </Link>
       </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-17.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-18.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,10 +21,10 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 434 passing (`npm test`) |
+| Tests | 492 passing (`npm test`) |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
-| Corpus at last run | 7,766 articles, 4,267 events; drifts with every ingest, so re-measure |
+| Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
 | Person roster | 122 officials across 39 states; 79 named, 43 silent, 24 seats corpus-confirmed |
 | Feeds | 25 direct + 3 video + 48 aggregator queries = 73, all health-checked |
 
@@ -949,6 +949,90 @@ carries on; it is not a misconfiguration.
   test run wedged on a permission prompt and never ingested, which is itself the finding: an
   unattended run can park indefinitely and look scheduled. A command allowlist was added to the
   workspace settings; **whether it actually prevents the stall is still unverified.**
+
+## Where 2026-09-18 ended
+
+Five pieces of work, in the order they shipped. All deployed and verified against the live
+site, not only locally.
+
+**Mobile overflow, fixed.** Two CSS causes, both from a min-content floor. Grid items default
+to `min-width: auto`, and a nowrap Chinese headline under Tailwind's `truncate` has no break
+opportunity, so its min-content width is the whole string — the item refuses to shrink, and
+three routes scrolled sideways on a phone (406px on `/`, 920px on `/dashboard`, 272px on
+`/china`). One rule, `.grid > * { min-width: 0 }`, fixed all three and also corrected a
+desktop bug nobody had noticed: the home page's declared `1.35fr 1fr` column ratio had been
+silently inverting under the same floor. `/methodology`'s ladder table needed `flex-wrap`
+instead — a different shape, fixed-width children summing wider than their column.
+
+**A footer, an About page, and the top nav.** The footer was one row linking two of sixteen
+routes; it is now four columns, plus `/about`, `/privacy`, `/terms`, `/contact` — the last
+three deliberate placeholders that say so rather than carrying invented boilerplate, and
+`/privacy` is a factual inventory of what is actually stored (email, a bcrypt hash, a session
+token, plan, watchlist, an anonymous device cookie), not a policy drafted by inference. A test
+now walks `app/` for real `page.tsx` files and fails the build on any footer link with no page
+behind it. `/about` became "Why Kautilya" in the top nav: the problem, eight feature cards,
+and — the part that had been missing everywhere — four concrete decision uses (telling signal
+from echo, reading the domestic message, catching a posture change early, arguing from
+evidence), plus what the engine explicitly does NOT do.
+
+**Provenance: the outlets the score was silently ignoring.** Measured on the production
+database: 628 of 1,569 articles — 40% of the corpus — resolved to `ZZZ` and contributed
+NOTHING to corroboration, across 387 distinct outlets. Thirty were placed by hand
+(government outlets marked `state`, not `independent`, so a ministry cannot corroborate
+itself). The structural fix mattered more: `resolveSource` now also matches with punctuation
+and whitespace stripped, because a feed sometimes gives an outlet as a bare hostname rather
+than a masthead — `times of india` does not occur in `timesofindia.indiatimes.com` — and the
+largest Indian daily had been unplaced since the roster began. After redeploying and
+re-ingesting: unplaced articles 628 → 523, distinct unplaced outlets 387 → 377.
+
+**The free-analysis limit is suspended, not deleted.** Josh: nothing to sell yet, remove the
+cap, keep the subscription model in mind. One flag, `QUOTA_ENFORCED` in `lib/quota`, default
+`false` — re-enabling before commercial launch is that single line. A second flag,
+`previewUnlimited`, is kept deliberately separate from `unlimited` (which means a PAID Pro
+plan everywhere it is read), so the pricing and account pages keep telling the truth about
+plan status throughout the free period instead of every visitor's nav badge reading "Pro".
+
+**A logo, and a one-time splash in front of the dashboard.** Three real SVG mark options were
+shown side by side rather than described; Josh picked the ascending-bars ladder, tied to the
+PRC escalation-ladder detector — the one feature unique to this product, and the one that also
+reads cleanly at 16px favicon size. `/` was the Threat Board; that content moved intact to
+`/board`, and `/` is now a splash whose map behind the headline is the REAL corpus, quieted —
+not a decorative mock. A visitor who has entered once never sees it again: middleware now
+forwards the request path as a header so the root layout can suppress its own Nav and footer
+for exactly this one route, something Next does not hand a root layout for free.
+
+**This shipped broken once, and the fix is worth remembering.** The first version put an
+`onClick` on the splash's Enter link to record "entered" in localStorage. `app/page.tsx`
+carries no `'use client'`, so it is a Server Component, and a Server Component cannot hand a
+FUNCTION to an element it renders — React can only serialize data across that boundary. It
+built clean and typed clean, because neither `next build` nor `tsc` executes the render; it
+500'd on every real request the moment it was deployed to production. **Caught within
+minutes by curling the live site immediately after deploy** — the same discipline this file
+already holds itself to elsewhere (see the 2026-09-17 deployment section above), and the one
+step skipped this one time. Fixed by moving the write to a small Client Component mounted on
+`/board` instead — which is also the more correct design, not merely a workaround: a
+bookmark or a shared link into `/board` now counts as "entered" too, not only clicking Enter
+on the splash. **Re-verified the second time by starting the actual standalone server
+locally and loading it in a real browser before touching the deployed server again** — build
+and test passing was never going to be enough evidence a second time.
+
+A second, smaller bug found the same way: `WorldMap` renders its own legend — a risk-scale
+key and two links to `/dashboard` and `/methodology` — unconditionally. On the splash this
+read as confusing dead furniture behind the headline, and it looked at first like a
+screenshot artifact from switching browser tabs; only reading `document.body.innerText`
+showed it was real DOM content. Fixed with a `legend?: boolean` prop, default `true`, so
+`/board`'s existing use is unaffected.
+
+**A general safety net, added while fixing the above, not tied to this feature:**
+`tests/layout.test.ts` now walks `globals.css` and fails on any class with a bare
+`animation:` that has no `prefers-reduced-motion` override. Its own first draft passed by
+finding nothing to check — the file has TWO `@media (prefers-reduced-motion: reduce)`
+blocks, and an `indexOf`-based extraction found only the first, silently excluding both the
+second block and every class defined after it from the check. Rewritten with a
+balanced-brace extractor, with its own test pinning that it finds both blocks — a guard on
+the guard, the same discipline this file's other tests already use.
+
+492 tests, `tsc --noEmit` clean.
 
 ## The accessibility pass (2026-09-07)
 

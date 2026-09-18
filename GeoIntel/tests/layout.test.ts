@@ -178,3 +178,64 @@ describe('the footer', () => {
     expect(dead, `footer links with no page.tsx behind them:\n${dead.join('\n')}`).toEqual([]);
   });
 });
+
+describe('reduced motion', () => {
+  // A general safety net, not tied to one feature. Every class in this file that gives an
+  // element a bare `animation:` outside a reduced-motion media block is a class that will
+  // keep moving for someone who has asked the OS not to move things, unless it is ALSO named
+  // inside one of those blocks. Nothing here enumerates classes by hand — the CSS is the
+  // source of truth, and adding a new animated class without its override is exactly the
+  // mistake this test exists to catch on the next one, not just the ones written so far.
+  const css = readFileSync('app/globals.css', 'utf8');
+
+  /**
+   * Pulls out every `@media (prefers-reduced-motion: reduce) { ... }` block's contents by
+   * counting brace depth, rather than a single indexOf/slice. globals.css has TWO such
+   * blocks — one for `:where(*) { transition: none; }` from the very first accessibility
+   * pass, one for the per-class animation overrides added since — and an indexOf that finds
+   * only the first would silently exclude both the second block AND every class defined
+   * after it from the check. That is not hypothetical: it is exactly the bug the first draft
+   * of this test had, and it passed by finding nothing to check rather than by checking
+   * anything — the same "guard on the guard" failure this file's other tests are written to
+   * avoid.
+   */
+  function reducedMotionBlocksAndRest(source: string): { blocks: string; rest: string } {
+    const needle = '@media (prefers-reduced-motion: reduce)';
+    let blocks = '';
+    let rest = '';
+    let cursor = 0;
+    for (let i = source.indexOf(needle); i !== -1; i = source.indexOf(needle, cursor)) {
+      rest += source.slice(cursor, i);
+      const open = source.indexOf('{', i);
+      let depth = 1;
+      let j = open + 1;
+      for (; j < source.length && depth > 0; j++) {
+        if (source[j] === '{') depth++;
+        else if (source[j] === '}') depth--;
+      }
+      blocks += source.slice(open + 1, j - 1);
+      cursor = j;
+    }
+    rest += source.slice(cursor);
+    return { blocks, rest };
+  }
+
+  it('finds both reduced-motion blocks, not just the first', () => {
+    // The guard on the guard above: if this ever finds only one, the real test below would
+    // silently stop checking everything defined after the block it missed.
+    const { blocks } = reducedMotionBlocksAndRest(css);
+    expect(blocks).toMatch(/:where\(\*\)/);
+    expect(blocks).toMatch(/\.pulse-ring/);
+  });
+
+  it('gives every animated class a reduced-motion override', () => {
+    const { blocks: rm, rest: base } = reducedMotionBlocksAndRest(css);
+
+    const animated = new Set<string>();
+    for (const m of base.matchAll(/\.([a-zA-Z0-9_-]+)\s*\{[^}]*\banimation:/g)) animated.add(m[1]);
+
+    const uncovered = [...animated].filter((cls) => !new RegExp(`\\.${cls}\\b`).test(rm));
+    expect(uncovered, `these animated classes have no reduced-motion override:\n${uncovered.join('\n')}`)
+      .toEqual([]);
+  });
+});

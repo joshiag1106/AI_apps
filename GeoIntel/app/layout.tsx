@@ -7,6 +7,7 @@ import { lastIngest, corpusStats } from '@/lib/queries';
 import { EmptyCorpus } from '@/components/EmptyCorpus';
 import { timeAgo } from '@/lib/format';
 import { PaletteSelect } from '@/components/PaletteSelect';
+import { headers } from 'next/headers';
 
 /**
  * Chinese face, self-hosted.
@@ -45,6 +46,11 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const ingested = lastIngest();
   const empty = corpusStats().events === 0;
+  // The splash (app/page.tsx) is the one route that gets no Nav, no footer, no skip link —
+  // a true front door rather than another page with the usual chrome on top. The root
+  // layout has no built-in way to know the current route, so middleware.ts forwards it as
+  // a header; see the comment there for why it has to be set on both of its branches.
+  const isSplash = (await headers()).get('x-pathname') === '/';
   return (
     // suppressHydrationWarning is required, not cosmetic: the inline script below sets
     // data-palette on this element BEFORE React hydrates, so the client tree legitimately
@@ -67,89 +73,95 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="min-h-screen">
-        {/*
-          Bypass blocks (WCAG 2.4.1). Every page opens with the wordmark, nine navigation
-          links and a search box, and a keyboard or screen-reader user had to walk all of
-          them again on every single page before reaching anything they came for.
+        {isSplash ? children : (
+          <>
+            {/*
+              Bypass blocks (WCAG 2.4.1). Every page opens with the wordmark, nine navigation
+              links and a search box, and a keyboard or screen-reader user had to walk all of
+              them again on every single page before reaching anything they came for. The
+              splash has neither, so it skips this block rather than offering a skip link to
+              nothing.
 
-          Off-screen until focused, so it costs the sighted layout nothing and appears the
-          moment it is tabbed to — the first tab stop on the page, deliberately. The
-          positioning is a .skip-link rule in globals.css rather than `sr-only
-          focus:not-sr-only`: that utility pairing left the clip applied while focused, so
-          the link worked and stayed invisible. See the note there.
+              Off-screen until focused, so it costs the sighted layout nothing and appears the
+              moment it is tabbed to — the first tab stop on the page, deliberately. The
+              positioning is a .skip-link rule in globals.css rather than `sr-only
+              focus:not-sr-only`: that utility pairing left the clip applied while focused, so
+              the link worked and stayed invisible. See the note there.
 
-          `main` takes tabIndex={-1} because an href alone moves the browser's scroll
-          position but not always its focus; without it the reader is looking at the content
-          while the next Tab continues from the navigation they just skipped.
-        */}
-        <a
-          href="#main"
-          className="skip-link rounded border border-[color:var(--color-line)] bg-[color:var(--color-bg)] px-4 py-2 text-[15px] text-text"
-        >
-          Skip to main content
-        </a>
-        <Nav />
-        <main id="main" tabIndex={-1} className="mx-auto max-w-[1760px] px-4 py-6">
-          {empty && <div className="mb-6"><EmptyCorpus /></div>}
-          {children}
-        </main>
-
-        <footer className="mt-16 border-t border-[color:var(--color-line)]">
-          {/*
-            * Four columns on a wide screen, stacking to two and then one as it narrows. Every
-            * href here is checked against a real page.tsx by tests/layout.test.ts: a footer is
-            * the one place a reader trusts to be a complete map of the site, so a link that
-            * 404s is worse than no footer at all.
+              `main` takes tabIndex={-1} because an href alone moves the browser's scroll
+              position but not always its focus; without it the reader is looking at the content
+              while the next Tab continues from the navigation they just skipped.
             */}
-          <div className="mx-auto grid max-w-[1760px] grid-cols-2 gap-x-8 gap-y-7 px-4 pt-10 pb-7 sm:grid-cols-4">
-            <div>
-              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Explore</div>
-              <ul className="space-y-1.5 text-[14px]">
-                <li><Link href="/" className="text-muted hover:text-[color:var(--color-accent)]">Threat board</Link></li>
-                <li><Link href="/events" className="text-muted hover:text-[color:var(--color-accent)]">Events</Link></li>
-                <li><Link href="/dashboard" className="text-muted hover:text-[color:var(--color-accent)]">Dashboard</Link></li>
-                <li><Link href="/person" className="text-muted hover:text-[color:var(--color-accent)]">People</Link></li>
-                <li><Link href="/ask" className="text-muted hover:text-[color:var(--color-accent)]">Ask</Link></li>
-              </ul>
-            </div>
+            <a
+              href="#main"
+              className="skip-link rounded border border-[color:var(--color-line)] bg-[color:var(--color-bg)] px-4 py-2 text-[15px] text-text"
+            >
+              Skip to main content
+            </a>
+            <Nav />
+            <main id="main" tabIndex={-1} className="mx-auto max-w-[1760px] px-4 py-6">
+              {empty && <div className="mb-6"><EmptyCorpus /></div>}
+              {children}
+            </main>
 
-            <div>
-              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Focus</div>
-              <ul className="space-y-1.5 text-[14px]">
-                <li><Link href="/india" className="text-muted hover:text-[color:var(--color-accent)]">India focus</Link></li>
-                <li><Link href="/china" className="text-muted hover:text-[color:var(--color-accent)]">China watch</Link></li>
-              </ul>
-            </div>
+            <footer className="mt-16 border-t border-[color:var(--color-line)]">
+              {/*
+                * Four columns on a wide screen, stacking to two and then one as it narrows. Every
+                * href here is checked against a real page.tsx by tests/layout.test.ts: a footer is
+                * the one place a reader trusts to be a complete map of the site, so a link that
+                * 404s is worse than no footer at all.
+                */}
+              <div className="mx-auto grid max-w-[1760px] grid-cols-2 gap-x-8 gap-y-7 px-4 pt-10 pb-7 sm:grid-cols-4">
+                <div>
+                  <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Explore</div>
+                  <ul className="space-y-1.5 text-[14px]">
+                    <li><Link href="/board" className="text-muted hover:text-[color:var(--color-accent)]">Threat board</Link></li>
+                    <li><Link href="/events" className="text-muted hover:text-[color:var(--color-accent)]">Events</Link></li>
+                    <li><Link href="/dashboard" className="text-muted hover:text-[color:var(--color-accent)]">Dashboard</Link></li>
+                    <li><Link href="/person" className="text-muted hover:text-[color:var(--color-accent)]">People</Link></li>
+                    <li><Link href="/ask" className="text-muted hover:text-[color:var(--color-accent)]">Ask</Link></li>
+                  </ul>
+                </div>
 
-            <div>
-              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Understand</div>
-              <ul className="space-y-1.5 text-[14px]">
-                <li><Link href="/about" className="text-muted hover:text-[color:var(--color-accent)]">About Kautilya</Link></li>
-                <li><Link href="/methodology" className="text-muted hover:text-[color:var(--color-accent)]">Methodology &amp; limitations</Link></li>
-              </ul>
-            </div>
+                <div>
+                  <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Focus</div>
+                  <ul className="space-y-1.5 text-[14px]">
+                    <li><Link href="/india" className="text-muted hover:text-[color:var(--color-accent)]">India focus</Link></li>
+                    <li><Link href="/china" className="text-muted hover:text-[color:var(--color-accent)]">China watch</Link></li>
+                  </ul>
+                </div>
 
-            <div>
-              <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Account</div>
-              <ul className="space-y-1.5 text-[14px]">
-                <li><Link href="/pricing" className="text-muted hover:text-[color:var(--color-accent)]">Plans</Link></li>
-                <li><Link href="/account" className="text-muted hover:text-[color:var(--color-accent)]">Your account</Link></li>
-                <li><Link href="/contact" className="text-muted hover:text-[color:var(--color-accent)]">Contact</Link></li>
-                <li><Link href="/privacy" className="text-muted hover:text-[color:var(--color-accent)]">Privacy</Link></li>
-                <li><Link href="/terms" className="text-muted hover:text-[color:var(--color-accent)]">Terms</Link></li>
-              </ul>
-            </div>
-          </div>
+                <div>
+                  <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Understand</div>
+                  <ul className="space-y-1.5 text-[14px]">
+                    <li><Link href="/about" className="text-muted hover:text-[color:var(--color-accent)]">About Kautilya</Link></li>
+                    <li><Link href="/methodology" className="text-muted hover:text-[color:var(--color-accent)]">Methodology &amp; limitations</Link></li>
+                  </ul>
+                </div>
 
-          <div className="border-t border-[color:var(--color-line)]">
-            <div className="mx-auto flex max-w-[1760px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-5 text-[13px] text-faint">
-              <span className="text-muted">Kautilya</span>
-              <span>Corroboration and provenance analysis — not a determination of truth.</span>
-              {ingested && <span className="mono-num">Corpus refreshed {timeAgo(ingested)}</span>}
-              <div className="ml-auto"><PaletteSelect /></div>
-            </div>
-          </div>
-        </footer>
+                <div>
+                  <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Account</div>
+                  <ul className="space-y-1.5 text-[14px]">
+                    <li><Link href="/pricing" className="text-muted hover:text-[color:var(--color-accent)]">Plans</Link></li>
+                    <li><Link href="/account" className="text-muted hover:text-[color:var(--color-accent)]">Your account</Link></li>
+                    <li><Link href="/contact" className="text-muted hover:text-[color:var(--color-accent)]">Contact</Link></li>
+                    <li><Link href="/privacy" className="text-muted hover:text-[color:var(--color-accent)]">Privacy</Link></li>
+                    <li><Link href="/terms" className="text-muted hover:text-[color:var(--color-accent)]">Terms</Link></li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t border-[color:var(--color-line)]">
+                <div className="mx-auto flex max-w-[1760px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-5 text-[13px] text-faint">
+                  <span className="text-muted">Kautilya</span>
+                  <span>Corroboration and provenance analysis — not a determination of truth.</span>
+                  {ingested && <span className="mono-num">Corpus refreshed {timeAgo(ingested)}</span>}
+                  <div className="ml-auto"><PaletteSelect /></div>
+                </div>
+              </div>
+            </footer>
+          </>
+        )}
       </body>
     </html>
   );
