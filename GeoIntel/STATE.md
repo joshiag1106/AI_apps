@@ -84,11 +84,12 @@ issue when the person layer arrived: a mixed graph is far more nearly bipartite 
 
 ## Three things that are NOT verified — read before relying on them
 
-1. **Alert mail has never been delivered.** The transport moved to SMTP on 2026-09-03 and
-   the pipeline is covered by tests against an injected transport, but `SMTP_PASS` is still
-   empty, so nothing has left the machine. The rendering half *was* checked against a real
-   corpus event; delivery was not. One missing value stands between this and proven — see
-   "Where to go next".
+1. **DONE 2026-09-18 — alert mail has been delivered.** `SMTP_PASS` is set, `npm run
+   alerts:check` sent a real ladder-alert email from a real corpus event, Hostinger's server
+   accepted it, and Josh confirmed it arrived. See "Alert mail is proven, finally" below for
+   the two bugs found getting there. **Still not proven**: a send FROM the production server's
+   own process, triggered by a genuine subscriber's watched state — only a manual local send
+   with a credential production was separately restarted to also hold.
 2. **It has never run on a real server.** The standalone Node path in `README.md` was tested
    end to end, and on 2026-09-11 the production build answered correctly to the headers a
    reverse proxy sends for a public host — but no real proxy, TLS certificate or DNS has
@@ -939,8 +940,8 @@ carries on; it is not a misconfiguration.
   while that was measured. **Re-measure before doing anything.** If it is still majority-old,
   the fix is to move the domain's nameservers to a DNS provider the operator controls and
   recreate the A and MX records there, rather than another round in the host's panel.
-- **`SMTP_PASS` still empty**, so alert mail has still never been delivered. `SMTP_HOST`
-  already defaults to the right provider for this mailbox.
+- **DONE 2026-09-18 — `SMTP_PASS` is set and alert mail has been delivered.** See "Alert
+  mail is proven, finally" for the full story.
 - **The MX records were deliberately never touched** through the whole cutover, and were
   re-checked after every DNS change. The alerts mailbox may be bundled with the old shared
   hosting plan, so **do not cancel that plan until that is confirmed**.
@@ -1033,6 +1034,56 @@ balanced-brace extractor, with its own test pinning that it finds both blocks �
 the guard, the same discipline this file's other tests already use.
 
 492 tests, `tsc --noEmit` clean.
+
+## Alert mail is proven, finally (2026-09-18)
+
+**SMTP_PASS is set, and a real alert has been delivered.** This item sat unresolved since the
+alerts pipeline was built: trigger, batching, state and the template were all covered by
+tests, but delivery itself had only ever been exercised against a stubbed transport — nothing
+had ever put a message in a real inbox.
+
+**Two real bugs found getting there, both worth knowing before touching SMTP config again.**
+
+First: the mailbox password Josh generated in hPanel contained a `#` and a space. Node's
+built-in `--env-file` loader (`tsx --env-file-if-exists=.env.local`, what `npm run
+alerts:check` actually uses) treats an **unquoted `#` as starting a comment**, so
+`SMTP_PASS=abc#def ghi` in `.env.local` silently parsed as `SMTP_PASS=abc` — three characters,
+not the real password, and `alerts-check.ts` correctly reported `(SMTP_PASS not set)` because
+by the time Node handed it the value, it effectively wasn't. Confirmed with a synthetic value
+before touching the real one: `TEST_VAL=abc#def ghi` unquoted parses to `"abc"`, the same
+value double-quoted parses to the full string intact. **The fix is quoting the value in
+`.env.local`** — `SMTP_PASS="<value>"` — and the more durable fix, which Josh did, was
+generating a fresh **alphanumeric-only** password in hPanel, since that class of bug can recur
+anywhere this credential passes through a shell, an SSH session, or a different config
+dialect that parses `#` differently (systemd's `EnvironmentFile`, notably, does NOT treat a
+mid-line `#` as a comment the way Node's `--env-file` does — the two dialects disagree, which
+is exactly the kind of thing that makes a credential with special characters risky to carry
+across systems).
+
+Second, and this is why the very first send attempt failed even after the quoting fix: the
+**production server's copy of the password was one character short of the local copy** (17
+vs 18 raw characters, no quoting difference explaining the gap) — a transcription slip typing
+it into `nano` over SSH. Caught by comparing lengths (never contents) in both places before
+testing either.
+
+**Verification, in order:** quoted the local value and confirmed via `node --env-file` that
+the full string now parses intact → ran `npm run alerts:check -- --to=<address>` locally,
+which authenticated and got a real `535 5.7.8 authentication failed` from Hostinger — proving
+the plumbing worked and the credential itself was wrong, not a config problem → Josh reset the
+password in hPanel to a clean alphanumeric one and re-entered it in both places → local and
+production lengths now match (12 chars, no `#`, no space) → `npm run alerts:check` again,
+**accepted by `smtp.hostinger.com` in 1.9s** → production restarted to load the same
+credential → **Josh confirmed the message actually arrived**, not merely that the SMTP server
+accepted it — the script's own output deliberately warns those are different claims.
+
+**What is still NOT proven, stated plainly:** `alerts:check` sends from a LOCAL machine using
+`.env.local`'s credentials, and production was separately restarted with a value confirmed to
+be the identical length and shape — but `alerts:check` cannot run on the production server
+itself (it ships as a Next.js standalone build with no `scripts/` directory and no `tsx`), so
+no message has yet been sent *from* production's own process, only inferred to work because it
+holds the same proven credential. The first REAL alert — triggered by an actual subscriber's
+watched state crossing a ladder rung, not a manual test — is still the first genuine end-to-end
+proof of the production path, and hasn't happened yet.
 
 ## The accessibility pass (2026-09-07)
 
@@ -1171,27 +1222,12 @@ palettes, and `/ask`'s answer panel beyond its heading and focus behaviour.
    govern commercial redistribution of this material, and the CC-CEDICT dictionary carries
    a CC BY-SA 4.0 obligation. This matters more now that Desk Pro has features attached to
    it.
-3. **Send one real alert email.** The pipeline is built and tested but has still never put
-   a message in an inbox. Delivery moved from Resend to SMTP on 2026-09-03: Resend sends
-   only from a domain verified in its dashboard, and a personal address can never be one,
-   so the transport was the blocker rather than anything in the pipeline.
-
-   `.env.local` is configured and **only `SMTP_PASS` is missing** — host, port, user, sender
-   and origin are all set there already. Read them from that file rather than from here: this
-   document is published to a public repository, so it names no mailbox and no provider.
-
-   The one thing worth recording, because it cost time to work out: the sending domain's MX
-   records do **not** point at Google, so the password is the mailbox's own, set in the
-   hosting control panel. There is no App Password to generate — that is a Gmail concept and
-   this is not Gmail. Set `KAUTILYA_ORIGIN` too if the links in the mail should resolve
-   anywhere but this machine. Then:
-
-   ```bash
-   npm run alerts:check -- --to=you@example.com
-   ```
-
-   Until that lands in an inbox the delivery half is unproven in exactly the way the LLM
-   layer was.
+3. **DONE 2026-09-18 — sent one real alert email.** See "Alert mail is proven, finally"
+   above for the two bugs found getting there (an unquoted `#`/space in the password truncated
+   by Node's `--env-file` parser, then a one-character transcription slip between local and
+   production). Josh confirmed the message actually arrived, not merely that the SMTP server
+   accepted it. Still open: a send triggered by a genuine subscriber condition, from
+   production's own process — see that section for exactly what remains unproven.
 
 4. **Full article text — now needed only for the ACTION on an edge, not for the edge.**
    ~~Person-to-person is impossible.~~ That ruling was wrong and is corrected above: the
