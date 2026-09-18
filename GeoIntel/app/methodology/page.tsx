@@ -356,7 +356,7 @@ export default function MethodologyPage() {
       </ol>
 
       <div className="mt-8 flex gap-3">
-        <Link href="/" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">← Threat board</Link>
+        <Link href="/board" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">← Threat board</Link>
         <Link href="/pricing" className="text-[14px] text-muted hover:text-[color:var(--color-accent)]">Plans →</Link>
       </div>
     </div>

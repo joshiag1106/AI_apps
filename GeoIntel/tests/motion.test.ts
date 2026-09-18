@@ -221,3 +221,26 @@ describe('progress bars grow in from zero instead of rendering pre-filled', () =
     expect((out.match(/data-reveal-bar/g) ?? []).length).toBe(rungCount);
   });
 });
+
+describe('WorldMap can drop its legend for a non-dashboard caller', () => {
+  // Added 2026-09-18. The splash page (app/page.tsx) wants the map itself, quieted, behind
+  // a headline — not the "Composite risk / low -> severe / active flashpoint" legend and its
+  // two links to /dashboard and /methodology, which read as confusing dead furniture on a
+  // page that is not the dashboard. Found by rendering the real thing in a browser and
+  // reading the DOM text, not by inspecting the component's source first — a screenshot
+  // alone made it look like a rendering artifact from switching tabs; only checking
+  // document.body.innerText showed it was real content.
+  const shapes = [{ name: 'X', d: 'M0 0', iso: undefined }];
+
+  it('shows the legend by default, so every existing caller is unaffected', () => {
+    const out = svg(createElement(WorldMap, { shapes, data: [], markers: [] } as never));
+    expect(out).toContain('Composite risk');
+  });
+
+  it('drops it entirely when legend={false}, including its dashboard/methodology links', () => {
+    const out = svg(createElement(WorldMap, { shapes, data: [], markers: [], legend: false } as never));
+    expect(out).not.toContain('Composite risk');
+    expect(out).not.toContain('/dashboard');
+    expect(out).not.toContain('/methodology');
+  });
+});

@@ -295,8 +295,28 @@ body {
 }
 .dropdown-in { animation: dropdown-in 150ms ease-out; }
 
+/* The splash page (app/page.tsx), on its one-time entrance. */
+@keyframes bars-rise {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.splash-bar { transform-origin: bottom; animation: bars-rise 420ms cubic-bezier(0.22,0.68,0,1.1) backwards; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.splash-fade-up { animation: fade-up 600ms ease-out backwards; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.splash-fade-in { animation: fade-in 900ms ease-out backwards; }
+
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .sweep::after { animation: none; }
+  .splash-bar, .splash-fade-up, .splash-fade-in { animation: none; opacity: 1; transform: none; }
   .edge-traveled { animation: none; stroke-dashoffset: 0; }
   .flash-new { animation: none; }
   .star-pop { animation: none; }

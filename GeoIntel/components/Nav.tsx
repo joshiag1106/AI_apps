@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { KautilyaMark } from '@/components/KautilyaMark';
 import { COUNTRIES } from '@/data/countries';
 import { CountrySearch } from '@/components/CountrySearch';
 import { quotaState } from '@/lib/quota';
@@ -7,7 +8,7 @@ import { LivePulse } from '@/components/LivePulse';
 import { getMeta } from '@/lib/db';
 
 const LINKS = [
-  { href: '/', label: 'Threat Board' },
+  { href: '/board', label: 'Threat Board' },
   { href: '/ask', label: 'Ask' },
   { href: '/india', label: 'India Focus' },
   { href: '/china', label: 'China Watch' },
@@ -26,9 +27,14 @@ export async function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--color-line)] bg-[color:var(--color-ink)]/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1760px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="text-[17px] font-semibold tracking-tight text-text">Kautilya</span>
-          <span className="hidden text-[12px] uppercase tracking-[0.2em] text-faint sm:inline">Geopolitical Risk Intelligence</span>
+        {/* Once inside the app, the wordmark returns to the dashboard, not back through
+            the splash gate — the splash is a one-time front door, not a nav destination. */}
+        <Link href="/board" className="flex items-center gap-2.5">
+          <KautilyaMark size={26} />
+          <span className="flex items-baseline gap-2">
+            <span className="text-[17px] font-semibold tracking-tight text-text">Kautilya</span>
+            <span className="hidden text-[12px] uppercase tracking-[0.2em] text-faint sm:inline">Geopolitical Risk Intelligence</span>
+          </span>
         </Link>
 
         <nav className="order-3 flex flex-wrap items-center gap-x-4 gap-y-1 md:order-none">

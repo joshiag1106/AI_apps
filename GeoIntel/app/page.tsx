@@ -1,224 +1,98 @@
 import Link from 'next/link';
-import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui';
 import { WorldMap } from '@/components/WorldMap';
-import { EventCard, EventRow } from '@/components/EventCard';
-import { ChineseText, zhTitleMap } from '@/components/ChineseText';
-import { titleGloss } from '@/components/EventCard';
-import { Sparkline, Ribbon, BarList } from '@/components/charts';
-import { CountUp } from '@/components/CountUp';
-import { FlashNewItems } from '@/components/FlashNewItems';
+import { corpus, corpusStats, countryRisks, hotspotActivity, countryName } from '@/lib/queries';
 import { worldShapes, project } from '@/lib/map';
-import {
-  corpus, countryRisks, topDyads, indiaBoard, ladderAlerts, languageMix,
-  domainMix, hotspotActivity, corpusStats, countryName, videoEvents,
-} from '@/lib/queries';
-import { VideoWall } from '@/components/VideoWall';
-import { LANGUAGE_LABEL } from '@/lib/lang/detect';
-import { timeAgo } from '@/lib/format';
-import { impact } from '@/lib/risk';
 
 export const dynamic = 'force-dynamic';
 
-const LANG_COLORS: Record<string, string> = {
-  en: '#4c7fd4', zh: '#ff8f7a', hi: '#e8b339', ja: '#9d7ad4', ru: '#4fb477',
-  ar: '#3fb6a8', ko: '#d47aa8', ur: '#c9a227', unknown: '#5b697d',
-};
-
-export default async function Home() {
+/**
+ * The one-time front door. Everything below the fold this used to hold — the stat tiles,
+ * the escalating-now board, the live feed — lives at /board now, and this page's only job
+ * is to say what the engine is in one screen and then get out of the way.
+ *
+ * The map is the REAL corpus, quieted (lower opacity, no hover state, no legend), not a
+ * decorative globe — a live threat board as the first thing a visitor sees is a stronger
+ * opener than a generic illustration, and it costs nothing extra: countryRisks/hotspotActivity
+ * are the same functions /board itself reads.
+ */
+export default function Splash() {
   const events = corpus();
   const stats = corpusStats(events);
   const risks = countryRisks(events);
-  const dyads = topDyads(events, 8);
-  const india = indiaBoard(events).slice(0, 6);
-  const ladder = ladderAlerts(events, 5);
-  const hotspots = hotspotActivity(events).slice(0, 12);
+  const hotspots = hotspotActivity(events).slice(0, 10);
   const shapes = worldShapes();
 
-  const markers = hotspots.map((h) => {
-    const p = project(h.lon, h.lat);
-    return p ? { id: h.id, name: h.name, x: p[0], y: p[1], heat: h.heat, count: h.count } : null;
-  }).filter(Boolean) as { id: string; name: string; x: number; y: number; heat: number; count: number }[];
+  const markers = hotspots
+    .map((h) => {
+      const p = project(h.lon, h.lat);
+      return p ? { id: h.id, name: h.name, x: p[0], y: p[1], heat: h.heat, count: h.count } : null;
+    })
+    .filter(Boolean) as { id: string; name: string; x: number; y: number; heat: number; count: number }[];
 
   const mapData = risks.map((r) => ({
     iso: r.iso, composite: r.composite, eventCount: r.eventCount, name: countryName(r.iso),
   }));
 
-  // A panel headed "Escalating now" must not show something from five months ago, so
-  // the window is hard rather than merely decayed. Ranking inside it uses impact(),
-  // which gates escalation on corroboration and decays with a 14-day half-life.
-  const WINDOW_DAYS = 21;
-  const cutoff = Date.now() - WINDOW_DAYS * 86_400_000;
-  const escalating = [...events]
-    .filter((e) => Date.parse(e.lastSeen) >= cutoff && e.escalation > 15)
-    .sort((a, b) => impact(b) - impact(a))
-    .slice(0, 6);
-
-  const live = [...events].sort((a, b) => Date.parse(b.lastSeen) - Date.parse(a.lastSeen)).slice(0, 14);
-
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="text-[12px] uppercase tracking-[0.22em] text-faint">Global Threat Board</div>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              What the world is reporting, in the languages it reports in
-            </h1>
-            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
-              {stats.articles.toLocaleString()} reports from {stats.countries} countries in {stats.languages} languages,
-              clustered into {stats.events.toLocaleString()} events and scored for corroboration and provenance.
-            </p>
-          </div>
+    <div className="relative flex min-h-[calc(100vh-1px)] flex-col items-center justify-center overflow-hidden px-4 py-16 text-center">
+      {/*
+        * Runs before hydration, synchronously, so a returning visitor never sees this page
+        * flash before being sent on to /board — the same shape as the palette script in
+        * app/layout.tsx, which solves the identical "avoid a flash of the wrong thing on
+        * load" problem for the theme. Wrapped in try/catch because localStorage throws
+        * outright in some privacy modes, and a reader in one of those must land on the
+        * splash rather than see a crashed page — worse than showing it twice.
+        */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{if(localStorage.getItem('kautilya-entered'))location.replace('/board')}catch(e){}`,
+        }}
+      />
+
+      <div className="splash-fade-in pointer-events-none absolute inset-0 opacity-[0.22]" style={{ animationDelay: '150ms' }}>
+        <WorldMap shapes={shapes} data={mapData} markers={markers} width={1100} height={520} legend={false} />
+      </div>
+
+      <div className="relative flex flex-col items-center">
+        {/* The mark's own four bars, drawn directly rather than through KautilyaMark — that
+            component is one atomic icon for nav/favicon use, and cannot stagger its rects
+            individually. Same geometry and colours, so it reads as the same mark rising in. */}
+        <svg width="56" height="56" viewBox="0 0 72 72" className="mb-6" aria-hidden>
+          <rect className="splash-bar" style={{ animationDelay: '0ms' }} x="14" y="52" width="8" height="10" rx="1.5" fill="#7a5f1d" />
+          <rect className="splash-bar" style={{ animationDelay: '70ms' }} x="26" y="42" width="8" height="20" rx="1.5" fill="#a67f28" />
+          <rect className="splash-bar" style={{ animationDelay: '140ms' }} x="38" y="30" width="8" height="32" rx="1.5" fill="#c99f31" />
+          <rect className="splash-bar" style={{ animationDelay: '210ms' }} x="50" y="14" width="8" height="48" rx="1.5" fill="#e8b339" />
+        </svg>
+
+        <div className="splash-fade-up mb-2 text-[12px] uppercase tracking-[0.28em] text-faint" style={{ animationDelay: '260ms' }}>
+          Kautilya
         </div>
+        <h1 className="splash-fade-up max-w-2xl text-[32px] font-semibold leading-tight tracking-tight text-text sm:text-[40px]"
+          style={{ animationDelay: '340ms' }}>
+          Reporting read in the language it was written in
+        </h1>
+        <p className="splash-fade-up mt-4 max-w-lg text-[16px] leading-relaxed text-muted" style={{ animationDelay: '440ms' }}>
+          {stats.articles.toLocaleString()} reports from {stats.countries} countries in {stats.languages} languages,
+          clustered into {stats.events.toLocaleString()} events and scored for corroboration — not asserted as truth.
+        </p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <Stat label="Events tracked" value={<CountUp value={stats.events} />} sub={`from ${stats.articles.toLocaleString()} reports`} />
-          <Stat label="Corroborated" value={<CountUp value={stats.corroborated} />} sub="score ≥ 50 across independent outlets" tone="var(--color-verified)" />
-          <Stat label="Chinese-language" value={<CountUp value={stats.zh} />} sub="events with PRC/Chinese sourcing" tone="var(--color-zh)" />
-          <Stat label="PRC ladder hits" value={<CountUp value={ladderAlerts(events, 999).length} />} sub="official escalation formulae detected" tone="var(--color-accent)" />
-          <Stat label="Active flashpoints" value={<CountUp value={hotspots.length} />} sub="geographies with current activity" />
-        </div>
-      </section>
+        {/* A plain, fully server-renderable link — no onClick. This page has no
+            'use client' directive, and a Server Component cannot hand a function to an
+            element it renders; components/MarkEntered.tsx, mounted on /board, is what
+            actually remembers this visitor arrived. See tests/splash.test.ts. */}
+        <Link
+          href="/board"
+          className="splash-fade-up mt-9 rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
+          style={{ animationDelay: '560ms' }}
+        >
+          Enter →
+        </Link>
 
-      <section>
-        <Panel className="p-4">
-          <SectionTitle kicker="Composite risk by state" action={
-            <Link href="/dashboard" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">Open dashboard →</Link>
-          }>
-            Global risk surface
-          </SectionTitle>
-          <WorldMap shapes={shapes} data={mapData} markers={markers} />
-        </Panel>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
-        <div>
-          <SectionTitle kicker={`Last ${WINDOW_DAYS} days, ranked by escalation × corroboration`}>
-            Escalating now
-          </SectionTitle>
-          {escalating.length ? (
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {escalating.map((e) => <EventCard key={e.id} event={e} />)}
-            </div>
-          ) : (
-            <Empty>
-              No events above the escalation threshold in the last {WINDOW_DAYS} days.
-              The <Link href="/events" className="underline decoration-dotted">full feed</Link> covers the whole corpus.
-            </Empty>
-          )}
-        </div>
-
-        <div>
-          <SectionTitle kicker="Newest first" action={
-            <Link href="/events" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">All events →</Link>
-          }>Live feed</SectionTitle>
-          <Panel className="px-3 py-1.5">
-            <FlashNewItems ids={live.map((e) => e.id)}>
-              {live.map((e) => <EventRow key={e.id} event={e} />)}
-            </FlashNewItems>
-          </Panel>
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div>
-          <SectionTitle kicker="India in focus" action={
-            <Link href="/india" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">India board →</Link>
-          }>Bilateral tension</SectionTitle>
-          <Panel className="divide-y divide-[color:var(--color-line-soft)]">
-            {india.map((d) => (
-              <Link key={d.key} href={`/dyad/IND-${d.b === 'IND' ? d.a : d.b}`}
-                className="flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
-                <span className="w-24 flex-none truncate text-[15px] text-text">
-                  {countryName(d.a === 'IND' ? d.b : d.a)}
-                </span>
-                <Sparkline data={d.series.map((s) => s.value)} width={90} height={22}
-                  color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-guarded)'} />
-                <span className="mono-num ml-auto text-[15px]"
-                  style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
-                <Trend value={d.trend} />
-              </Link>
-            ))}
-          </Panel>
-        </div>
-
-        <div>
-          <SectionTitle kicker="Detected in Chinese-language sources" action={
-            <Link href="/china" className="text-[13px] text-muted hover:text-[color:var(--color-accent)]">China Watch →</Link>
-          }>PRC official rhetoric</SectionTitle>
-          {ladder.length ? (
-            <Panel className="divide-y divide-[color:var(--color-line-soft)]">
-              {ladder.map((e) => (
-                <Link key={e.id} href={`/events/${e.id}`} className="block px-3.5 py-2.5 transition-colors hover:bg-[color:var(--color-panel-2)]">
-                  <div className="flex items-center gap-2">
-                    <Badge tone="var(--color-zh)">rung {e.ladderRung}</Badge>
-                    <ChineseText text={e.ladderZh!} size="small" accent clamp={false}
-                      className="text-[15px]" />
-                    <span className="ml-auto text-[12px] text-faint">{timeAgo(e.lastSeen)}</span>
-                  </div>
-                  <div className="mt-1 text-[14px] leading-snug text-muted">
-                    {e.ladderEn} — <ChineseText text={e.title} english={titleGloss(e.title)} englishIsGloss />
-                  </div>
-                </Link>
-              ))}
-            </Panel>
-          ) : <Empty>No official escalation formulae in the current corpus.</Empty>}
-        </div>
-
-        <div className="space-y-5">
-          <div>
-            <SectionTitle kicker="Source corpus">Language mix</SectionTitle>
-            <Panel className="p-3.5">
-              <Ribbon parts={languageMix(events).slice(0, 7).map((l) => ({
-                label: LANGUAGE_LABEL[l.language] ?? l.language, value: l.count,
-                color: LANG_COLORS[l.language] ?? '#5b697d',
-              }))} />
-            </Panel>
-          </div>
-          <div>
-            <SectionTitle kicker="Event classification">Domains</SectionTitle>
-            <Panel className="p-3.5">
-              <BarList items={domainMix(events).slice(0, 7).map((d) => ({ label: d.domain, value: d.count }))} />
-            </Panel>
-          </div>
-        </div>
-      </section>
-
-      {videoEvents(events, 6).length > 0 && (
-        <section>
-          <SectionTitle kicker="From official broadcaster channels — nothing loads until you press play">
-            On camera
-          </SectionTitle>
-          {(() => {
-            const vids = videoEvents(events, 6);
-            return <VideoWall events={vids} titles={zhTitleMap(vids, titleGloss)} />;
-          })()}
-        </section>
-      )}
-
-      <section>
-        <SectionTitle kicker="Ranked by escalation × corroboration, decayed by recency">Most tense relationships</SectionTitle>
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {dyads.map((d) => (
-            <Link key={d.key} href={`/dyad/${d.a}-${d.b}`}
-              className="panel block p-3.5 transition-colors hover:border-[color:var(--color-accent-dim)]">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[15px] text-text">{countryName(d.a)} — {countryName(d.b)}</span>
-                <Trend value={d.trend} />
-              </div>
-              <div className="mt-2 flex items-end gap-2">
-                <span className="mono-num text-2xl leading-none"
-                  style={{ color: d.score >= 55 ? 'var(--color-high)' : 'var(--color-text)' }}>{d.score}</span>
-                <span className="mb-0.5 text-[12px] text-faint">{d.eventCount} events</span>
-              </div>
-              <div className="mt-2">
-                <Sparkline data={d.series.map((s) => s.value)} width={200} height={26}
-                  color={d.score >= 55 ? 'var(--color-high)' : 'var(--color-accent)'} />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+        <Link href="/about" className="splash-fade-up mt-6 text-[13px] text-faint underline decoration-dotted hover:text-muted"
+          style={{ animationDelay: '620ms' }}>
+          Why Kautilya
+        </Link>
+      </div>
     </div>
   );
 }
