@@ -114,6 +114,31 @@ describe('the splash page', () => {
   it('carries the mark', () => {
     expect(src).toMatch(/KautilyaMark/);
   });
+
+  /*
+   * Reported 2026-09-18: "lot of margins on both sides" of the map. Measured in a real
+   * browser before touching any code: the SVG element itself was genuinely full-bleed
+   * (left 0, right = viewport width, no CSS constraint anywhere) — but the drawn landmass
+   * inside it only spanned x=20 to x=940 of a 0-1100 viewBox, a 2% gap on the left and a
+   * 15% gap on the right. Not a layout bug at all; a canvas-size mismatch.
+   *
+   * worldShapes(width, height) and project(lon, lat, width, height) both default to
+   * 960x400 when called with no arguments, and every other caller in the app (app/board's
+   * own map) renders WorldMap at ITS default 960x400 too, so the two numbers always agreed
+   * by accident of both being left at their defaults — this bug had no way to exist until
+   * something first overrode WorldMap's size without also threading that size through to
+   * the shape and marker calculations. The splash is that something: it renders WorldMap
+   * at width={1100} height={520}, but called worldShapes() and project() with no arguments
+   * at all, so the map's CONTENT was projected onto a 960x400 canvas and then dropped,
+   * un-rescaled, into a 1100x520 viewBox — filling most but not all of the wider box,
+   * exactly matching the measured gap.
+   */
+  it('projects the map onto the SAME size it is rendered at, not the 960x400 default', () => {
+    expect(src, 'worldShapes() must be called with the same 1100x520 WorldMap is given')
+      .toMatch(/worldShapes\(1100,\s*520\)/);
+    expect(src, 'project() must be called with the same 1100x520 WorldMap is given')
+      .toMatch(/project\(h\.lon,\s*h\.lat,\s*1100,\s*520\)/);
+  });
 });
 
 describe('the moved Threat Board', () => {
