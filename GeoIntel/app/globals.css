@@ -327,16 +327,17 @@ body {
  */
 @keyframes map-fade-in {
   from { opacity: 0; }
-  to   { opacity: 0.22; }
+  to   { opacity: 0.5; }
 }
 .splash-map-fade { animation: map-fade-in 900ms ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .sweep::after { animation: none; }
   .splash-bar, .splash-fade-up, .splash-fade-in { animation: none; opacity: 1; transform: none; }
-  /* Rests at the QUIETED level (0.22), not full brightness — this element's resting
-     opacity is never 1, animated or not, so it must not share the line above. */
-  .splash-map-fade { animation: none; opacity: 0.22; }
+  /* Rests at the QUIETED level (0.5, matching @keyframes map-fade-in's end state), not
+     full brightness — this element's resting opacity is never 1, animated or not, so it
+     must not share the line above. */
+  .splash-map-fade { animation: none; opacity: 0.5; }
   .edge-traveled { animation: none; stroke-dashoffset: 0; }
   .flash-new { animation: none; }
   .star-pop { animation: none; }
