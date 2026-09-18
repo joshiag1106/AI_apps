@@ -19,11 +19,14 @@ export default function Splash() {
   const stats = corpusStats(events);
   const risks = countryRisks(events);
   const hotspots = hotspotActivity(events).slice(0, 10);
-  const shapes = worldShapes();
+  // Matches WorldMap's width={1100} height={520} below — otherwise the map's content is
+  // projected onto the default 960x400 canvas and dropped, un-rescaled, into the wider box,
+  // leaving real empty space on the right. See tests/splash.test.ts.
+  const shapes = worldShapes(1100, 520);
 
   const markers = hotspots
     .map((h) => {
-      const p = project(h.lon, h.lat);
+      const p = project(h.lon, h.lat, 1100, 520);
       return p ? { id: h.id, name: h.name, x: p[0], y: p[1], heat: h.heat, count: h.count } : null;
     })
     .filter(Boolean) as { id: string; name: string; x: number; y: number; heat: number; count: number }[];
