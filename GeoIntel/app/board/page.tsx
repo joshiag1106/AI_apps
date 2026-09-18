@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { MarkEntered } from '@/components/MarkEntered';
 import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui';
 import { WorldMap } from '@/components/WorldMap';
 import { EventCard, EventRow } from '@/components/EventCard';
@@ -59,7 +58,6 @@ export default async function Home() {
 
   return (
     <div className="space-y-8">
-      <MarkEntered />
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>

@@ -1,13 +1,14 @@
 // tests/splash.test.ts
 //
-// The one-time front door at app/page.tsx, added 2026-09-18. / used to BE the Threat Board;
-// that content moved to app/board/page.tsx (tests/layout.test.ts's route-existence checks
-// cover the internal links that had to be repointed). This file is deliberately narrow: it
-// pins the few things that make the splash a front door rather than a wall — that it always
-// carries a working Enter link even with JavaScript off, and that a returning visitor is
-// never shown it twice.
+// The front door at app/page.tsx, added 2026-09-18. / used to BE the Threat Board; that
+// content moved to app/board/page.tsx (tests/layout.test.ts's route-existence checks cover
+// the internal links that had to be repointed). This file is deliberately narrow: it pins
+// the few things that make the splash a front door rather than a wall — that it always
+// carries a working Enter link even with JavaScript off, and — reversed the same day, at
+// Josh's explicit instruction, from an earlier version that skipped it for a returning
+// visitor — that EVERY visit lands here, with no exception for having been before.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 
 describe('the splash page', () => {
   const src = readFileSync('app/page.tsx', 'utf8');
@@ -59,16 +60,19 @@ describe('the splash page', () => {
       .not.toMatch(/<Link\b/);
   });
 
-  it('checks localStorage before paint, not after, and never blocks on it failing', () => {
-    // Checking in a useEffect would paint the splash first and redirect a frame later — a
-    // visible flash on every return visit. The palette selector solved the same class of
-    // problem (app/layout.tsx) with a synchronous inline script that runs before hydration;
-    // this follows the same shape rather than inventing a second one. try/catch is required
-    // because localStorage throws outright in some privacy modes, and a returning reader in
-    // one of those must still land on the splash rather than see a crashed page.
-    expect(src).toMatch(/dangerouslySetInnerHTML/);
-    expect(src).toMatch(/try\s*\{[^}]*localStorage/s);
-    expect(src).toMatch(/catch/);
+  it('never redirects a returning visitor away from the splash — every visit lands here', () => {
+    // The opposite of what this page shipped with on 2026-09-18: a pre-paint script that
+    // read a 'kautilya-entered' localStorage flag and sent a returning visitor straight to
+    // /board without ever painting this page. Removed the same day at Josh's explicit
+    // instruction — every visit, first or hundredth, must land on the splash. Pinned here so
+    // nobody reaches for that pattern again out of habit; components/MarkEntered.tsx, which
+    // used to write the flag this would have checked, no longer exists at all.
+    expect(src, 'no localStorage read of any kind belongs on this page any more')
+      .not.toMatch(/localStorage/);
+    expect(src, 'no pre-paint redirect script belongs on this page any more')
+      .not.toMatch(/location\.replace/);
+    expect(existsSync('components/MarkEntered.tsx'), 'MarkEntered had no purpose once nothing reads its flag')
+      .toBe(false);
   });
 
   /*
@@ -88,23 +92,16 @@ describe('the splash page', () => {
       .not.toMatch(/<Link[^>]*onClick=/s);
   });
 
-  it('writes the entered flag from a real Client Component mounted on /board, not from here', () => {
-    // Moving the write off the Enter click and onto "did /board actually render" is not
-    // just a workaround for the bug above — it is more correct. Anyone who reaches /board at
-    // all, by a bookmark, a shared link or typing the URL, has now seen the dashboard and
-    // should never be gated again, not only visitors who clicked Enter on this exact page.
+  it('never marks /board as "entered" any more — nothing should skip the splash', () => {
+    // /board used to render <MarkEntered/>, whose only job was writing the flag the splash
+    // read to redirect a returning visitor away from itself. With that redirect gone, a
+    // component that only ever wrote to a key nobody reads is dead weight, not a workaround
+    // left in for safety — removed alongside the check it existed to feed.
     const board = readFileSync('app/board/page.tsx', 'utf8');
-    expect(board).toMatch(/MarkEntered/);
-    const marker = readFileSync('components/MarkEntered.tsx', 'utf8');
-    expect(marker).toMatch(/^['"]use client['"]/m);
-    expect(marker).toMatch(/kautilya-entered/);
-    expect(marker).toMatch(/try/);
-  });
-
-  it('uses the same localStorage key to check (splash) and to set (board)', () => {
-    const board = readFileSync('app/board/page.tsx', 'utf8') + readFileSync('components/MarkEntered.tsx', 'utf8');
-    expect(src).toMatch(/kautilya-entered/);
-    expect(board).toMatch(/kautilya-entered/);
+    expect(board, 'MarkEntered must not be imported or rendered on /board any more')
+      .not.toMatch(/MarkEntered/);
+    expect(board, 'no localStorage write belongs on /board either')
+      .not.toMatch(/localStorage/);
   });
 
   it('shows the real corpus, not placeholder numbers', () => {

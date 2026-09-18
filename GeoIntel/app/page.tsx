@@ -35,18 +35,14 @@ export default function Splash() {
   return (
     <div className="relative flex min-h-[calc(100vh-1px)] flex-col items-center justify-center overflow-hidden px-4 py-16 text-center">
       {/*
-        * Runs before hydration, synchronously, so a returning visitor never sees this page
-        * flash before being sent on to /board — the same shape as the palette script in
-        * app/layout.tsx, which solves the identical "avoid a flash of the wrong thing on
-        * load" problem for the theme. Wrapped in try/catch because localStorage throws
-        * outright in some privacy modes, and a reader in one of those must land on the
-        * splash rather than see a crashed page — worse than showing it twice.
+        * Josh: every visit must land here, not only the first. There is deliberately no
+        * "already entered" check any more — this page shipped 2026-09-18 with one (a
+        * pre-paint script reading the browser's own storage, redirecting a returning
+        * visitor straight to /board), and it was removed the same day at Josh's explicit
+        * instruction. The component that used to write that flag, MarkEntered, is gone
+        * entirely — it had no purpose left once nothing read what it wrote. See
+        * tests/splash.test.ts, which used to pin that mechanism and now pins its absence.
         */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `try{if(localStorage.getItem('kautilya-entered'))location.replace('/board')}catch(e){}`,
-        }}
-      />
 
       <div className="splash-map-fade pointer-events-none absolute inset-0" style={{ animationDelay: '150ms' }}>
         <WorldMap shapes={shapes} data={mapData} markers={markers} width={1100} height={520} legend={false} />
@@ -104,9 +100,11 @@ export default function Splash() {
           * a freshly evaluated root layout, the same as typing the URL. See
           * tests/splash.test.ts, which pins both links, not only Enter.
           *
-          * No onClick either, for the unrelated reason this page has no 'use client' and a
-          * Server Component cannot hand a function to an element it renders — the write to
-          * localStorage is components/MarkEntered.tsx, mounted on /board.
+          * No onClick either — the unrelated reason is that this page has no 'use client',
+          * and a Server Component cannot hand a function to an element it renders. It used
+          * to have one, writing to the browser's own storage so a returning visitor could
+          * be sent straight to /board; that whole mechanism is gone, on purpose, as of
+          * 2026-09-18 — see the note at this file's top.
           */}
         <a
           href="/board"
