@@ -25,7 +25,8 @@ friend and rival states, which is literally the relationship graph the site rend
 - **Scores corroboration, never truth.** Every event carries a 0–100 score built from
   auditable signals — independent outlet count, ownership diversity, source-country and
   language spread, primary-source presence, outlet track record, contradiction penalty —
-  each shown with its own evidence line.
+  each shown with its own evidence line. A wire story reprinted by several outlets under
+  near-identical headlines counts once.
 - **Models risk.** Six-vector country risk indices and 90-day dyad tension series, with
   escalation gated by corroboration and decayed on a 14-day half-life.
 - **Maps the network.** Every state that shares a clustered event with another is a node;

@@ -1,4 +1,5 @@
 import type { Article, ConfidenceSignal, EventFlag } from '@/lib/types';
+import { reprintFamilies } from '@/lib/verify/reprints';
 
 export interface Verdict {
   confidence: number;
@@ -32,23 +33,33 @@ function has(list: string[], text: string): boolean {
  * signals are what encode that.
  */
 export function scoreConfidence(cluster: Article[]): Verdict {
+  // Every signal below reads ONE report per original. A wire story printed by five outlets in
+  // five countries is one report, and would otherwise earn outlet-count, ownership and
+  // country-spread points five times over. The contradiction check further down deliberately
+  // still reads the whole `cluster`: a denial inside a reprint is still a denial.
+  const evidence = reprintFamilies(cluster).map((f) => f.representative);
+
+  // Every outlet reporting, for the detail line only.
   const outlets = new Set(cluster.map((a) => a.outlet.toLowerCase()));
+  // Outlets among the reports that are counted. An outlet that only ever reprinted drops out.
+  const evidenceOutlets = new Set(evidence.map((a) => a.outlet.toLowerCase()));
   // 'ZZZ' marks an outlet we could not place. Unknown provenance must not be counted
   // as a distinct country — that would let unrecognised sources manufacture the very
   // geographic diversity the signal exists to measure.
-  const countries = new Set(cluster.map((a) => a.sourceCountry).filter((c) => c !== 'ZZZ'));
-  const unplaced = cluster.filter((a) => a.sourceCountry === 'ZZZ').length;
-  const languages = new Set(cluster.map((a) => a.language));
-  const ownerships = new Set(cluster.map((a) => a.ownership));
+  const countries = new Set(evidence.map((a) => a.sourceCountry).filter((c) => c !== 'ZZZ'));
+  const unplaced = evidence.filter((a) => a.sourceCountry === 'ZZZ').length;
+  const languages = new Set(evidence.map((a) => a.language));
+  const ownerships = new Set(evidence.map((a) => a.ownership));
   // Think-tank and research output is commentary on events, not independent reporting
   // of them, so it is excluded from corroboration while still being displayed.
-  const independents = cluster.filter(
+  const independents = evidence.filter(
     (a) => a.ownership === 'independent' || a.ownership === 'public',
   );
-  const analyses = cluster.filter((a) => a.ownership === 'analysis');
+  const analyses = evidence.filter((a) => a.ownership === 'analysis');
   const independentOutlets = new Set(independents.map((a) => a.outlet.toLowerCase()));
-  const primaries = cluster.filter((a) => a.isPrimary);
-  const bestTier = Math.min(...cluster.map((a) => a.tier));
+  const primaries = evidence.filter((a) => a.isPrimary);
+  const bestTier = Math.min(...evidence.map((a) => a.tier));
+  const reprinted = outlets.size - evidenceOutlets.size;
 
   const signals: ConfidenceSignal[] = [];
 
@@ -60,6 +71,7 @@ export function scoreConfidence(cluster: Article[]): Verdict {
     detail: (nInd === 0
       ? `No independent outlet among ${outlets.size} reporting.`
       : `${nInd} independent outlet${nInd > 1 ? 's' : ''} of ${outlets.size} reporting.`)
+      + (reprinted > 0 ? ` ${reprinted} outlet${reprinted > 1 ? 's' : ''} reprinted a report already counted.` : '')
       + (analyses.length ? ` ${analyses.length} think-tank item(s) present but not counted as corroboration.` : ''),
   });
 
@@ -108,8 +120,11 @@ export function scoreConfidence(cluster: Article[]): Verdict {
   let score = signals.reduce((s, x) => s + x.points, 0);
 
   const flags: EventFlag[] = [];
-  if (outlets.size <= 1) flags.push('single_source');
-  const stateish = cluster.filter((a) => a.ownership === 'state' || a.ownership === 'state_affiliated');
+  // One original, however many outlets printed it. Counted by outlet among the reports that
+  // stand for a family, so one outlet publishing twice under different headlines is still a
+  // single source.
+  if (evidenceOutlets.size <= 1) flags.push('single_source');
+  const stateish = evidence.filter((a) => a.ownership === 'state' || a.ownership === 'state_affiliated');
   if (independents.length === 0 && stateish.length > 0) flags.push('state_media_only');
   if (primaries.length > 0) flags.push('primary_sourced');
 
