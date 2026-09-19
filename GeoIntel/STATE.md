@@ -1089,8 +1089,9 @@ proof of the production path, and hasn't happened yet.
 
 ## Where 2026-09-19 ended
 
-Three pieces of work, committed to `main` locally (b522300, 01ac1cf, f09e5a8) and **not yet
-pushed or deployed** at the time of writing. 526 tests, `tsc --noEmit` clean.
+Three pieces of work (b522300, 01ac1cf, f09e5a8), pushed to the private repo and **deployed to
+the production server the same evening** — see "Deployed" at the end of this section. 526 tests,
+`tsc --noEmit` clean.
 
 **The first alert email's links pointed at localhost, and production was never at fault.**
 Root cause, found before any fix: the mail came from a manual `alerts:check` on the dev
@@ -1109,8 +1110,9 @@ digest, so both are covered. The ingest already contains a throw from `runAlerts
 environment the dev server reads, and refuses a localhost origin with the exact command to
 run instead. Leave `.env.local` alone — the same value is right for local development. The
 check is a full dotted-quad match rather than a `127.` prefix so a real host such as
-`127.example.com` is not blocked. **Not yet done: a corrected test email has not been sent.**
-That is a message on Josh's behalf, so it waits for his say-so.
+`127.example.com` is not blocked. **A corrected test email was then sent**, with `--origin` set
+to the public address, and Hostinger accepted it in 1.8s. Accepted is not delivered: that it
+arrived with working links is Josh's to confirm, and the script's own output says so.
 
 **A glossary, with the Chinese terms on their own page.** `/glossary` holds about 45
 abbreviations — picked by measuring the corpus for the acronyms that actually recur, not from
@@ -1146,6 +1148,22 @@ ceiling: it catches reprints and misses rewritten wire copy. It is the same weak
 Vietnam seat note describes — one story printed twice — and the strongest candidate for the
 next piece of work. The open decision is whether collapsing reprints should change the
 confidence score or only annotate it.
+
+**Deployed, and what the deploy taught.** Shipped by the runbook's step 5 and verified against
+the live site: the new build id is in the served HTML, twelve routes return 200, the glossary
+and all 87 Chinese terms render, `http` redirects, `/_next/image` is 400, `/api/cron` is 401,
+no `STRIPE_*` names appear on `/pricing`, and the server's database was untouched, with its
+write-ahead log still advancing from the hourly refresh. The mirror PR into the public
+monorepo is open, not merged.
+
+Two defects in the runbook itself, found by following it and now fixed in "Deploying an
+update". **Its rsync shortcut omitted the exclusions that keep the local database out** —
+copied as written it would have shipped the corpus and a real user row's email and password
+hash; the bundle checked before shipping did contain both that file and a macOS binary, exactly
+as step 5 warns, and only the exclusions kept them off the server. **Its restart line could not
+run**: `kautilya` is a service user with no sudo, so the restart runs as root. A dry run
+(`-n --itemize-changes`) showing zero database or `darwin` paths is the check worth keeping
+before any first transfer.
 
 ## The accessibility pass (2026-09-07)
 
