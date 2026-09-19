@@ -1,5 +1,6 @@
 import { createTransport } from 'nodemailer';
 import type { Jump } from '@/lib/alerts/detect';
+import { isLoopbackOrigin } from '@/lib/site';
 
 /**
  * Composing and delivering a ladder alert.
@@ -47,6 +48,16 @@ export interface SendOptions {
  * mails, which is how an alert becomes a nuisance and then a filter rule.
  */
 export function renderDigest(jumps: Jump[], origin: string): Digest {
+  // Every link in the mail is built from `origin`, and a link to the sending machine is dead
+  // in an inbox. Refused here rather than at each caller because this is the one place both
+  // the scheduled run and the manual check build a digest — and because a config that names
+  // localhost is well-formed, so nothing upstream objects to it.
+  if (isLoopbackOrigin(origin)) {
+    throw new Error(
+      `Alert links would point at ${origin}, an address only this machine can open. `
+      + 'Set KAUTILYA_ORIGIN to the address readers use (e.g. https://example.com).',
+    );
+  }
   const n = jumps.length;
   const head = n === 1
     ? `${jumps[0].item.label} moved to rung ${jumps[0].rung}`

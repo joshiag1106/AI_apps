@@ -372,9 +372,26 @@ Steps 5 and 6 only:
 ```bash
 npm test && npm run build
 cp -r .next/static .next/standalone/.next/static
-rsync -az --delete .next/standalone/ kautilya@SERVER_IP:/srv/kautilya/
-ssh kautilya@SERVER_IP 'sudo systemctl restart kautilya'
+rsync -az --delete \
+  --exclude='kautilya.db' \
+  --exclude='node_modules/@img/*darwin*' \
+  --exclude='node_modules/@img/*libvips-darwin*' \
+  .next/standalone/ kautilya@SERVER_IP:/srv/kautilya/
+ssh root@SERVER_IP 'systemctl restart kautilya'
 ```
+
+**Keep the three `--exclude` lines.** An earlier version of this section omitted them, and
+copied as written it would ship your local `kautilya.db` — the whole corpus and a real user
+row, email and password hash — into the release directory. The build traces that file into
+the bundle every time; only the exclusion keeps it off the server. Before the first real
+transfer, add `-n --itemize-changes` to the rsync and confirm `kautilya.db` and `darwin` do not
+appear in the output.
+
+**The restart runs as root, not as `kautilya`.** `kautilya` is a service user with no sudo
+rights, so `ssh kautilya@… 'sudo systemctl restart kautilya'` stops at a password prompt that
+nobody can answer. Use root, or whichever account administers the box. Follow it with the
+probes in step 11: a build that passes its tests and starts cleanly can still be wrong on the
+live host, and the only way to know is to ask the live host.
 
 The database is untouched because it was never in that directory.
 

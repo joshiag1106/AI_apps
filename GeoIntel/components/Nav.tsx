@@ -17,6 +17,7 @@ const LINKS = [
   { href: '/network/CHN', label: 'Network' },
   { href: '/person', label: 'People' },
   { href: '/about', label: 'Why Kautilya' },
+  { href: '/glossary', label: 'Glossary' },
   { href: '/methodology', label: 'Methodology' },
 ];
 

@@ -173,6 +173,23 @@ describe('where the links point', () => {
     await m.run.runAlerts(events, { send: r.send });
     expect(r.sent).toHaveLength(1);
   });
+
+  it('refuses to mail links to this machine, marks nothing delivered, and sends once the address is public', async () => {
+    // A localhost value is present and well-formed, so siteOrigin accepts it — which is how
+    // the first real alert went out with dead links. Being set is not the same as being
+    // reachable from an inbox.
+    user('pro10', 'pro', true);
+    m.watch.addWatch('pro10', { kind: 'country', id: 'CHN', label: 'China' });
+    const events = [ev(8, ['CHN'])];
+    const r = recorder();
+
+    await expect(m.run.runAlerts(events, { send: r.send, origin: 'http://localhost:3111' }))
+      .rejects.toThrow(/KAUTILYA_ORIGIN/);
+    expect(r.sent).toEqual([]);
+
+    await m.run.runAlerts(events, { send: r.send, origin: 'https://kautilya.example' });
+    expect(r.sent).toHaveLength(1);
+  });
 });
 
 describe('reporting honestly', () => {

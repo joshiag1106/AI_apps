@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { siteOrigin } from '@/lib/site';
+import { siteOrigin, isLoopbackOrigin } from '@/lib/site';
 
 /**
  * Behind a reverse proxy, Next builds a route handler's `req.url` from the host and port the
@@ -44,5 +44,35 @@ describe('the public origin', () => {
     for (const raw of ['kautilya.example', 'localhost:3111', 'ftp://kautilya.example']) {
       expect(() => siteOrigin(DEV, { KAUTILYA_ORIGIN: raw, NODE_ENV: 'development' })).toThrow(/KAUTILYA_ORIGIN/);
     }
+  });
+});
+
+/**
+ * A link in an inbox is opened from somewhere else. An address that only the sending machine
+ * can reach — localhost, 127.x, ::1 — is dead the moment it leaves it, and the first alert
+ * ever delivered carried exactly that: valid in every way except that nobody could click it.
+ */
+describe('an address only this machine can reach', () => {
+  it('recognises every spelling of the local machine', () => {
+    for (const o of [
+      'http://localhost:3111', 'http://localhost', 'https://localhost:3000',
+      'http://LOCALHOST:3111', 'http://app.localhost:3000',
+      'http://127.0.0.1:3000', 'http://127.1.2.3', 'http://[::1]:3000', 'http://0.0.0.0:3000',
+    ]) {
+      expect(isLoopbackOrigin(o), o).toBe(true);
+    }
+  });
+
+  it('lets a public address through', () => {
+    // The last two are the near-misses a sloppy prefix test would block: a real host that merely
+    // begins with "localhost" or "127.".
+    for (const o of ['https://kautilya.example', 'http://203.0.113.7:3000', 'https://localhost.example', 'https://127.example.com']) {
+      expect(isLoopbackOrigin(o), o).toBe(false);
+    }
+  });
+
+  it('does not throw on something that is not an address', () => {
+    // It is a question ("is this local?"), asked of values that may already be wrong.
+    expect(isLoopbackOrigin('not a url')).toBe(false);
   });
 });

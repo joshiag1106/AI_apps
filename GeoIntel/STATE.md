@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-18.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-19.** Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 492 passing (`npm test`) |
+| Tests | 526 passing (`npm test`) |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
@@ -998,7 +998,9 @@ shown side by side rather than described; Josh picked the ascending-bars ladder,
 PRC escalation-ladder detector — the one feature unique to this product, and the one that also
 reads cleanly at 16px favicon size. `/` was the Threat Board; that content moved intact to
 `/board`, and `/` is now a splash whose map behind the headline is the REAL corpus, quieted —
-not a decorative mock. A visitor who has entered once never sees it again: middleware now
+not a decorative mock. (A visitor who had entered once was first never shown it again; Josh
+reversed that the same evening — see "Where 2026-09-19 ended" — and it now shows on every
+visit.) Middleware now
 forwards the request path as a header so the root layout can suppress its own Nav and footer
 for exactly this one route, something Next does not hand a root layout for free.
 
@@ -1084,6 +1086,84 @@ no message has yet been sent *from* production's own process, only inferred to w
 holds the same proven credential. The first REAL alert — triggered by an actual subscriber's
 watched state crossing a ladder rung, not a manual test — is still the first genuine end-to-end
 proof of the production path, and hasn't happened yet.
+
+## Where 2026-09-19 ended
+
+Three pieces of work (b522300, 01ac1cf, f09e5a8), pushed to the private repo and **deployed to
+the production server the same evening** — see "Deployed" at the end of this section. 526 tests,
+`tsc --noEmit` clean.
+
+**The first alert email's links pointed at localhost, and production was never at fault.**
+Root cause, found before any fix: the mail came from a manual `alerts:check` on the dev
+machine, and `.env.local` pins `KAUTILYA_ORIGIN=http://localhost:3111` for local checkout
+testing. `siteOrigin` accepted it, because localhost is a perfectly well-formed address, and
+nothing asked whether an inbox could reach it. Production resolved to its real public address
+— read without side effects from `GET /api/checkout/confirm`, which with no session redirects
+to `${origin}/pricing` before touching any state — so alerts sent by the server carried correct
+links.
+
+The fix is a rule, not a setting. `isLoopbackOrigin()` in `lib/site.ts`, and `renderDigest()`
+throws on one: it is the single place both the scheduled run and the manual check build a
+digest, so both are covered. The ingest already contains a throw from `runAlerts`, logs
+`alerts skipped`, and marks nothing delivered, so mail goes out once the address is public.
+`alerts:check` gained `--origin=<public address>` for a one-off send without touching the
+environment the dev server reads, and refuses a localhost origin with the exact command to
+run instead. Leave `.env.local` alone — the same value is right for local development. The
+check is a full dotted-quad match rather than a `127.` prefix so a real host such as
+`127.example.com` is not blocked. **A corrected test email was then sent**, with `--origin` set
+to the public address, and Hostinger accepted it in 1.8s. Accepted is not delivered: that it
+arrived with working links is Josh's to confirm, and the script's own output says so.
+
+**A glossary, with the Chinese terms on their own page.** `/glossary` holds about 45
+abbreviations — picked by measuring the corpus for the acronyms that actually recur, not from
+a primer — plus the site's own vocabulary, the network measures and the 13-rung ladder.
+`/glossary/chinese` holds the 87 terms in `data/glossary.zh.ts`, grouped, with pinyin and
+weight. It is in the header menu between Why Kautilya and Methodology, and in the footer's
+Understand column. The count is 87, not the 102 quoted while planning: that figure included
+the 13 ladder rungs and a few other `zh:` fields.
+
+It cannot drift silently. The ladder and the Chinese terms are read from the detector's own
+file, never copied, and `tests/glossary.test.ts` holds exhaustive records keyed on `Domain`,
+`Ownership` and `EventFlag` — so `tsc` stops when a member is added — plus a scrape of the
+network panels' labels, failing until each has an entry.
+
+**A bug found only by loading a real production build:** deep links (`/glossary#lac`) landed
+the term underneath the sticky header at every width. The menu wraps onto more rows as the
+window narrows — the header measures 92px at 1440 wide, 121px at 1024 and 171px on a phone —
+and the first offset reserved 80px. `components/anchorOffset.ts` holds one constant sized to
+those heights, and a test fails on any anchor target using less. Re-measured after the fix,
+the term clears the header by 34, 36 and 49px at 375, 1024 and 1440. **If the header gains a
+row or a link, re-measure.** No horizontal overflow at 375px.
+
+**Tooling note.** The Browser pane cannot screenshot a scrolled page: one taken after
+scrolling returns a blank frame, on untouched pages too, and a full-scale screenshot shows the
+page cropped to the top-left. Verify anything below the fold with `getBoundingClientRect()`.
+
+**Measured, not yet acted on — reprint inflation.** Of 670 events currently scored as having
+two or more independent outlets, **147 (21.9%)** contain near-identical headlines (word
+overlap of 0.8 or more) from different outlets, so the distinct originals number fewer than
+the outlets counted: 110 lose one, 23 lose two, and the tail reaches ten. Two Chinese outlets
+running the identical headline turn "2 independent outlets" into one. This is a floor, not a
+ceiling: it catches reprints and misses rewritten wire copy. It is the same weakness the
+Vietnam seat note describes — one story printed twice — and the strongest candidate for the
+next piece of work. The open decision is whether collapsing reprints should change the
+confidence score or only annotate it.
+
+**Deployed, and what the deploy taught.** Shipped by the runbook's step 5 and verified against
+the live site: the new build id is in the served HTML, twelve routes return 200, the glossary
+and all 87 Chinese terms render, `http` redirects, `/_next/image` is 400, `/api/cron` is 401,
+no `STRIPE_*` names appear on `/pricing`, and the server's database was untouched, with its
+write-ahead log still advancing from the hourly refresh. The mirror PR into the public
+monorepo is open, not merged.
+
+Two defects in the runbook itself, found by following it and now fixed in "Deploying an
+update". **Its rsync shortcut omitted the exclusions that keep the local database out** —
+copied as written it would have shipped the corpus and a real user row's email and password
+hash; the bundle checked before shipping did contain both that file and a macOS binary, exactly
+as step 5 warns, and only the exclusions kept them off the server. **Its restart line could not
+run**: `kautilya` is a service user with no sudo, so the restart runs as root. A dry run
+(`-n --itemize-changes`) showing zero database or `darwin` paths is the check worth keeping
+before any first transfer.
 
 ## The accessibility pass (2026-09-07)
 

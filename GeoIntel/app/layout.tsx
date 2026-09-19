@@ -135,6 +135,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <div className="mb-2.5 text-[12px] uppercase tracking-[0.18em] text-faint">Understand</div>
                   <ul className="space-y-1.5 text-[14px]">
                     <li><Link href="/about" className="text-muted hover:text-[color:var(--color-accent)]">About Kautilya</Link></li>
+                    <li><Link href="/glossary" className="text-muted hover:text-[color:var(--color-accent)]">Glossary</Link></li>
+                    <li><Link href="/glossary/chinese" className="text-muted hover:text-[color:var(--color-accent)]">Chinese terms</Link></li>
                     <li><Link href="/methodology" className="text-muted hover:text-[color:var(--color-accent)]">Methodology &amp; limitations</Link></li>
                   </ul>
                 </div>

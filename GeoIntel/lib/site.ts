@@ -12,6 +12,31 @@
  * an address that is wrong by construction. Outside production the caller's fallback is kept:
  * nothing sits in front of the dev server, so the request's own address is the right one.
  */
+/**
+ * Whether an address can only be opened from the machine that produced it.
+ *
+ * `siteOrigin` answers "is the configured value well-formed?", and `http://localhost:3111` is.
+ * That is not the same as "can a reader reach it?" — a link in an inbox is opened from
+ * somewhere else, so a loopback address is dead on arrival. The first real alert shipped
+ * with exactly that, because the local config said so and nothing asked the second question.
+ *
+ * Deliberately a question rather than a throw: it is asked of values that may already be wrong.
+ * Private-network addresses (192.168.x.x) are left alone — an intranet deployment is a
+ * legitimate reason to mail one.
+ */
+export function isLoopbackOrigin(origin: string): boolean {
+  let host: string;
+  try {
+    host = new URL(origin).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return host === 'localhost' || host.endsWith('.localhost')
+    || host === '0.0.0.0' || host === '[::1]'
+    // A full dotted quad, not a "127." prefix: 127.example.com is a real host.
+    || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+}
+
 export function siteOrigin(fallback: string, env: Record<string, string | undefined> = process.env): string {
   const raw = env.KAUTILYA_ORIGIN?.trim();
   if (!raw) {

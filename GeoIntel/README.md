@@ -70,7 +70,7 @@ No API keys are required. The engine is fully deterministic and runs without any
 | `npx tsx scripts/cluster-gates.ts` | What each clustering gate costs. Run before changing a threshold. |
 | `npx tsx scripts/cluster-shape.ts` | Cluster sizes and the members behind the largest. Run after. |
 | `npm run llm:check` | Send one real analysis and report what it cost. Needs a key; charges nothing without one. |
-| `npm run alerts:check -- --to=you@example.com` | Send one real alert email. Recipient must be explicit; sends nothing without a key. |
+| `npm run alerts:check -- --to=you@example.com --origin=https://example.com` | Send one real alert email. Recipient must be explicit; sends nothing without a key. `--origin` is the public address the mail's links point at — a localhost address is refused, since it would be dead in an inbox. |
 | `KAUTILYA_AUTO_INGEST=1 npm run dev` | Refresh the corpus in the background every 30 minutes. |
 | `npm test` | 61 unit tests over the analytical core. |
 | `npm run build` | Production build. |
@@ -187,7 +187,8 @@ proxy in front of it. Schedule refreshes with host cron:
 
 `npm run ingest` works on the server too, but it reads only what its shell exports, not
 the server's environment. Export the same settings first: with mail credentials and no
-`KAUTILYA_ORIGIN`, its alerts would link to localhost.
+`KAUTILYA_ORIGIN`, it refuses to send the alert at all, because links to localhost would be
+dead in an inbox (the ingest logs `alerts skipped` and marks nothing delivered).
 
 ## Security and accessibility
 
