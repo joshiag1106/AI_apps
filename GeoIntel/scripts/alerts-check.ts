@@ -9,11 +9,17 @@
  * The recipient must be given explicitly. This puts mail in a real inbox, so it will not
  * guess an address, read one out of the database, or fall back to a default.
  *
- *   npm run alerts:check -- --to=you@example.com
+ *   npm run alerts:check -- --to=you@example.com --origin=https://example.com
+ *
+ * The links in the mail are built from the site's public address. A development machine's
+ * KAUTILYA_ORIGIN is usually http://localhost:3111, and links to that are dead in an inbox —
+ * the first real alert was sent that way — so this refuses a localhost address rather than
+ * sending it. `--origin` names the public address for this one send without touching the
+ * environment the dev server reads.
  */
 import { allEvents } from '@/lib/db';
 import { renderDigest, sendDigest } from '@/lib/alerts/send';
-import { siteOrigin } from '@/lib/site';
+import { siteOrigin, isLoopbackOrigin } from '@/lib/site';
 import type { Jump } from '@/lib/alerts/detect';
 
 function arg(name: string): string | undefined {
@@ -28,7 +34,9 @@ async function main() {
   const host = process.env.SMTP_HOST ?? 'smtp.gmail.com';
   const port = process.env.SMTP_PORT ?? '465';
   const from = process.env.ALERTS_FROM ?? user;
-  const origin = siteOrigin('http://localhost:3111');
+  const originArg = arg('origin');
+  const origin = siteOrigin('http://localhost:3111',
+    originArg ? { ...process.env, KAUTILYA_ORIGIN: originArg } : process.env);
 
   console.log(`\n  server   ${host}:${port}`);
   console.log(`  user     ${user ?? '(SMTP_USER not set)'}`);
@@ -48,6 +56,18 @@ async function main() {
     console.error('\n  SMTP_HOST must match where that address\'s mail is really hosted —');
     console.error('  check its MX records. Gmail is the exception that needs a 16-character');
     console.error('  App Password rather than the account password.');
+    console.error('  Nothing was sent.\n');
+    process.exit(1);
+  }
+
+  // The last gate before a real inbox. Being well-formed is not the same as being reachable.
+  if (isLoopbackOrigin(origin)) {
+    console.error(`\n  Not sending: the links in this mail would point at ${origin},`);
+    console.error('  which only this machine can open. Clicked from an inbox they lead nowhere.');
+    console.error('\n  Name the public address for this send:');
+    console.error(`    npm run alerts:check -- --to=${to} --origin=https://example.com`);
+    console.error('  or set KAUTILYA_ORIGIN in .env.local (which also changes where local');
+    console.error('  checkout redirects go).');
     console.error('  Nothing was sent.\n');
     process.exit(1);
   }

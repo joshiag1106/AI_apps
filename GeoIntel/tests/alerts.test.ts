@@ -148,6 +148,15 @@ describe('the digest a reader receives', () => {
     expect(d.text).toContain('CHN');
     expect(d.subject).toMatch(/2|two/i);
   });
+
+  it('refuses to build links that only the sending machine can open', () => {
+    // The first real alert went out with every link pointing at localhost, because the local
+    // config said so and nothing checked. Both the manual check and the scheduled run build
+    // their digest here, so refusing here covers both.
+    for (const local of ['http://localhost:3111', 'http://127.0.0.1:3111', 'http://[::1]:3111']) {
+      expect(() => renderDigest([jump()], local), local).toThrow(/KAUTILYA_ORIGIN/);
+    }
+  });
 });
 
 describe('sending', () => {
