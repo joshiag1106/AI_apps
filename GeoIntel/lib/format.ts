@@ -36,7 +36,7 @@ export function escalationLabel(e: number): { label: string; color: string } {
 }
 
 export const FLAG_LABEL: Record<string, { label: string; tone: string; help: string }> = {
-  single_source:    { label: 'Single source', tone: 'var(--color-elevated)', help: 'Only one outlet is reporting this. Treat as a lead, not an established fact.' },
+  single_source:    { label: 'Single source', tone: 'var(--color-elevated)', help: 'Every report traces back to one original — one outlet, or several printing the same headline. Treat as a lead, not an established fact.' },
   state_media_only: { label: 'State media only', tone: 'var(--color-high)',  help: 'Every reporting outlet is state-owned or state-affiliated. Repetition within one state’s media is not corroboration.' },
   disputed:         { label: 'Disputed', tone: 'var(--color-severe)',        help: 'Sources in this cluster assert and deny the same claim. The accounts conflict.' },
   uncorroborated:   { label: 'Uncorroborated', tone: 'var(--color-faint)',   help: 'Below the corroboration threshold — too few independent sources to assess.' },

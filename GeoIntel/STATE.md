@@ -1111,8 +1111,10 @@ environment the dev server reads, and refuses a localhost origin with the exact 
 run instead. Leave `.env.local` alone — the same value is right for local development. The
 check is a full dotted-quad match rather than a `127.` prefix so a real host such as
 `127.example.com` is not blocked. **A corrected test email was then sent**, with `--origin` set
-to the public address, and Hostinger accepted it in 1.8s. Accepted is not delivered: that it
-arrived with working links is Josh's to confirm, and the script's own output says so.
+to the public address, and Hostinger accepted it in 1.8s. **Josh confirmed it arrived with
+working links** — delivery, not merely acceptance, which is the distinction the script's own
+output insists on. Still not proven: a send FROM the production process for a genuine
+subscriber's watched state; every real send so far has been a manual one from a dev machine.
 
 **A glossary, with the Chinese terms on their own page.** `/glossary` holds about 45
 abbreviations — picked by measuring the corpus for the acronyms that actually recur, not from
@@ -1164,6 +1166,82 @@ as step 5 warns, and only the exclusions kept them off the server. **Its restart
 run**: `kautilya` is a service user with no sudo, so the restart runs as root. A dry run
 (`-n --itemize-changes`) showing zero database or `darwin` paths is the check worth keeping
 before any first transfer.
+
+## Reprint collapse — built, merged and DEPLOYED (2026-09-19 evening)
+
+Built on the branch `reprint-collapse` (a spec, a plan and seven commits), then — after Josh saw
+the shift below and approved it — fast-forwarded into `main` and deployed the same evening. 569
+tests, `tsc --noEmit` clean, verified against a real production build and then against the live
+site. It deliberately lowers some scores, which is why Josh saw the shift first. Design:
+`docs/specs/2026-09-19-reprint-collapse-design.md`; plan: `docs/plans/2026-09-19-reprint-collapse.md`.
+
+**What it does.** A wire story printed by several outlets now counts once in EVERY signal that
+rewards diversity — outlet count, ownership mix, country spread — not only the outlet count.
+`lib/verify/reprints.ts` groups articles into families of near-identical headlines (0.8 overlap
+after removing an outlet suffix and section label, figures must agree, minimum four words or
+six Han characters); `scoreConfidence` reads one representative per family, except the
+contradiction check, which still reads the whole cluster. The event page groups its evidence list
+with the same function, so page and score cannot disagree, and a fold animation shuts each
+family's reprints into a native `<details>` as it scrolls into view. No schema change: events
+rebuild from articles on every ingest, so scores move on the first hourly refresh after a deploy.
+
+**The shift, measured on the local corpus** (`npm run reprints:shift`, read-only): 4,267 events;
+418 contain reprints; **155 change score (3.6%)**, by a median of 7 points, p90 18, max 35; no
+event rises; 53 change band (31 Limited → Single report, 16 Corroborated → Limited, 5 Well →
+Corroborated, 1 Corroborated → Single report); **"corroborated" (≥ 50) falls 262 → 245**; the
+"single source" flag rises 3,468 → 3,567. The check that matters most: **events with no reprints
+score exactly as before — 0 unexplained changes.** The biggest drops are official ministry
+statements republished by a dozen portals, the case this exists for.
+
+**Three things this build taught.**
+
+1. **Read a sample, not just the totals.** The report prints an evenly spaced sample of the
+   families it collapsed. The first one showed a daily VOA Chinese broadcast titled by its date
+   collapsing into the next day's, because set overlap alone scores "… 9月3日" against "… 9月4日"
+   above 0.86 — and "4 missiles" against "5 missiles" at 1.0. The fix is a rule: reprints carry
+   identical figures. Aggregates would never have shown it.
+2. **I leaked the domain into my own plan.** The plan's "run the leak scan" line contained the scan
+   pattern, and the pattern names the domain. Caught by the scan itself, and repaired BEFORE any
+   push: the one unpushed commit was dropped and recreated, and the feature branch rebased onto
+   it, so no pushed history ever held it. **The pattern list now lives outside the repo, in
+   `~/.claude/kautilya-leak-patterns.txt`**: run `git grep -n -i -E -f` on that file. A scan
+   command written into a tracked file defeats itself.
+3. **A copied database shows OLD scores until it is re-clustered**, because events store the score
+   computed at their last ingest. Verifying the new panel text meant re-running only the
+   clustering step against the copy. The same is true on the server after a deploy: scores move
+   at the first ingest, not at restart.
+
+**Verified in a real browser.** A fold caught mid-animation at 250px between 348px and closed,
+resting closed with every inline style removed; folds below the viewport stay open until seen;
+opening one by hand shows its natural height; no horizontal overflow at 375px; the confidence
+panel reads "9 independent outlets of 21 reporting. 12 outlets reprinted a report already
+counted." (62 → 57 on a widely reported story; 40 → 5 on a ministry statement reprinted by
+seven portals).
+
+**Deliberately not caught, and said so on `/methodology`:** rewritten wire copy and translated
+copy, so the correction is a floor. Families of one outlet under one headline (a video beside
+its article, daily programme titles) collapse too but are labelled "More from <outlet> under the
+same headline", never "also printed by". The `timeout` command does not exist on macOS.
+
+**Deployed, and verified on the live site.** Shipped by the runbook's step 5, the dry run first
+(zero database or macOS paths in the transfer; both known traps were again in the bundle), the
+restart as root. The build id is in the served HTML, twelve routes return 200, and every runbook
+probe passes; the server's database is untouched. Scores only move at an ingest, so the hourly
+job's exact command was run once by hand — 73 feeds, 71 ok (the same two datacenter 403s), 1,276
+events in 9.8 s — and then the live corpus showed the new scoring: 18 of 80 sampled events carry
+folded families, and a panel reads "25 independent outlets of 36 reporting. 5 outlets reprinted a
+report already counted." In a real browser on the live site a fold went from 77px pinned open, to
+46px at 250 ms, to closed with its styles removed by 900 ms.
+
+**A note for the next burst test.** Requesting the live site rapidly (about 60 requests a minute
+from one address) produced occasional connect timeouts — code 000 with a connect time of exactly
+zero, so the connection never started — on a static icon as often as on an event page, while the
+app answered 200 of 200 from inside the server. It is throttling of a rapid test, not the app.
+Test bursts from inside the server (`ssh` and `curl` the loopback), or pace them.
+
+To re-measure the shift against the live corpus, restore a nightly backup locally and run
+`npm run reprints:shift` with `KAUTILYA_DB` pointed at it; the standalone server carries no
+scripts. The backup holds accounts, so keep it off shared storage and delete it afterwards.
 
 ## The accessibility pass (2026-09-07)
 

@@ -17,6 +17,9 @@ import { ChineseText, zhTitleMap } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { llmEnabled } from '@/lib/llm/client';
 import { currentUser } from '@/lib/auth';
+import type { Article } from '@/lib/types';
+import { EvidenceFamily } from '@/components/EvidenceFamily';
+import { reprintFamilies } from '@/lib/verify/reprints';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +81,42 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     .map((en) => ZH_GLOSSARY.find((t) => t.en === en))
     .filter(Boolean)
     .slice(0, 24) as typeof ZH_GLOSSARY;
+
+  // The same grouping the score uses, so what the page shows and what was counted cannot
+  // disagree. Articles arrive oldest first, and families keep their anchor's order.
+  const families = reprintFamilies(articles);
+
+  const report = (a: Article) => (
+    <article key={a.id} className="py-3">
+      <div className="mb-1 flex flex-wrap items-center gap-1.5">
+        <Badge tone={OWNERSHIP_TONE[a.ownership]} title={`Ownership class: ${OWNERSHIP_LABEL[a.ownership]}`}>
+          {OWNERSHIP_LABEL[a.ownership] ?? a.ownership}
+        </Badge>
+        <span className="text-[14px] font-medium text-text">{a.outlet}</span>
+        <span className="text-[13px] text-faint">{a.sourceCountry}</span>
+        <span className="text-[13px] text-faint">{LANGUAGE_LABEL[a.language] ?? a.language}</span>
+        {a.isPrimary && <Badge tone="var(--color-verified)">Primary</Badge>}
+        {a.ladderRung && <Badge tone="var(--color-zh)">rung {a.ladderRung}</Badge>}
+        <span className="mono-num ml-auto text-[13px] text-faint">{fmtDate(a.publishedAt)}</span>
+      </div>
+      <a href={a.url} target="_blank" rel="noopener noreferrer"
+        className={`block text-[15px] leading-snug hover:underline ${a.language === 'zh' ? '' : 'text-text'}`}>
+        <ChineseText text={a.title} clamp={false} accent={a.language === 'zh'}
+          english={translationFor(a.title) ?? titleGloss(a.title) ?? a.titleEn}
+          englishIsGloss={!translationFor(a.title)} />
+      </a>
+    </article>
+  );
+
+  const reprintRow = (a: Article) => (
+    <div key={a.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-2 text-[13px]">
+      <span className="font-medium text-text">{a.outlet}</span>
+      <span className="text-faint">{a.sourceCountry}</span>
+      <a href={a.url} target="_blank" rel="noopener noreferrer" lang={a.language === 'zh' ? 'zh' : undefined}
+        className="min-w-0 flex-1 basis-64 text-muted hover:underline">{a.title}</a>
+      <span className="mono-num text-faint">{fmtDate(a.publishedAt)}</span>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -155,27 +194,20 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   Source-by-source evidence
                 </SectionTitle>
                 <div className="divide-y divide-[color:var(--color-line-soft)]">
-                  {articles.map((a) => (
-                    <article key={a.id} className="py-3">
-                      <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                        <Badge tone={OWNERSHIP_TONE[a.ownership]} title={`Ownership class: ${OWNERSHIP_LABEL[a.ownership]}`}>
-                          {OWNERSHIP_LABEL[a.ownership] ?? a.ownership}
-                        </Badge>
-                        <span className="text-[14px] font-medium text-text">{a.outlet}</span>
-                        <span className="text-[13px] text-faint">{a.sourceCountry}</span>
-                        <span className="text-[13px] text-faint">{LANGUAGE_LABEL[a.language] ?? a.language}</span>
-                        {a.isPrimary && <Badge tone="var(--color-verified)">Primary</Badge>}
-                        {a.ladderRung && <Badge tone="var(--color-zh)">rung {a.ladderRung}</Badge>}
-                        <span className="mono-num ml-auto text-[13px] text-faint">{fmtDate(a.publishedAt)}</span>
-                      </div>
-                      <a href={a.url} target="_blank" rel="noopener noreferrer"
-                        className={`block text-[15px] leading-snug hover:underline ${a.language === 'zh' ? '' : 'text-text'}`}>
-                        <ChineseText text={a.title} clamp={false} accent={a.language === 'zh'}
-                          english={translationFor(a.title) ?? titleGloss(a.title) ?? a.titleEn}
-                          englishIsGloss={!translationFor(a.title)} />
-                      </a>
-                    </article>
-                  ))}
+                  {families.map((f) => {
+                    const reprints = f.members.filter((m) => m.id !== f.representative.id);
+                    if (!reprints.length) return report(f.representative);
+                    // Outlets other than the lead's own: "also printed by" the outlet already
+                    // shown would claim a second publisher that does not exist.
+                    const lead = f.representative.outlet.toLowerCase();
+                    const others = [...new Set(reprints.map((m) => m.outlet).filter((o) => o.toLowerCase() !== lead))];
+                    return (
+                      <EvidenceFamily key={f.representative.id} lead={report(f.representative)}
+                        outlets={others} sameOutlet={f.representative.outlet} count={reprints.length}>
+                        {reprints.map(reprintRow)}
+                      </EvidenceFamily>
+                    );
+                  })}
                 </div>
               </Panel>
             </div>

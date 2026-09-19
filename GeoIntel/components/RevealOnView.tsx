@@ -4,6 +4,8 @@ import { useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 const REVEAL_MS = 900;
+/** How long a family's reprints take to fold into their summary line. */
+const FOLD_MS = 450;
 
 /**
  * Reveals a panel's data marks the first time it scrolls into view, instead of
@@ -13,7 +15,7 @@ const REVEAL_MS = 900;
  * layout — these charts are laid out by their parent (a flex row, a grid cell) and a
  * wrapper that introduced its own box would break that.
  *
- * Three opt-in surfaces, chosen by what the mark already is rather than a
+ * Four opt-in surfaces, chosen by what the mark already is rather than a
  * caller-supplied mode:
  * - `<path>` / `<line>` draw in via stroke-dashoffset, using each one's own real
  *   length (sparklines, the Mandala's spokes, the network graph's edges). Skips
@@ -23,6 +25,10 @@ const REVEAL_MS = 900;
  * - `.reveal-scale` scales in from its own centre (the risk radar's polygon).
  * - `[data-reveal-bar]` grows its width from 0 to whatever the caller already set
  *   it to (confidence and ladder-severity bars, category bars).
+ * - `details[data-reveal-fold]` starts OPEN and folds shut, so the reader watches a story's
+ *   reprints merge into the report they repeat. Its resting state is closed — what renders
+ *   without JavaScript or under reduced motion — so the animation can only ever start from
+ *   content that is visible, never hide content that cannot be recovered.
  */
 export function RevealOnView({ children, className = 'contents' }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -46,7 +52,8 @@ export function RevealOnView({ children, className = 'contents' }: { children: R
       .filter((m) => getComputedStyle(m).animationName === 'none');
     const scales = [...el.querySelectorAll<HTMLElement | SVGElement>('.reveal-scale')];
     const bars = [...el.querySelectorAll<HTMLElement>('[data-reveal-bar]')];
-    if (!strokes.length && !scales.length && !bars.length) return;
+    const folds = [...el.querySelectorAll<HTMLDetailsElement>('details[data-reveal-fold]')];
+    if (!strokes.length && !scales.length && !bars.length && !folds.length) return;
 
     const strokeLengths = strokes.map((m) => {
       try { return m.getTotalLength(); } catch { return 0; }
@@ -67,6 +74,17 @@ export function RevealOnView({ children, className = 'contents' }: { children: R
     const barWidths = bars.map((b) => b.style.width);
     bars.forEach((b) => { b.style.width = '0%'; });
 
+    // Each fold starts open, its body pinned at its natural height so it has a number to
+    // animate from. This lands before paint, for the same reason as the bars above.
+    const foldBodies = folds.map((d) => d.querySelector<HTMLElement>('[data-fold-body]'));
+    folds.forEach((d, i) => {
+      const body = foldBodies[i];
+      if (!body) return;
+      d.open = true;
+      body.style.overflow = 'hidden';
+      body.style.height = `${body.scrollHeight}px`;
+    });
+
     const io = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) return;
       strokes.forEach((m) => {
@@ -80,6 +98,19 @@ export function RevealOnView({ children, className = 'contents' }: { children: R
       bars.forEach((b, i) => {
         b.style.transition = `width ${REVEAL_MS}ms ease-out`;
         b.style.width = barWidths[i];
+      });
+      folds.forEach((d, i) => {
+        const body = foldBodies[i];
+        if (!body) return;
+        body.style.transition = `height ${FOLD_MS}ms ease-in-out, opacity ${FOLD_MS}ms ease-in-out`;
+        body.style.height = '0px';
+        body.style.opacity = '0';
+        // Back to the resting state: closed, with every inline style removed so opening it
+        // later by hand shows the natural height.
+        window.setTimeout(() => {
+          d.open = false;
+          body.removeAttribute('style');
+        }, FOLD_MS + 40);
       });
       io.disconnect();
     }, { threshold: 0.2 });

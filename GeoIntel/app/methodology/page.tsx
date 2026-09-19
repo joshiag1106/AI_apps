@@ -149,7 +149,7 @@ export default function MethodologyPage() {
       <P>Each event scores out of 100 across six positive signals and one penalty:</P>
       <Panel className="my-4 divide-y divide-[color:var(--color-line-soft)] p-4">
         {[
-          ['Independent outlets', '25', 'Distinct commercial or public-broadcaster outlets. State, state-affiliated, tabloid and think-tank sources are all excluded from this count — it is the strongest single signal, so it is kept strict.'],
+          ['Independent outlets', '25', 'Distinct commercial or public-broadcaster outlets, each original report counted once — several outlets printing the same headline are one report. State, state-affiliated, tabloid and think-tank sources are all excluded from this count — it is the strongest single signal, so it is kept strict.'],
           ['Ownership diversity', '20', 'Presence of independent reporting, plus a mix of ownership classes.'],
           ['Source-country spread', '20', 'Distinct countries of publication. One state’s press is one perspective.'],
           ['Language spread', '10', 'Distinct languages. Cross-language pickup is hard to manufacture.'],
@@ -166,6 +166,18 @@ export default function MethodologyPage() {
           </div>
         ))}
       </Panel>
+      <P>
+        <strong>Reprints.</strong> Two articles are treated as one report when their headlines match at
+        0.8 or better after removing a trailing outlet name, a leading section label, case and punctuation
+        &mdash; and only when their figures agree, since &ldquo;4 missiles&rdquo; and &ldquo;5 missiles&rdquo;, or two
+        daily broadcasts titled by date, are different reports. A wire story printed by five outlets then
+        counts once, in the outlet count, the ownership mix and the country spread alike. This is
+        deliberately conservative: headlines two editors wrote separately about one event are independent
+        evidence and stay separate, so <strong>rewritten wire copy and translated copy are not caught</strong>,
+        and the correction is a floor. A headline shorter than four words (six Chinese characters) is never
+        treated as a reprint, since two editors could write it independently. A denial inside a reprint
+        still counts against the event.
+      </P>
       <P>
         Band labels are deliberately about reporting depth rather than veracity: &ldquo;Single report&rdquo;
         describes corroboration, where &ldquo;unverified&rdquo; would imply a judgement on the claim.
