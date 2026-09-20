@@ -1294,7 +1294,8 @@ recall lost on purpose, and printed in the report.
    as unclear.
 4. **The `analyse-route` test is a latent flake.** Under the full suite its file takes 4.9-6.6 s on both
    `main` and this branch against vitest's 5 s limit, and it failed once right after a restart. Not
-   caused by this work; flagged as its own task.
+   caused by this work; flagged as its own task. **Fixed 2026-09-20** (`b58e1a2`): the file now sets a
+   20 s `testTimeout` with `vi.setConfig`; the file takes ~2 s in the full suite.
 
 **Verified in a real browser.** An India-Pakistan event shows no ladder gauge and two article rows reading
 "rung 8 · not Beijing"; a Beijing event keeps its gauge and plain rung badges; `/china` and `/methodology`
@@ -1379,7 +1380,7 @@ Beijing formula about India found in headlines since 22 Jun." Contrast: dot vs l
 panel 10.94:1; all three palettes are identical because the trail uses fixed tokens; the site is
 dark-only. No console errors, no server errors.
 
-**What was NOT verified — do this once.** **Nobody has looked at the pixels.** The Browser pane was
+**What was NOT verified — do this once.** **Nobody has looked at the pixels.** *(Done later the same day, live in real Chrome — see "Where 2026-09-20 continued"; a phone, real touch and reduced motion are still unseen.)* The Browser pane was
 hidden, so screenshots came back blank at the wrong size and everything above is measured from the DOM
 (geometry, hit-testing, computed styles), not seen. Reduced-motion could not be emulated (the markup test
 and the hook's own early return cover it). Real touch was not tried. Open `/china` and scroll to
@@ -1418,12 +1419,50 @@ guard with `|| true` (`grep -c` exits 1 on zero matches).
 CPU uploading the fresh 600 MB `.next` from the synced Desktop. Moving the repo out of the synced
 Desktop is still Josh's decision, and now has a second reason.
 
-**Still open.** Nobody has looked at the pixels of the live page (see above) — open `/china` and scroll
-to "Evidence trail". The flaky-test branch `analyse-route-test-timeout` (`6ea49c0`) is still local and
-unmerged. The public `AI_apps` mirror of this work is a separate PR, opened and not merged until Josh
-says. The weekly audit now has a second list to read: `npm run ladder:shift` prints every resolved
+**Still open.** ~~Nobody has looked at the pixels of the live page~~ — done, see "Where 2026-09-20 continued". The public `AI_apps` mirror carries this work (PR #85, merged @ `e25ad77`); the
+flaky-test merge (`b58e1a2`, six lines of a test file) is not mirrored yet — it needs its own small
+PR whenever Josh wants one. The weekly audit now has a second list to read: `npm run ladder:shift` prints every resolved
 target and every unstated headline — run it against a restored nightly backup once the live corpus has
 weeks in it, since that is the held-out sample the rule has never seen.
+
+## Where 2026-09-20 continued — the pixels, both audits, and two findings
+
+Nothing was built. A pass to look at what shipped, run the two weekly audits, and chase the loose ends the
+last section named. `main` unchanged in code; 724 tests as before.
+
+**Both audits held their baselines.** Corpus 8,381 articles after an ingest (70 of 73 feeds; Indian Express
+and Dawn answered locally this time). `roster:audit`: the same four flags as 2026-09-10 and nothing new —
+Lula (noise: "ex-leader" is Bolsonaro), Xi (noise: he is the one doing the purging), Vietnam's 黎明兴 (still
+one story, still no romanisation, still not guessed at), and the DPRK defence minister the corpus reports
+dismissed (seat stays empty). Seats confirmed by the corpus 23 → 25; named 80, silent 42. `ladder:shift`:
+51 rung-bearing articles, **29 Beijing's, 19 another party's, 3 unclear**; 24 of 29 Beijing formulae resolve
+to a target (was 22 of 27) and the same five stay unstated. Every one of the 22 excluded headlines was read
+and reads right; nothing was moved. That is a THIN held-out sample: rung-bearing headlines went from 47 to 51
+since the rule was shaped, and the fixture is still the whole hit set it was built from. Four new cases that
+all read right is a good sign and not a verdict — read the excluded list again next week.
+
+**The three YouTube 404s are YouTube's, not ours.** `channel_id` was suspected stale. It is not: YouTube's own
+channel and two others also return 404 from the same endpoint, the body is served by "YouTube RSS Feeds
+server", a retry twenty seconds later is identical, and the channel *pages* return 200. Local ingest fails
+exactly those three and nothing else. No change to `data/feeds.ts`. If it is still 404 in a week, that is when
+to think about the feed rather than the IDs — re-run `curl -I` on a channel that certainly exists first.
+
+**Somebody has now looked at the pixels of the evidence trail** — live, in real Chrome, at ~1000 px. It renders
+as designed: three rows (United States, Japan, "target not stated"), a dated axis, the "Collecting since 10
+Sep" caption, dots sized by rung, and the table under it with pinyin beneath each headline. Dot positions
+match the audit's dates. Still not seen: a phone, real touch, and reduced motion.
+
+**One finding, and it is about the data, not the drawing: a stale reprint from a junk site made a fresh dot.**
+The live Japan row holds exactly one dot, 17 Sep, rung 8, and its headline is
+`众赢国际手机版_体育_8·15日本政要又“拜鬼”…` from an outlet Google News labels 体坛. The prefix is
+casino-style SEO, and "8·15" is the 15 August Yasukuni visits — so a page republished a month-old story and
+the feed dated it 17 Sep. The formula in it is genuinely Beijing's; the DATE is not evidence of anything on
+that day. It is the only spam-shaped headline among the 51 rung-bearing articles locally, so this is one case,
+not a leak, but on the live site it is the whole basis of the Japan row. **Reprint collapse does not help** —
+it folds duplicates of a story within a window, and this is an old story arriving new. Not fixed, because the
+fix is a design choice: an outlet denylist (cheap, needs upkeep, and the prefix pattern is exactly what a
+denylist is for) versus dating a formula by the event it names (a much larger job). Decide before the trail
+has weeks in it, since every dot after this one inherits the question.
 
 ## The accessibility pass (2026-09-07)
 
