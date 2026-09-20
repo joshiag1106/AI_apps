@@ -203,9 +203,11 @@ export const CONCEPT_GROUPS: ConceptGroup[] = [
       { id: 'hotspot', term: 'Hotspot',
         meaning: 'A named flashpoint that is not itself a state — the Line of Actual Control, Doklam, the Taiwan Strait. Kautilya uses hotspots to decide which pair of states an event belongs to.' },
       { id: 'escalation-ladder', term: 'Escalation ladder',
-        meaning: 'The fixed sequence of formulae Beijing uses in official statements, from “expresses concern” to “do not say you were not forewarned”. Which rung is used matters more than how loudly or often. The full ladder is below.' },
+        meaning: 'The fixed sequence of formulae Beijing uses in official statements, from “expresses concern” to “do not say you were not forewarned”. Which rung is used matters more than how loudly or often. The same words are used by other governments in their own protests, so each hit is also attributed to whoever spoke it, and only Beijing’s count as Beijing’s. The full ladder is below.' },
       { id: 'rung', term: 'Rung',
-        meaning: 'One step on the escalation ladder, numbered from 1 (the mildest) to 13. A country or relationship “moving up” is a new, higher rung than it used before.' },
+        meaning: 'One step on Beijing’s escalation ladder, numbered from 1 (the mildest) to 13. A country or relationship “moving up” is a new, higher rung of Beijing’s than it used before.' },
+      { id: 'ladder-speaker', term: 'Speaker (of a formula)',
+        meaning: 'Whose formula a rung is. The same words — “strong protest”, “solemn representations” — are used by India, Pakistan, Vietnam and Russia as well as Beijing, so a rung alone does not mean Beijing spoke. Kautilya reads the headline to attribute each one: Beijing, another party (labelled “not Beijing”), or unclear when the headline does not settle it. Only Beijing’s count as PRC formulae; unclear ones are left out, not guessed.' },
     ],
   },
   {

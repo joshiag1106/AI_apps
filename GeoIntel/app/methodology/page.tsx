@@ -136,6 +136,17 @@ export default function MethodologyPage() {
         evidence, not prophecy. Verify the outlet and date directly before acting on any detection.
       </P>
 
+      <P>
+        <strong>Whose formula it is.</strong> The match is on the words, and the words are not
+        Beijing&rsquo;s alone: India, Pakistan, Vietnam and Russia use the same formulae in their own
+        protests. So each hit is also attributed &mdash; Beijing, another party, or unclear &mdash; by
+        reading the headline&rsquo;s grammar: the nearest subject before the formula, ignoring who is
+        being addressed. Only Beijing&rsquo;s count on the pages that say &ldquo;PRC&rdquo;; another
+        government&rsquo;s protest still registers as tension but is labelled &ldquo;not Beijing&rdquo;,
+        and a headline that does not settle it is left out rather than guessed. Only headlines and
+        short snippets are read, so how many real Beijing formulae never appear in one is not known
+        &mdash; an absence here is not calm.
+      </P>
       <H>4. Clustering into events</H>
       <P>
         Reports are grouped by an inverted index over title tokens, glossed English terms, flashpoint

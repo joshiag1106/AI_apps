@@ -1243,6 +1243,89 @@ To re-measure the shift against the live corpus, restore a nightly backup locall
 `npm run reprints:shift` with `KAUTILYA_DB` pointed at it; the standalone server carries no
 scripts. The backup holds accounts, so keep it off shared storage and delete it afterwards.
 
+## Whose formula is it? — built, merged and DEPLOYED (2026-09-20)
+
+Built on the branch `ladder-speaker` (a spec, a plan and five commits), then — at Josh's instruction —
+fast-forwarded into `main` and deployed. 624 tests, `tsc --noEmit` clean, verified against a real
+production build and then against the live site. It lowers numbers Josh already watches. Design:
+`docs/specs/2026-09-19-ladder-speaker-design.md`; plan: `docs/plans/2026-09-19-ladder-speaker.md`.
+This is Stage 1 of the two-stage ladder-timeline plan he approved ("A approved"); the evidence-trail
+timeline itself is Stage 2 and gets its own spec after this ships.
+
+**The flaw.** The ladder detector matches formula text whatever the speaker, yet the site labelled
+every hit an "official PRC formula" in about fifteen places. Of the 47 rung-bearing headlines in the
+90-day corpus, 17 are other governments using the same language — India and Pakistan protesting each
+other, Vietnam, Russia to Japan, France to Iran — plus 3 that cannot be told. The single India-China
+hit was India lodging representations with China, and the test alert email of 2026-09-19, "IND — PAK
+moved to rung 8", was not a Beijing event. No real subscriber had received a server alert.
+
+**The fix.** `lib/lang/speaker.ts` reads the headline's grammar: the nearest subject marker before the
+formula, dropping the party being addressed (after 向 对 就 准, and verbs of address such as 谴责),
+ignoring markers after the formula, reading a possessive directly before it ("遭到中国的坚决反对"), and
+refusing to guess — a bare ministry after another state's name, or no marker at all, is `unclear`.
+An article keeps its raw rung and gains `ladderSpeaker`; **an event's ladder now comes from Beijing's
+articles only**, so the board and dashboard stats, China Watch, dyad pages, event badges, Ask and the
+alert emails all become truthful without touching their own code. Escalation scoring is unchanged: an
+India-Pakistan protest still counts as tension. On an event page another party's formula reads
+"rung 8 · not Beijing", an unattributed one "speaker unclear"; `/methodology` says how and what the
+method cannot see.
+
+**The shift, measured on the local corpus** (`npm run ladder:shift`, read-only): of 47 hits, **27 are
+Beijing's, 17 another party's, 3 unclear**. Events carrying a ladder fall **37 → 20**, none change
+rung, and the board's "PRC ladder hits" reads 16 where it read 32 this morning. Against the
+hand-labelled fixture Beijing is recognised on 27 of 29, no headline is called Beijing's that is not,
+and no real Beijing formula is called another party's. Two real Beijing statements are left `unclear`
+(a formula-first headline with no subject before it, and a bare ministry answering a US tariff) —
+recall lost on purpose, and printed in the report.
+
+**Four things this build taught.**
+
+1. **The fixture is the whole hit set, so it is also the training set.** A passing score proves less
+   than it seems. The only unseen sample is 4 headlines from the live server (4 of 4 agree), which is
+   thin and is said so. New cases belong in `LIVE_FIXTURE` whenever the audit turns one up.
+2. **Read the audit; my own labels were wrong.** The report prints every excluded headline in full.
+   Reading it found one the rule called another party's that was Beijing: a VOA piece on Taiwan's vice
+   president whose snippet says her trip "遭到中国的坚决反对" and that China lodged representations. I had
+   labelled it from the title alone, so the fixture gate had passed on a wrong label. Both were fixed:
+   29 Beijing formulae rather than 28, and the rule now reads that possessive.
+3. **An ingest only re-analyses rows it re-fetches.** Feeds reach back seven days, so rows older than
+   that keep their old analysis forever. `ladderPatches` and `updateLadders` back-fill the speaker on
+   stored rows inside the ingest's existing re-evaluation, or every older event's ladder would have read
+   as unclear.
+4. **The `analyse-route` test is a latent flake.** Under the full suite its file takes 4.9-6.6 s on both
+   `main` and this branch against vitest's 5 s limit, and it failed once right after a restart. Not
+   caused by this work; flagged as its own task.
+
+**Verified in a real browser.** An India-Pakistan event shows no ladder gauge and two article rows reading
+"rung 8 · not Beijing"; a Beijing event keeps its gauge and plain rung badges; `/china` and `/methodology`
+load and carry the new text. A database copy was back-filled and re-clustered the way the first ingest
+after a deploy would, giving the same 20 events with a ladder the report predicted.
+
+**Deployed, and verified on the live site.** Shipped by the runbook after a dry run showing no database,
+macOS-binary or duplicate-named file in the transfer. The service came up in 187 ms; the release directory
+holds no database; ten routes return 200 and every runbook probe passes; the server's database is intact
+and the migration added `ladder_speaker`. Scores and ladders only move at an ingest, so the hourly job's
+exact command was run once by hand (73 feeds, 71 ok — the same two datacenter 403s). It back-filled the
+speaker on the server's 12 rung-bearing rows — 4 Beijing, 8 another party's (India-Pakistan five times,
+Russia-Japan, Pakistan to India, Hong Kong's government answering US lawmakers), all of which read right —
+and left 4 events carrying a ladder. Live: the India-Pakistan event has no ladder gauge and its article
+rows read "not Beijing"; a Beijing event keeps its gauge and plain rung badges; the board's "PRC ladder
+hits" reads 4; `/methodology` carries the new paragraph.
+
+**THE DESKTOP IS ICLOUD-SYNCED, AND IT CORRUPTS THE WORKING TREE.** `FXICloudDriveDesktop` is on, and this
+repository lives under `~/Desktop`. iCloud makes " 2" and " 3" conflict copies and restores older versions
+of files. Seen this session: a deleted `components/MarkEntered.tsx` came back and broke the test that guards
+its absence; `.next/` filled with `* 2.ts`, `* 3.js` duplicates, which made `tsc` fail with duplicate-identifier
+errors; and `.next/standalone/` held **`kautilya 2.db`, a stale copy of the local database with a real user
+row**. The runbook's rsync excluded only the exact name `kautilya.db`, so it would NOT have excluded that
+file. Nothing shipped it. Countermeasures now standing: **deploy only from a freshly rebuilt `.next`**
+(`rm -rf .next` first — the source itself was clean), exclude `*.db` and `*.db-*` in the rsync rather than one
+filename, run the dry run and read it, and check the server afterwards for `* 2*` names and databases in the
+release directory. The lasting fix is to move the repository out of the synced Desktop — Josh's call.
+
+Read `npm run ladder:shift` weekly beside the roster audit: a wrong "other" hides a real Beijing formula
+silently, and reading that list is what found the one wrong call so far.
+
 ## The accessibility pass (2026-09-07)
 
 Five commits. Structural, and audited against the accessibility tree in a real browser

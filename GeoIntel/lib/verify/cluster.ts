@@ -293,7 +293,13 @@ function buildEvent(cluster: Article[]): GeoEvent {
   const english = cluster.filter((a) => a.language === 'en');
   const lead = pick(english.length ? english : cluster, (a) => (a.tier === 1 ? 3 : a.tier === 2 ? 2 : 1));
   const verdict = scoreConfidence(cluster);
-  const withLadder = cluster.filter((a) => a.ladderRung !== null)
+  // An event's ladder is BEIJING's. The detector matches formula text whatever the speaker, and
+  // about two in five hits in the real corpus were other governments — India and Pakistan
+  // protesting each other, Vietnam, Russia to Japan — while every surface that reads this says
+  // "PRC": the board's stat, China Watch, the alert emails. Taking it only from articles where
+  // Beijing is the speaker fixes all of them here, once. An article with no speaker (a row stored
+  // before this existed) or an unclear one is left out rather than over-claimed.
+  const withLadder = cluster.filter((a) => a.ladderRung !== null && a.ladderSpeaker === 'prc')
     .sort((a, b) => (b.ladderRung ?? 0) - (a.ladderRung ?? 0))[0];
 
   const escalations = cluster.map((a) => a.escalation).sort((x, y) => x - y);
