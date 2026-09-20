@@ -22,7 +22,8 @@ const FOLD_MS = 450;
  *   anything that already carries its own CSS animation — the network graph's "you
  *   just walked this edge" highlight, for one — so the two never fight over the
  *   same property.
- * - `.reveal-scale` scales in from its own centre (the risk radar's polygon).
+ * - `.reveal-scale` scales in from its own centre (the risk radar's polygon). A
+ *   `data-reveal-delay="<ms>"` on the element staggers it (the evidence trail's dots).
  * - `[data-reveal-bar]` grows its width from 0 to whatever the caller already set
  *   it to (confidence and ladder-severity bars, category bars).
  * - `details[data-reveal-fold]` starts OPEN and folds shut, so the reader watches a story's
@@ -92,7 +93,8 @@ export function RevealOnView({ children, className = 'contents' }: { children: R
         m.style.strokeDashoffset = '0';
       });
       scales.forEach((s) => {
-        s.style.transition = `transform ${REVEAL_MS}ms ease-out`;
+        // `data-reveal-delay` staggers a row of dots; anything without it scales in at once.
+        s.style.transition = `transform ${REVEAL_MS}ms ease-out ${Number(s.dataset.revealDelay) || 0}ms`;
         s.style.transform = 'scale(1)';
       });
       bars.forEach((b, i) => {

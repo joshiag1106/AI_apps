@@ -70,6 +70,24 @@ const show = (label: string, list: typeof hits) => {
 show('excluded as another party’s', bySpeaker.other);
 show('excluded as unclear', bySpeaker.unclear);
 
+// Whom each Beijing formula is about. A wrong arrow puts a dot in the wrong row and looks
+// confident, so every resolved target is listed with its headline and every headline left
+// unresolved is listed in full — read both, weekly, with the rest of this audit.
+const aimed = new Map<string, typeof hits>();
+const unstated: typeof hits = [];
+for (const a of bySpeaker.prc) {
+  const t = scored.get(a.id)!.ladderTarget;
+  if (t) aimed.set(t, [...(aimed.get(t) ?? []), a]);
+  else unstated.push(a);
+}
+console.log(`\n=== whom Beijing’s formulae are about: ${bySpeaker.prc.length - unstated.length} of ${bySpeaker.prc.length} resolved ===`);
+for (const [t, list] of [...aimed.entries()].sort((x, y) => y[1].length - x[1].length)) {
+  console.log(`\n  → ${t} (${list.length})`);
+  for (const a of list) console.log(`      ${a.publishedAt.slice(0, 10)}  ${a.title}`);
+}
+console.log(`\n=== target not stated (${unstated.length}) — read these: could a person tell whom it is about? ===`);
+for (const a of unstated) console.log(`  ${a.publishedAt.slice(0, 10)}  ${a.title}`);
+
 // Invariant: an article with no formula must be untouched by any of this.
 const stray = arts.filter((a) => scored.get(a.id)!.ladderRung === null && a.ladderRung !== null && a.ladderRung !== undefined).length;
 console.log(`\nstored rungs that the current rules would no longer find at all (a lexicon change, not this one): ${stray}\n`);

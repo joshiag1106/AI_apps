@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Panel, SectionTitle, Stat, Badge, Trend, Empty } from '@/components/ui';
 import { EventCard } from '@/components/EventCard';
+import { LadderTrail } from '@/components/LadderTrail';
 import { ChineseText } from '@/components/ChineseText';
 import { titleGloss } from '@/components/EventCard';
 import { Columns, BarList, Ribbon } from '@/components/charts';
 import { Paywall } from '@/components/Paywall';
 import { WatchToggle } from '@/components/Watchlist';
 import { CountUp } from '@/components/CountUp';
-import { corpus, countryName } from '@/lib/queries';
+import { corpus, countryName, ladderTrailData } from '@/lib/queries';
 import { dyadTension } from '@/lib/risk';
 import { consume } from '@/lib/quota';
 import { BY_ISO, HOTSPOTS } from '@/data/countries';
@@ -154,6 +155,15 @@ export default async function DyadPage({ params }: { params: Promise<{ pair: str
               )}
             </Panel>
           </section>
+
+          {(a.iso === 'CHN') !== (b.iso === 'CHN') && (
+            <section>
+              <SectionTitle kicker="Beijing’s own formulae, by date">
+                Evidence trail — {a.iso === 'CHN' ? b.name : a.name}
+              </SectionTitle>
+              <LadderTrail trail={ladderTrailData()} only={a.iso === 'CHN' ? b.iso : a.iso} />
+            </section>
+          )}
 
           <section>
             <SectionTitle kicker="Highest escalation × corroboration">Defining events</SectionTitle>

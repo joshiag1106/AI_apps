@@ -1,6 +1,7 @@
 import { LEXICON, DOMAIN_HINTS, type Domain } from '@/data/lexicon';
 import { glossArticle, highestRung } from '@/lib/lang/chinese';
 import { formulaSpeaker, type LadderSpeaker } from '@/lib/lang/speaker';
+import { formulaTarget } from '@/lib/lang/target';
 
 export interface ScoreResult {
   escalation: number;      // -100..100
@@ -13,6 +14,8 @@ export interface ScoreResult {
   ladderEn: string | null;
   /** Who said it — null when there is no formula. See lib/lang/speaker. */
   ladderSpeaker: LadderSpeaker | null;
+  /** Whom a Beijing formula is aimed at — null unless the speaker is Beijing and the headline says. */
+  ladderTarget: string | null;
 }
 
 const LATIN = /^[\x20-\x7F]+$/;
@@ -65,6 +68,8 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
   // tension. Only the surfaces that say "PRC" care whose it is, and they read the speaker.
   if (rung) score += rung.severity * 0.5;
   const speaker = rung ? formulaSpeaker(raw, rung.zh) : null;
+  // Only Beijing's formulae have a Beijing target: another government's is not aimed by Beijing.
+  const target = rung && speaker === 'prc' ? formulaTarget(raw, rung.zh) : null;
 
   return {
     // tanh-style squash keeps a long article from running away with the score.
@@ -77,6 +82,7 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
     ladderZh: rung?.zh ?? null,
     ladderEn: rung?.en ?? null,
     ladderSpeaker: speaker,
+    ladderTarget: target,
   };
 }
 
