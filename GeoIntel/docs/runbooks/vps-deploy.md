@@ -408,6 +408,12 @@ The database is untouched because it was never in that directory.
 
 ## What will bite you
 
+- **Do not put the rsync `--exclude` flags in a shell variable.** On macOS the shell is zsh, which does
+  not word-split an unquoted `$VAR`, so rsync receives ONE mangled pattern and every exclusion silently
+  stops working: the 2026-09-20 dry run planned to send `kautilya.db` (with a real user row) and the
+  macOS binaries. Write each `--exclude='…'` out, as the block above does. And always read the dry run:
+  `bad=$(grep -c -i -E '\.db|darwin| [23]([. /]|$)' plan.txt || true)` and stop unless it is `0` — the
+  `|| true` matters, because `grep -c` exits 1 when it counts zero and silently breaks an `&&` chain.
 - **An unset `KAUTILYA_DB` destroys accounts on the next deploy.** The standalone server
   changes directory into its own folder at startup, so the default `./kautilya.db` lands in
   the directory `rsync --delete` replaces. In production that file is not the rebuildable

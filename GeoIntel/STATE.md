@@ -1326,6 +1326,105 @@ release directory. The lasting fix is to move the repository out of the synced D
 Read `npm run ladder:shift` weekly beside the roster audit: a wrong "other" hides a real Beijing formula
 silently, and reading that list is what found the one wrong call so far.
 
+## The ladder evidence trail — built, merged and DEPLOYED (2026-09-20)
+
+Stage 2 of the two-stage plan Josh approved ("A approved"). Built on the branch `ladder-trail` from
+`docs/specs/2026-09-20-ladder-trail-design.md` and `docs/plans/2026-09-20-ladder-trail.md`: six commits
+(`b474dad` target rule, `7fb39c7` storage, `5c7da11` trail, `8d72061` chart, `62370e8` placement,
+`a786a72` what the real build showed). 724 tests (was 624), `tsc --noEmit` clean.
+
+**What it is.** China Watch has an "Evidence trail" section after "Official statement detections", and a
+China dyad page (`/dyad/CHN-JPN`) has the same chart narrowed to one country, inside the paywall's
+allowed branch. One row per country Beijing aimed a formula at; one dot per day at that day's highest
+rung, reprints folded; a ring on a rung higher than any earlier dot in the row (the row's first dot is
+never ringed). Headlines whose target the grammar cannot settle go in a "target not stated" row. Under
+the chart, always in the page, is a table of every dated headline behind every dot — the chart is a
+picture of it. Nothing is a line: no dot means no formula found in a headline, not calm.
+
+**The rule that names the target** (`lib/lang/target.ts`, stored as `articles.ladder_target`, back-filled by
+the ingest like the speaker). Steps, first that finds one state decides, two different states → `null`:
+a pair named with Beijing; a state introduced by 向/对/就/召 or written 日方 in Beijing's own clause; the
+state an embassy sits in; a state named before Beijing's subject (the act being answered); a state
+named after the formula; a named official's home state, only when no state is named at all. Never
+China, never the EU. **Read `npm run ladder:shift`** — its new section lists every resolved target and
+every unresolved headline in full.
+
+**The numbers, local 90-day corpus.** 27 Beijing-attributed hits: **22 resolved** (Japan 10, South Korea
+4, Philippines 4, United States 4), **5 left unstated on purpose**: the two 萧美琴 headlines (Taiwan and
+the EU/Italy), the Anthropic report (a company), the Korea-and-Taiwan Biennale item, and the US-and-Iran
+sanctions item (the answer is to the US, but the grammar cannot say so). Zero wrong on the hand-labelled
+fixture — which is the whole hit set and so also what the rule was shaped on. The real held-out test is
+the live corpus as it fills: after a few weeks, restore a nightly backup and read `ladder:shift`.
+
+**What the real build showed** (production build, standalone server on a scratch copy of the DB, driven
+from the Browser pane). Three defects no unit test could see, all fixed in `a786a72`, plus one more:
+1. **Neighbouring dots took each other's clicks.** Days are ~9 px apart on a desktop axis (3 px on a
+   phone); dots were 9-22 px with 24 px click targets, so a click on the centre of 4 of 15 dots opened the
+   next day's event. Now 8-16 px, the target is the dot and never wider than two days of axis (taken from
+   the real window length), and a halo separates overlapping dots: 15 of 15 reach themselves. **The spec
+   said 24 px targets; that was wrong for a 90-day axis.** On a phone adjacent days still merge; the
+   table's text links are the way in there, and the copy says so.
+2. **The new-high ring was visual only.** Now also in each dot's accessible label and in the table.
+3. **"Collecting since 22 Jun" was false** once the 90-day cap moved the window past the corpus's real
+   start (20 Jun). The trail now carries `capped` and says "Showing the last 90 days."
+4. **The oldest dots had no event link**, because `corpus()` holds only the newest 4,000 events and the
+   local DB has 4,267: 11 of 15 dots linked. Now looked up directly (`eventIdsByArticle`): 15 of 15.
+Also found: `toLocaleDateString('en-GB')` writes September "Sept" on this Node, so day labels come from a
+fixed month table, not Intl (the server and a laptop could otherwise disagree).
+
+**Also checked, and fine.** Reveal lifecycle (hydrated; dots held at `scale(0)`; on scroll `scale(1)`,
+staggered 0-0.63 s). 375 px: no sideways page scroll, labels above lanes, the table scrolls inside its own
+box. `/dyad/CHN-JPN` one row (5 dots, 10 headlines); `/dyad/IND-PAK` none; `/dyad/CHN-IND` says "No
+Beijing formula about India found in headlines since 22 Jun." Contrast: dot vs lane 7.23:1, ring vs
+panel 10.94:1; all three palettes are identical because the trail uses fixed tokens; the site is
+dark-only. No console errors, no server errors.
+
+**What was NOT verified — do this once.** **Nobody has looked at the pixels.** The Browser pane was
+hidden, so screenshots came back blank at the wrong size and everything above is measured from the DOM
+(geometry, hit-testing, computed styles), not seen. Reduced-motion could not be emulated (the markup test
+and the hook's own early return cover it). Real touch was not tried. Open `/china` and scroll to
+"Evidence trail". Separately: on the first load of a fresh browser profile, `/china` did a full
+navigation to `/` by itself once; it did not repeat. Not investigated, and nothing here touches routing.
+
+**Deployed, at Josh's instruction ("merge it and deploy"), and verified live.** `main` = `7bc21c5`
+(a fast-forward of `ladder-trail` `21482c5` plus one fix), on the private repo. Two deploys, the current
+build `VzKFTc2vPfm5P0p0wJTbm`. Before the first, a separately named backup on the server,
+`/var/backups/kautilya/pre-ladder-trail-2026-09-20-0326.db.gz` (integrity ok; 2,618 articles, 1,385 events,
+0 users). Then the hourly job's own command run once by hand as `kautilya`, which back-filled the live
+rows: 68 of 73 feeds fetched (Indian Express and Dawn 403 as always, **and three YouTube channel feeds
+404 — new; it was 71 of 73 — watch it, the channel ids may be stale**), 9 s.
+Live afterwards: 13 rung-bearing articles, 5 Beijing's, **2 with a target** (Japan, United States, both
+right on reading) and 3 unstated (the Anthropic report and the two 萧美琴 items, the same three the local
+audit left unstated); the India-Pakistan hits are correctly "other". `/china` shows **4 dots in 3 rows**
+and `/dyad/CHN-JPN` one; `/dyad/IND-PAK` no trail; `/dyad/CHN-IND` says "No Beijing formula about India
+found in headlines since 10 Sep." Every runbook probe passes, the journal has no errors.
+
+**What the live site showed that the local build could not** (fixed in `7bc21c5`, redeployed): the trail
+said "Collecting since **3 Jul**", though ingesting began on 17 Sep. The corpus holds 98 articles dated
+July and August, one to three a day — stragglers, not coverage — and `corpusSince()` started at the
+earliest. That stretched the axis over 79 days and implied a formula-free July, when before about 10 Sep
+nothing was collected systematically. The corpus now starts at the later of its earliest article and the
+first ingest less the feeds' seven-day look-back: **10 Sep** live, unchanged for a corpus collected
+throughout. **The spec's premise — that the corpus start is when collecting began — was wrong on live
+data.** The live trail will fill in as the hourly job runs; by design it opens sparse.
+
+**A deploy mistake, caught by a guard.** I put the rsync `--exclude` flags in a shell variable; zsh does
+not word-split it, so rsync received one mangled pattern and the dry run planned to send `kautilya.db`
+(with its user row) and the macOS binaries. The abort-unless-clean guard on the dry run stopped it
+before anything was transferred. Pass each `--exclude` explicitly, as the runbook shows, and write the
+guard with `|| true` (`grep -c` exits 1 on zero matches).
+
+**The iCloud cost, measured.** The second clean build took over ten minutes; `fileproviderd` sat at ~98%
+CPU uploading the fresh 600 MB `.next` from the synced Desktop. Moving the repo out of the synced
+Desktop is still Josh's decision, and now has a second reason.
+
+**Still open.** Nobody has looked at the pixels of the live page (see above) — open `/china` and scroll
+to "Evidence trail". The flaky-test branch `analyse-route-test-timeout` (`6ea49c0`) is still local and
+unmerged. The public `AI_apps` mirror of this work is a separate PR, opened and not merged until Josh
+says. The weekly audit now has a second list to read: `npm run ladder:shift` prints every resolved
+target and every unstated headline — run it against a restored nightly backup once the live corpus has
+weeks in it, since that is the held-out sample the rule has never seen.
+
 ## The accessibility pass (2026-09-07)
 
 Five commits. Structural, and audited against the accessibility tree in a real browser

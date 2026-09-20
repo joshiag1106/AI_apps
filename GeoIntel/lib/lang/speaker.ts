@@ -22,8 +22,8 @@
 export type LadderSpeaker = 'prc' | 'other' | 'unclear';
 
 /** One-character abbreviations headlines use for states. */
-const ABBR = '印巴俄日韩美英法德伊菲越澳泰朝';
-const NAMES = ['印度', '巴基斯坦', '俄罗斯', '日本', '韩国', '美国', '英国', '法国', '德国', '伊朗', '菲律宾',
+export const ABBR = '印巴俄日韩美英法德伊菲越澳泰朝';
+export const NAMES = ['印度', '巴基斯坦', '俄罗斯', '日本', '韩国', '美国', '英国', '法国', '德国', '伊朗', '菲律宾',
   '越南', '澳大利亚', '泰国', '朝鲜', '以色列', '土耳其', '沙特', '台湾', '乌克兰', '马来西亚', '印尼',
   '新加坡', '加拿大', '意大利', '欧盟'];
 const NAME_ALT = NAMES.join('|');
@@ -33,7 +33,7 @@ const PRED = '(?:严正|强烈|坚决|表示|驳斥|警告|提出|提|已|将|�
 // What introduces the party being ADDRESSED. Prepositions (向 对 就 与 同 给), verbs of summoning
 // (召见 传召 召 准), and verbs of address or condemnation, whose object is the counterparty:
 // in 中方强烈谴责日方, 日方 is who is condemned, not who speaks.
-const TARGET_LEAD = /(?:向|对|就|与|同|准|给|召见|传召|召|谴责|批评|指责|敦促|呼吁|制裁|抵制|警告|要求|回击|反制|驳斥|反对)$/;
+export const TARGET_LEAD = /(?:向|对|就|与|同|准|给|召见|传召|召|谴责|批评|指责|敦促|呼吁|制裁|抵制|警告|要求|回击|反制|驳斥|反对)$/;
 
 type Side = 'prc' | 'other' | 'bare';
 interface Marker { start: number; end: number; side: Side }
@@ -74,13 +74,17 @@ function findMarkers(pre: string): Marker[] {
   return out.filter((m, i) => !out.slice(0, i).some((p) => p.start <= m.start && p.end >= m.end && p !== m));
 }
 
-export function formulaSpeaker(text: string, formula: string): LadderSpeaker {
+/** The subject markers before the formula, minus those that only name who is being addressed. */
+function subjectsBefore(text: string, formula: string): Marker[] | null {
   const at = text.indexOf(formula);
-  if (at < 0) return 'unclear';
+  if (at < 0) return null;
   const pre = text.slice(0, at);
-  const markers = findMarkers(pre)
-    .filter((m) => !TARGET_LEAD.test(pre.slice(Math.max(0, m.start - 2), m.start)));
-  if (!markers.length) return 'unclear';
+  return findMarkers(pre).filter((m) => !TARGET_LEAD.test(pre.slice(Math.max(0, m.start - 2), m.start)));
+}
+
+export function formulaSpeaker(text: string, formula: string): LadderSpeaker {
+  const markers = subjectsBefore(text, formula);
+  if (!markers || !markers.length) return 'unclear';
 
   const nearest = markers[markers.length - 1];
   if (nearest.side === 'bare') {
@@ -89,4 +93,16 @@ export function formulaSpeaker(text: string, formula: string): LadderSpeaker {
     return markers.some((m) => m !== nearest && m.side === 'other') ? 'unclear' : 'prc';
   }
   return nearest.side;
+}
+
+/**
+ * Where Beijing's own voice sits in the text before the formula: the nearest subject marker,
+ * when that marker is Beijing's (中方, an embassy, a bare ministry). Null when it is anyone
+ * else's, when there is none, or when the formula is absent. The target rule reads the clause
+ * between this and the formula, and the text on either side of it.
+ */
+export function formulaAnchor(text: string, formula: string): { start: number; end: number } | null {
+  const markers = subjectsBefore(text, formula);
+  const nearest = markers?.[markers.length - 1];
+  return nearest && nearest.side !== 'other' ? { start: nearest.start, end: nearest.end } : null;
 }

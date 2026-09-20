@@ -119,7 +119,7 @@ describe('back-filling rows that are already stored', () => {
 
   it('leaves a row that is already right alone', () => {
     const s = scoreText('中方已向日方提出严正交涉');
-    const stored = art({ title: '中方已向日方提出严正交涉', ladderRung: s.ladderRung, ladderZh: s.ladderZh, ladderEn: s.ladderEn, ladderSpeaker: s.ladderSpeaker });
+    const stored = art({ title: '中方已向日方提出严正交涉', ladderRung: s.ladderRung, ladderZh: s.ladderZh, ladderEn: s.ladderEn, ladderSpeaker: s.ladderSpeaker, ladderTarget: s.ladderTarget });
     expect(ladderPatches([stored])).toEqual([]);
   });
 

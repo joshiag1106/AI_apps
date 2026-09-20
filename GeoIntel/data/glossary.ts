@@ -208,6 +208,10 @@ export const CONCEPT_GROUPS: ConceptGroup[] = [
         meaning: 'One step on Beijing’s escalation ladder, numbered from 1 (the mildest) to 13. A country or relationship “moving up” is a new, higher rung of Beijing’s than it used before.' },
       { id: 'ladder-speaker', term: 'Speaker (of a formula)',
         meaning: 'Whose formula a rung is. The same words — “strong protest”, “solemn representations” — are used by India, Pakistan, Vietnam and Russia as well as Beijing, so a rung alone does not mean Beijing spoke. Kautilya reads the headline to attribute each one: Beijing, another party (labelled “not Beijing”), or unclear when the headline does not settle it. Only Beijing’s count as PRC formulae; unclear ones are left out, not guessed.' },
+      { id: 'ladder-target', term: 'Target (of a formula)',
+        meaning: 'The state a Beijing formula is aimed at, read from the headline: the party after 向 / 对 / 就, the state whose act is being answered, or the host of a protesting embassy. When a headline names two states or none, the target is left unstated, not guessed.' },
+      { id: 'evidence-trail', term: 'Evidence trail',
+        meaning: 'A row of dots per country on China Watch, one for each day a formula Beijing itself used appeared in a headline about that country, with the headline behind every dot. It is not a level: no dot means none was found in a headline, not that things were calm.' },
     ],
   },
   {

@@ -98,6 +98,8 @@ export async function GET(req: Request) {
         ladder_zh: a.ladderZh ?? '',
         // Whose formula it is: prc, other, unclear, or empty when there is no formula.
         ladder_speaker: a.ladderSpeaker ?? '',
+        // Whom a Beijing formula is aimed at (ISO3), or empty when the headline does not say.
+        ladder_target: a.ladderTarget ?? '',
         url: a.url,
       })));
     }

@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { Panel, SectionTitle, Stat, Badge, Empty, Trend } from '@/components/ui';
 import { EventCard, EventRow, ConfidenceChip } from '@/components/EventCard';
 import { ChineseText } from '@/components/ChineseText';
+import { LadderTrail } from '@/components/LadderTrail';
 import { titleGloss } from '@/components/EventCard';
 import { Radar, BarList, Ribbon, Sparkline } from '@/components/charts';
 import { Mandala } from '@/components/Mandala';
 import { CountUp } from '@/components/CountUp';
-import { corpus, ladderAlerts, chineseStream, eventsFor, countryName, languageStats, articlesIn } from '@/lib/queries';
+import { corpus, ladderAlerts, ladderTrailData, chineseStream, eventsFor, countryName, languageStats, articlesIn } from '@/lib/queries';
 import { countryRisk, dyadTension, VECTORS } from '@/lib/risk';
 import { ESCALATION_LADDER, ZH_GLOSSARY } from '@/data/glossary.zh';
 import { timeAgo } from '@/lib/format';
@@ -20,6 +21,7 @@ export default async function ChinaPage() {
   const events = corpus();
   const risk = countryRisk('CHN', events);
   const ladder = ladderAlerts(events, 14);
+  const trail = ladderTrailData();
   const zhEvents = chineseStream(events, 30);
   const dyads = CHN_DYADS.map((iso) => dyadTension('CHN', iso, events)).sort((a, b) => b.score - a.score);
 
@@ -160,6 +162,13 @@ export default async function ChinaPage() {
             ))}
           </div>
         ) : <Empty>No official escalation formulae detected in the current corpus.</Empty>}
+      </section>
+
+      <section>
+        <SectionTitle kicker="Beijing’s own formulae, by date and by country">
+          Evidence trail
+        </SectionTitle>
+        <LadderTrail trail={trail} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">

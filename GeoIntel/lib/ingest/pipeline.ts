@@ -17,6 +17,7 @@ export interface LadderPatch {
   ladderZh: string | null;
   ladderEn: string | null;
   ladderSpeaker: LadderSpeaker | null;
+  ladderTarget: string | null;
 }
 
 /**
@@ -32,8 +33,12 @@ export function ladderPatches(stored: Article[]): LadderPatch[] {
   const out: LadderPatch[] = [];
   for (const a of stored) {
     const s = scoreText(a.title, a.snippet);
-    if (a.ladderRung === s.ladderRung && (a.ladderSpeaker ?? null) === s.ladderSpeaker) continue;
-    out.push({ id: a.id, ladderRung: s.ladderRung, ladderZh: s.ladderZh, ladderEn: s.ladderEn, ladderSpeaker: s.ladderSpeaker });
+    if (a.ladderRung === s.ladderRung && (a.ladderSpeaker ?? null) === s.ladderSpeaker
+      && (a.ladderTarget ?? null) === s.ladderTarget) continue;
+    out.push({
+      id: a.id, ladderRung: s.ladderRung, ladderZh: s.ladderZh, ladderEn: s.ladderEn,
+      ladderSpeaker: s.ladderSpeaker, ladderTarget: s.ladderTarget,
+    });
   }
   return out;
 }
@@ -69,6 +74,7 @@ export function enrich(raw: RawArticle): Article {
     ladderZh: s.ladderZh,
     ladderEn: s.ladderEn,
     ladderSpeaker: s.ladderSpeaker,
+    ladderTarget: s.ladderTarget,
     glossed: s.glossed,
     titleEn: glossHeadline(raw.title, raw.language),
     relevant,

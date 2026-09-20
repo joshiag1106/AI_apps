@@ -41,6 +41,11 @@ export interface Article extends RawArticle {
    * it. Optional because rows stored before it existed carry none, which reads as unclear.
    */
   ladderSpeaker?: LadderSpeaker | null;
+  /**
+   * The state a Beijing formula is aimed at — an ISO3 code, or null when the headline does not
+   * say. Only ever set when ladderSpeaker is 'prc', and never 'CHN'. See lib/lang/target.
+   */
+  ladderTarget?: string | null;
   glossed: string[];      // English renderings of recognised Chinese terms
   titleEn: string | null; // English gloss of a non-English headline
   /** Carries a geopolitical security signal — see isRelevant() in lib/ingest/pipeline. */

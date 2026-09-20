@@ -147,6 +147,14 @@ export default function MethodologyPage() {
         short snippets are read, so how many real Beijing formulae never appear in one is not known
         &mdash; an absence here is not calm.
       </P>
+      <P>
+        <strong>Whom it is about.</strong> For each of Beijing&rsquo;s formulae the headline is also
+        read for the state it is aimed at &mdash; the party after 向, 对 or 就, the state whose act is
+        being answered, or the host of a protesting embassy. China Watch plots one dot per country per
+        day from it. Where a headline names two states, or none, the target is left unstated rather
+        than guessed. Formulae are read from headlines and short snippets only, so a gap in the trail
+        means none was found, not that things were calm.
+      </P>
       <H>4. Clustering into events</H>
       <P>
         Reports are grouped by an inverted index over title tokens, glossed English terms, flashpoint

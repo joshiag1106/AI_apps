@@ -1,9 +1,10 @@
 import 'server-only';
 import { cache } from 'react';
-import { allEvents, articlesByIds, eventById, getMeta, articleCountByLanguage, articlesByLanguage } from '@/lib/db';
+import { allEvents, articlesByIds, eventById, getMeta, articleCountByLanguage, articlesByLanguage, ladderTrailArticles, corpusSince, eventIdsByArticle } from '@/lib/db';
 import { countryRisk, dyadTension, type CountryRisk } from '@/lib/risk';
 import { COUNTRIES, BY_ISO, HOTSPOTS } from '@/data/countries';
 import { dyadKey } from '@/lib/analyze/entities';
+import { ladderTrail, type Trail } from '@/lib/verify/trail';
 import type { GeoEvent } from '@/lib/types';
 
 /** One corpus read per request; every aggregation below works off it. */
@@ -69,6 +70,18 @@ export function ladderAlerts(events = corpus(), limit = 20) {
     .sort((a, b) => (b.ladderRung ?? 0) - (a.ladderRung ?? 0) || Date.parse(b.lastSeen) - Date.parse(a.lastSeen))
     .slice(0, limit);
 }
+
+/**
+ * The evidence trail: Beijing's own formulae by country and day. Cached per request, like the
+ * corpus it reads. Each dot's event is looked up directly rather than through `corpus()`, which
+ * holds only the newest 4,000 events — the oldest dots would otherwise lose their links.
+ */
+export const ladderTrailData = cache((): Trail => {
+  const articles = ladderTrailArticles();
+  const eventOf = eventIdsByArticle(articles.map((a) => a.id));
+  const now = new Date().toISOString();
+  return ladderTrail(articles, { since: corpusSince() ?? now, until: now, eventOf });
+});
 
 /**
  * Exact corpus totals for a language. The China page previously derived its headline

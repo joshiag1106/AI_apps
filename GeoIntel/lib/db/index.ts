@@ -37,7 +37,7 @@ function migrate(db: DatabaseSync) {
       beat_id TEXT, locale_key TEXT, source_country TEXT, ownership TEXT,
       tier INTEGER, is_primary INTEGER, actors TEXT, hotspots TEXT, domain TEXT,
       escalation REAL, framing REAL, ladder_rung INTEGER, ladder_zh TEXT,
-      ladder_en TEXT, ladder_speaker TEXT, glossed TEXT, title_en TEXT, relevant INTEGER, video_id TEXT, ingested_at TEXT
+      ladder_en TEXT, ladder_speaker TEXT, ladder_target TEXT, glossed TEXT, title_en TEXT, relevant INTEGER, video_id TEXT, ingested_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_articles_pub ON articles(published_at DESC);
     CREATE INDEX IF NOT EXISTS idx_articles_lang ON articles(language);
@@ -96,6 +96,9 @@ function migrate(db: DatabaseSync) {
   if (!cols.has('ladder_speaker')) {
     db.exec('ALTER TABLE articles ADD COLUMN ladder_speaker TEXT');
   }
+  if (!cols.has('ladder_target')) {
+    db.exec('ALTER TABLE articles ADD COLUMN ladder_target TEXT');
+  }
   const eventCols = new Set(
     (db.prepare('PRAGMA table_info(events)').all() as { name: string }[]).map((c) => c.name),
   );
@@ -133,10 +136,10 @@ export function upsertArticles(rows: Article[]): number {
   const stmt = db.prepare(`
     INSERT INTO articles (id,url,title,outlet,published_at,snippet,image_url,language,
       beat_id,locale_key,source_country,ownership,tier,is_primary,actors,people,hotspots,domain,
-      escalation,framing,ladder_rung,ladder_zh,ladder_en,ladder_speaker,glossed,title_en,relevant,video_id,ingested_at)
+      escalation,framing,ladder_rung,ladder_zh,ladder_en,ladder_speaker,ladder_target,glossed,title_en,relevant,video_id,ingested_at)
     VALUES (@id,@url,@title,@outlet,@published_at,@snippet,@image_url,@language,
       @beat_id,@locale_key,@source_country,@ownership,@tier,@is_primary,@actors,@people,@hotspots,@domain,
-      @escalation,@framing,@ladder_rung,@ladder_zh,@ladder_en,@ladder_speaker,@glossed,@title_en,@relevant,@video_id,@ingested_at)
+      @escalation,@framing,@ladder_rung,@ladder_zh,@ladder_en,@ladder_speaker,@ladder_target,@glossed,@title_en,@relevant,@video_id,@ingested_at)
     ON CONFLICT(url) DO UPDATE SET
       title=excluded.title, snippet=excluded.snippet,
       image_url=COALESCE(excluded.image_url, articles.image_url),
@@ -147,7 +150,8 @@ export function upsertArticles(rows: Article[]): number {
       actors=excluded.actors, people=excluded.people, hotspots=excluded.hotspots, domain=excluded.domain,
       escalation=excluded.escalation, framing=excluded.framing,
       ladder_rung=excluded.ladder_rung, ladder_zh=excluded.ladder_zh,
-      ladder_en=excluded.ladder_en, ladder_speaker=excluded.ladder_speaker, glossed=excluded.glossed,
+      ladder_en=excluded.ladder_en, ladder_speaker=excluded.ladder_speaker,
+      ladder_target=excluded.ladder_target, glossed=excluded.glossed,
       title_en=excluded.title_en, relevant=excluded.relevant, video_id=excluded.video_id
   `);
   const now = new Date().toISOString();
@@ -163,6 +167,7 @@ export function upsertArticles(rows: Article[]): number {
         domain: S(a.domain), escalation: S(a.escalation), framing: S(a.framing),
         ladder_rung: S(a.ladderRung), ladder_zh: S(a.ladderZh), ladder_en: S(a.ladderEn),
         ladder_speaker: S(a.ladderSpeaker ?? null),
+        ladder_target: S(a.ladderTarget ?? null),
         glossed: J(a.glossed), title_en: S(a.titleEn), relevant: a.relevant ? 1 : 0,
         video_id: S(a.videoId), ingested_at: now,
       });
@@ -180,6 +185,7 @@ function rowToArticle(r: any): Article {
     actors: P(r.actors, []), people: P(r.people, []), hotspots: P(r.hotspots, []), domain: r.domain,
     escalation: r.escalation, framing: r.framing, ladderRung: r.ladder_rung,
     ladderZh: r.ladder_zh, ladderEn: r.ladder_en, ladderSpeaker: r.ladder_speaker ?? null,
+    ladderTarget: r.ladder_target ?? null,
     glossed: P(r.glossed, []),
     titleEn: r.title_en, relevant: r.relevant !== 0, videoId: r.video_id ?? null,
   };
@@ -192,12 +198,13 @@ function rowToArticle(r: any): Article {
  */
 export function updateLadders(patches: {
   id: string; ladderRung: number | null; ladderZh: string | null; ladderEn: string | null; ladderSpeaker: string | null;
+  ladderTarget: string | null;
 }[]): number {
   if (!patches.length) return 0;
   const db = getDb();
-  const stmt = db.prepare('UPDATE articles SET ladder_rung=@r, ladder_zh=@z, ladder_en=@e, ladder_speaker=@s WHERE id=@id');
+  const stmt = db.prepare('UPDATE articles SET ladder_rung=@r, ladder_zh=@z, ladder_en=@e, ladder_speaker=@s, ladder_target=@t WHERE id=@id');
   tx(db, () => {
-    for (const p of patches) stmt.run({ id: p.id, r: S(p.ladderRung), z: S(p.ladderZh), e: S(p.ladderEn), s: S(p.ladderSpeaker) });
+    for (const p of patches) stmt.run({ id: p.id, r: S(p.ladderRung), z: S(p.ladderZh), e: S(p.ladderEn), s: S(p.ladderSpeaker), t: S(p.ladderTarget) });
   });
   return patches.length;
 }
@@ -211,6 +218,50 @@ export function articlesByIds(ids: string[]): Article[] {
   if (!ids.length) return [];
   const q = ids.map(() => '?').join(',');
   return getDb().prepare(`SELECT * FROM articles WHERE id IN (${q})`).all(...ids).map(rowToArticle);
+}
+
+/** Beijing's own rung-bearing articles, oldest first — what the evidence trail is drawn from. */
+export function ladderTrailArticles(): Article[] {
+  return getDb()
+    .prepare("SELECT * FROM articles WHERE ladder_rung IS NOT NULL AND ladder_speaker = 'prc' ORDER BY published_at ASC")
+    .all().map(rowToArticle);
+}
+
+/** How far back a feed reaches when it is first read: the aggregator queries look about a week. */
+const FEED_LOOKBACK_MS = 7 * 86_400_000;
+
+/**
+ * When the corpus starts: where coverage begins, which is not always the earliest article.
+ *
+ * Placeholder dates (feeds that send none) are ignored, or one of them would stretch the trail's
+ * axis back to 1970. And articles dated before the first ingest less the feeds' look-back are
+ * stragglers, not coverage: on the live site 98 articles are dated July and August, one to three a
+ * day, though ingesting began on 17 Sep. Starting the corpus at the earliest of them said
+ * "collecting since 3 Jul" and, worse, implied a formula-free July — before about 10 Sep nothing was
+ * collected systematically, so an absence there says nothing.
+ */
+export function corpusSince(): string | null {
+  const r = getDb().prepare("SELECT MIN(published_at) AS p, MIN(ingested_at) AS i FROM articles WHERE published_at > '2000'").get() as { p: string | null; i: string | null } | undefined;
+  if (!r?.p) return null;
+  const began = r.i ? Date.parse(r.i) : NaN;
+  if (Number.isNaN(began)) return r.p;
+  const floor = new Date(began - FEED_LOOKBACK_MS).toISOString();
+  return r.p > floor ? r.p : floor;
+}
+
+/**
+ * The event each of these articles belongs to. Reads every event, not the newest few thousand the
+ * display corpus holds: the trail's oldest dots are the ones a reader most wants to follow up, and
+ * an event past that cutoff would otherwise leave its dot without a link.
+ */
+export function eventIdsByArticle(articleIds: string[]): Map<string, string> {
+  const want = new Set(articleIds);
+  const out = new Map<string, string>();
+  if (!want.size) return out;
+  for (const r of getDb().prepare('SELECT id, article_ids FROM events').all() as { id: string; article_ids: string | null }[]) {
+    for (const a of P<string[]>(r.article_ids, [])) if (want.has(a) && !out.has(a)) out.set(a, r.id);
+  }
+  return out;
 }
 
 export function replaceEvents(events: GeoEvent[]) {
