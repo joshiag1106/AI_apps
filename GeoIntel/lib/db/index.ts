@@ -37,7 +37,7 @@ function migrate(db: DatabaseSync) {
       beat_id TEXT, locale_key TEXT, source_country TEXT, ownership TEXT,
       tier INTEGER, is_primary INTEGER, actors TEXT, hotspots TEXT, domain TEXT,
       escalation REAL, framing REAL, ladder_rung INTEGER, ladder_zh TEXT,
-      ladder_en TEXT, glossed TEXT, title_en TEXT, relevant INTEGER, video_id TEXT, ingested_at TEXT
+      ladder_en TEXT, ladder_speaker TEXT, glossed TEXT, title_en TEXT, relevant INTEGER, video_id TEXT, ingested_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_articles_pub ON articles(published_at DESC);
     CREATE INDEX IF NOT EXISTS idx_articles_lang ON articles(language);
@@ -93,6 +93,9 @@ function migrate(db: DatabaseSync) {
   if (!cols.has('people')) {
     db.exec("ALTER TABLE articles ADD COLUMN people TEXT DEFAULT '[]'");
   }
+  if (!cols.has('ladder_speaker')) {
+    db.exec('ALTER TABLE articles ADD COLUMN ladder_speaker TEXT');
+  }
   const eventCols = new Set(
     (db.prepare('PRAGMA table_info(events)').all() as { name: string }[]).map((c) => c.name),
   );
@@ -130,10 +133,10 @@ export function upsertArticles(rows: Article[]): number {
   const stmt = db.prepare(`
     INSERT INTO articles (id,url,title,outlet,published_at,snippet,image_url,language,
       beat_id,locale_key,source_country,ownership,tier,is_primary,actors,people,hotspots,domain,
-      escalation,framing,ladder_rung,ladder_zh,ladder_en,glossed,title_en,relevant,video_id,ingested_at)
+      escalation,framing,ladder_rung,ladder_zh,ladder_en,ladder_speaker,glossed,title_en,relevant,video_id,ingested_at)
     VALUES (@id,@url,@title,@outlet,@published_at,@snippet,@image_url,@language,
       @beat_id,@locale_key,@source_country,@ownership,@tier,@is_primary,@actors,@people,@hotspots,@domain,
-      @escalation,@framing,@ladder_rung,@ladder_zh,@ladder_en,@glossed,@title_en,@relevant,@video_id,@ingested_at)
+      @escalation,@framing,@ladder_rung,@ladder_zh,@ladder_en,@ladder_speaker,@glossed,@title_en,@relevant,@video_id,@ingested_at)
     ON CONFLICT(url) DO UPDATE SET
       title=excluded.title, snippet=excluded.snippet,
       image_url=COALESCE(excluded.image_url, articles.image_url),
@@ -144,7 +147,7 @@ export function upsertArticles(rows: Article[]): number {
       actors=excluded.actors, people=excluded.people, hotspots=excluded.hotspots, domain=excluded.domain,
       escalation=excluded.escalation, framing=excluded.framing,
       ladder_rung=excluded.ladder_rung, ladder_zh=excluded.ladder_zh,
-      ladder_en=excluded.ladder_en, glossed=excluded.glossed,
+      ladder_en=excluded.ladder_en, ladder_speaker=excluded.ladder_speaker, glossed=excluded.glossed,
       title_en=excluded.title_en, relevant=excluded.relevant, video_id=excluded.video_id
   `);
   const now = new Date().toISOString();
@@ -159,6 +162,7 @@ export function upsertArticles(rows: Article[]): number {
         hotspots: J(a.hotspots),
         domain: S(a.domain), escalation: S(a.escalation), framing: S(a.framing),
         ladder_rung: S(a.ladderRung), ladder_zh: S(a.ladderZh), ladder_en: S(a.ladderEn),
+        ladder_speaker: S(a.ladderSpeaker ?? null),
         glossed: J(a.glossed), title_en: S(a.titleEn), relevant: a.relevant ? 1 : 0,
         video_id: S(a.videoId), ingested_at: now,
       });
@@ -175,9 +179,27 @@ function rowToArticle(r: any): Article {
     ownership: r.ownership, tier: r.tier, isPrimary: !!r.is_primary,
     actors: P(r.actors, []), people: P(r.people, []), hotspots: P(r.hotspots, []), domain: r.domain,
     escalation: r.escalation, framing: r.framing, ladderRung: r.ladder_rung,
-    ladderZh: r.ladder_zh, ladderEn: r.ladder_en, glossed: P(r.glossed, []),
+    ladderZh: r.ladder_zh, ladderEn: r.ladder_en, ladderSpeaker: r.ladder_speaker ?? null,
+    glossed: P(r.glossed, []),
     titleEn: r.title_en, relevant: r.relevant !== 0, videoId: r.video_id ?? null,
   };
+}
+
+/**
+ * Overwrite the ladder fields of rows already stored. The upsert re-analyses a row only when a
+ * feed serves it again, so rows older than the feed window would otherwise keep whatever
+ * analysis they were stored with — see ladderPatches in the ingest.
+ */
+export function updateLadders(patches: {
+  id: string; ladderRung: number | null; ladderZh: string | null; ladderEn: string | null; ladderSpeaker: string | null;
+}[]): number {
+  if (!patches.length) return 0;
+  const db = getDb();
+  const stmt = db.prepare('UPDATE articles SET ladder_rung=@r, ladder_zh=@z, ladder_en=@e, ladder_speaker=@s WHERE id=@id');
+  tx(db, () => {
+    for (const p of patches) stmt.run({ id: p.id, r: S(p.ladderRung), z: S(p.ladderZh), e: S(p.ladderEn), s: S(p.ladderSpeaker) });
+  });
+  return patches.length;
 }
 
 export function allArticles(limit = 5000): Article[] {

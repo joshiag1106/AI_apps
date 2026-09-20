@@ -1,5 +1,6 @@
 import type { Ownership } from '@/data/sources';
 import type { Domain } from '@/data/lexicon';
+import type { LadderSpeaker } from '@/lib/lang/speaker';
 
 export type { Ownership, Domain };
 
@@ -35,6 +36,11 @@ export interface Article extends RawArticle {
   ladderRung: number | null;
   ladderZh: string | null;
   ladderEn: string | null;
+  /**
+   * Whose formula the rung is. The rung records that a formula is PRESENT; this records who said
+   * it. Optional because rows stored before it existed carry none, which reads as unclear.
+   */
+  ladderSpeaker?: LadderSpeaker | null;
   glossed: string[];      // English renderings of recognised Chinese terms
   titleEn: string | null; // English gloss of a non-English headline
   /** Carries a geopolitical security signal — see isRelevant() in lib/ingest/pipeline. */

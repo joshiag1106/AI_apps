@@ -96,6 +96,8 @@ export async function GET(req: Request) {
         headline: a.title,
         glossed_terms: a.glossed.join(' | '),
         ladder_zh: a.ladderZh ?? '',
+        // Whose formula it is: prc, other, unclear, or empty when there is no formula.
+        ladder_speaker: a.ladderSpeaker ?? '',
         url: a.url,
       })));
     }

@@ -19,6 +19,7 @@ import { llmEnabled } from '@/lib/llm/client';
 import { currentUser } from '@/lib/auth';
 import type { Article } from '@/lib/types';
 import { EvidenceFamily } from '@/components/EvidenceFamily';
+import { LadderBadge } from '@/components/LadderBadge';
 import { reprintFamilies } from '@/lib/verify/reprints';
 
 export const dynamic = 'force-dynamic';
@@ -96,7 +97,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         <span className="text-[13px] text-faint">{a.sourceCountry}</span>
         <span className="text-[13px] text-faint">{LANGUAGE_LABEL[a.language] ?? a.language}</span>
         {a.isPrimary && <Badge tone="var(--color-verified)">Primary</Badge>}
-        {a.ladderRung && <Badge tone="var(--color-zh)">rung {a.ladderRung}</Badge>}
+        {a.ladderRung && <LadderBadge rung={a.ladderRung} speaker={a.ladderSpeaker} />}
         <span className="mono-num ml-auto text-[13px] text-faint">{fmtDate(a.publishedAt)}</span>
       </div>
       <a href={a.url} target="_blank" rel="noopener noreferrer"

@@ -114,7 +114,7 @@ export async function analyseEvent(event: GeoEvent, articles: Article[]): Promis
     `    ownership: ${a.ownership} | language: ${a.language} | published: ${a.publishedAt}`,
     `    headline: ${a.title}`,
     a.snippet ? `    snippet: ${a.snippet.slice(0, 300)}` : null,
-    a.ladderZh ? `    PRC ladder formula detected: ${a.ladderZh} (${a.ladderEn})` : null,
+    ladderNote(a),
   ].filter(Boolean).join('\n')).join('\n\n');
 
   const userContent = [
@@ -176,6 +176,19 @@ export async function analyseEvent(event: GeoEvent, articles: Article[]): Promis
 }
 
 /** Has this event already been analysed? Lets the page render without an API call. */
+/**
+ * What the model is told about a ladder formula in an article. It is told a formula is PRC's only
+ * when Beijing is the speaker: the detector matches the words whoever says them, and a model
+ * handed "PRC ladder formula detected" beside an India-Pakistan protest would analyse it as
+ * Beijing's stated position.
+ */
+export function ladderNote(a: Article): string | null {
+  if (!a.ladderZh) return null;
+  return a.ladderSpeaker === 'prc'
+    ? `    PRC ladder formula detected: ${a.ladderZh} (${a.ladderEn})`
+    : `    escalation formula present (${a.ladderZh}) but not attributed to Beijing`;
+}
+
 export function cachedAnalysis(event: GeoEvent, articles: Article[]): EventAnalysis | null {
   return readCache(cacheKey(event, articles));
 }

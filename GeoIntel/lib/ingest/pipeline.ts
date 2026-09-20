@@ -6,8 +6,37 @@ import { resolveActors, extractPeople } from '@/lib/analyze/entities';
 import { scoreText, glossHeadline } from '@/lib/analyze/score';
 import { clusterArticles } from '@/lib/verify/cluster';
 import { TREND_SERIES_DAYS } from '@/lib/risk';
-import { upsertArticles, replaceEvents, allArticles, deleteArticles, setMeta } from '@/lib/db';
+import { upsertArticles, replaceEvents, allArticles, deleteArticles, setMeta, updateLadders } from '@/lib/db';
+import type { LadderSpeaker } from '@/lib/lang/speaker';
 import type { Article, RawArticle } from '@/lib/types';
+
+/** What an ingest changes on a stored article's ladder fields. */
+export interface LadderPatch {
+  id: string;
+  ladderRung: number | null;
+  ladderZh: string | null;
+  ladderEn: string | null;
+  ladderSpeaker: LadderSpeaker | null;
+}
+
+/**
+ * The stored rows whose ladder fields are out of date against the current rules.
+ *
+ * The upsert re-analyses a row only when the feed serves it again, and aggregator queries reach
+ * back seven days — so a row older than that would keep the analysis it was stored with forever.
+ * Whose formula a rung is was added after most of the corpus was stored, so without this the
+ * first ingest after the change would fill only the newest rows, and the ladder on every older
+ * event would silently read as unclear.
+ */
+export function ladderPatches(stored: Article[]): LadderPatch[] {
+  const out: LadderPatch[] = [];
+  for (const a of stored) {
+    const s = scoreText(a.title, a.snippet);
+    if (a.ladderRung === s.ladderRung && (a.ladderSpeaker ?? null) === s.ladderSpeaker) continue;
+    out.push({ id: a.id, ladderRung: s.ladderRung, ladderZh: s.ladderZh, ladderEn: s.ladderEn, ladderSpeaker: s.ladderSpeaker });
+  }
+  return out;
+}
 
 export const articleId = (url: string) => createHash('sha1').update(url).digest('hex').slice(0, 16);
 
@@ -39,6 +68,7 @@ export function enrich(raw: RawArticle): Article {
     ladderRung: s.ladderRung,
     ladderZh: s.ladderZh,
     ladderEn: s.ladderEn,
+    ladderSpeaker: s.ladderSpeaker,
     glossed: s.glossed,
     titleEn: glossHeadline(raw.title, raw.language),
     relevant,
@@ -198,6 +228,10 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
     deleteArticles(stale.map((a) => a.id));
     log(`pruned ${stale.length} stored articles that no longer pass the relevance gate`);
   }
+
+  // Whose formula a rung is, on rows the feeds no longer serve — see ladderPatches.
+  const patched = updateLadders(ladderPatches(allArticles(8000)));
+  if (patched) log(`re-attributed the ladder on ${patched} stored articles`);
 
   // Age is the other reason to drop a row. Without this the corpus only ever grows, and
   // articles too old to corroborate anything keep competing for cluster membership.

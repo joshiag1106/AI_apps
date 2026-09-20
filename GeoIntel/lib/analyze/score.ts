@@ -1,5 +1,6 @@
 import { LEXICON, DOMAIN_HINTS, type Domain } from '@/data/lexicon';
 import { glossArticle, highestRung } from '@/lib/lang/chinese';
+import { formulaSpeaker, type LadderSpeaker } from '@/lib/lang/speaker';
 
 export interface ScoreResult {
   escalation: number;      // -100..100
@@ -10,6 +11,8 @@ export interface ScoreResult {
   ladderRung: number | null;
   ladderZh: string | null;
   ladderEn: string | null;
+  /** Who said it — null when there is no formula. See lib/lang/speaker. */
+  ladderSpeaker: LadderSpeaker | null;
 }
 
 const LATIN = /^[\x20-\x7F]+$/;
@@ -58,7 +61,10 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
   score += gloss.escalationScore;
 
   const rung = highestRung(raw);
+  // The rung adds to escalation whoever says it: another government's formal protest is still
+  // tension. Only the surfaces that say "PRC" care whose it is, and they read the speaker.
   if (rung) score += rung.severity * 0.5;
+  const speaker = rung ? formulaSpeaker(raw, rung.zh) : null;
 
   return {
     // tanh-style squash keeps a long article from running away with the score.
@@ -70,6 +76,7 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
     ladderRung: rung?.rung ?? null,
     ladderZh: rung?.zh ?? null,
     ladderEn: rung?.en ?? null,
+    ladderSpeaker: speaker,
   };
 }
 

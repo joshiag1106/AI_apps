@@ -370,15 +370,24 @@ fix.
 Steps 5 and 6 only:
 
 ```bash
+rm -rf .next                               # deploy only from a build made from scratch — see below
 npm test && npm run build
 cp -r .next/static .next/standalone/.next/static
 rsync -az --delete \
-  --exclude='kautilya.db' \
+  --exclude='*.db' --exclude='*.db-*' \
   --exclude='node_modules/@img/*darwin*' \
   --exclude='node_modules/@img/*libvips-darwin*' \
   .next/standalone/ kautilya@SERVER_IP:/srv/kautilya/
 ssh root@SERVER_IP 'systemctl restart kautilya'
 ```
+
+**Exclude `*.db` and `*.db-*`, not one filename, and build from an empty `.next`.** An earlier version
+excluded only `kautilya.db`. On a machine whose working folder is synced by iCloud (the Desktop, if
+"Desktop & Documents" is on), the sync leaves conflict copies — `kautilya 2.db`, `server 2.js` — and
+restores older versions of files, and a `.next` that has lived there for a while is full of them. A
+duplicate database inside the bundle would have slipped past the one-name exclusion and put the local
+corpus and a real user row's email and password hash on the server. After the transfer, check the server:
+`find /srv/kautilya \( -name '*.db*' -o -name '* 2*' -o -name '* 3*' \)` must print nothing.
 
 **Keep the three `--exclude` lines.** An earlier version of this section omitted them, and
 copied as written it would ship your local `kautilya.db` — the whole corpus and a real user
