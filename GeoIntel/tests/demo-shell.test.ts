@@ -62,7 +62,7 @@ describe('the tour shell, as first rendered', () => {
   });
 
   it('closes with a plain anchor to the splash', () => {
-    expect(out).toContain('<a href="/"');
+    expect(out).toContain('<a href="/kautilya"');
   });
 
   it('shows the plan chip when the chapter has one', () => {

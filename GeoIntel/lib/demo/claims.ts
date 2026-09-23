@@ -1,5 +1,6 @@
 import type { MeteredAction } from '@/lib/quota';
 import type { ChapterId, ClaimsState, CloseData } from './types';
+import { BASE_PATH } from '@/lib/site';
 
 /**
  * What the tour is allowed to say about paying, and nothing else. It never prints a price, a limit
@@ -38,8 +39,8 @@ export function exportChipFor(enforced: boolean): string | null {
 
 export function closingFor(c: ClaimsState): CloseData {
   const canPay = c.mode !== 'closed';
-  const enter = { label: 'Enter the threat board', href: '/board', primary: true };
-  const plans = { label: 'See plans', href: '/pricing', primary: false };
+  const enter = { label: 'Enter the threat board', href: `${BASE_PATH}/board`, primary: true };
+  const plans = { label: 'See plans', href: `${BASE_PATH}/pricing`, primary: false };
 
   const copy = c.enforced
     ? canPay

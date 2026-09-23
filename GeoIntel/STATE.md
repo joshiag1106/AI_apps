@@ -31,6 +31,76 @@ still renders every page and shows a first-run panel telling you to run the inge
 There is one real account in the local database (the one created while testing the
 signup flow). It is only in this local file.
 
+## The basePath migration to /kautilya — built and verified locally, NOT YET DEPLOYED (2026-09-23)
+
+Josh is building a company site (RamanujTech, a separate static project in the AI_apps
+monorepo) to occupy the production domain's root, with Kautilya as its first linked
+product. That means Kautilya itself moves off the domain root to `/kautilya`.
+
+**The code change.** `next.config.mjs` gets `basePath: '/kautilya'`. That alone breaks two
+categories of thing Next does not auto-prefix for you: (1) any manually-built absolute URL
+— `NextResponse.redirect` in a Route Handler, a raw `<a href="/...">`, a `<form
+action="/...">`, a client-side `fetch('/...')` — and (2) nothing else, notably `redirect()`
+from `next/navigation` in a Server Component/Server Action, which **is** basePath-aware
+automatically (confirmed by curling a real build, not assumed).
+
+`lib/site.ts` gained `BASE_PATH` and `siteUrl()` (origin + BASE_PATH) alongside the
+existing, untouched `siteOrigin()` (which deliberately strips to bare origin — that
+contract and its tests were not touched). Every caller that builds a link into this app's
+own routes — checkout's two Route Handlers, `runAlerts`, `demoOrigin` — switched from
+`siteOrigin` to `siteUrl`. A full audit of the codebase found and fixed ten files with
+hardcoded root-relative paths that `basePath` does not touch on its own: the splash's three
+deliberately-raw anchors (`/board`, `/demo`, `/about` — raw on purpose, see the comment in
+`app/page.tsx`, to avoid the chromeless-layout soft-nav bug), the demo tour's close link and
+keyboard-exit, `lib/demo/claims.ts`'s closing-chapter buttons, dashboard/events/event-detail
+CSV+JSON export links, the events search form, both checkout form actions, and the two
+client-side `fetch()` calls (`LivePulse`, `FramingAnalysis`).
+
+**A real bug, found only by curling a real production build — not by any test.** With
+`basePath` set, Next concatenates it directly onto a middleware matcher pattern's own
+leading `/` to decide whether to run middleware at all. The matcher here,
+`/((?!_next/static|...).*)"`, becomes in effect `/kautilya/((?!...).*)"` — which needs a
+*second* `/` after the prefix, so it never matched a request for exactly `/kautilya` (no
+trailing slash, nothing after it). Middleware silently never ran for that one request
+shape: `app/layout.tsx` never learned the route was chromeless (the splash kept its Nav and
+footer), and the anonymous device cookie was never minted on that request either. Fixed by
+adding `'/'` as its own matcher entry rather than folding it into the general pattern — see
+`middleware.ts`. Pinned with a structural test (`config.matcher` contains `'/'`), since
+calling `middleware()` directly, as the rest of that test file does, cannot reproduce this —
+the decision to invoke middleware at all happens in Next's own routing layer, upstream of
+the function.
+
+**Verified**, against a real `rm -rf .next && npm run build` standalone server, not assumed:
+root `/` 404s, `/kautilya` 200s and is chromeless, `/kautilya/board` has Nav+footer,
+`/kautilya/demo` is chromeless, the device cookie mints on the bare `/kautilya` request,
+`/kautilya/account` (unauthenticated) redirects to `/kautilya/login`, an unauthenticated
+checkout POST redirects to `/kautilya/login?next=/pricing`, dashboard/events export links
+and both checkout form actions render with the `/kautilya` prefix, `/kautilya/api/pulse` and
+`/kautilya/api/export` both 200. `npm test` — 973 passing (the pre-existing 972 plus the new
+matcher test), `tsc --noEmit` clean.
+
+**DEPLOYED the same day, once SSH access was unblocked.** rsync'd clean (dry run first, 0
+`.db`/`darwin`/duplicate-file hits), `KAUTILYA_ORIGIN` updated in `/etc/kautilya.env` to
+include `/kautilya`, the hourly cron's URL updated to `/kautilya/api/cron`, service
+restarted. The RamanujTech static homepage (a separate project, `AI_apps/RamanujTech/`) went
+to `/var/www/ramanujtech` on the same VPS; the Caddyfile changed from a single
+`reverse_proxy` covering the whole domain to `handle /kautilya* { reverse_proxy
+127.0.0.1:3000 }` plus a catch-all `handle { file_server }` for the new homepage. Both
+`kautilya.env` and the Caddyfile were backed up (timestamped) before editing; the old
+Caddyfile is one `reverse_proxy` line, easy to restore by hand if ever needed.
+
+**Verified live, not just locally:** `ramanujtech.com/` and `www.ramanujtech.com/` both serve
+the new homepage; `/kautilya` and `/kautilya/board` serve Kautilya; the chromeless-splash fix
+and the device-cookie-on-bare-root fix both confirmed working on the real domain, not only
+the local build; unauthenticated `/kautilya/account` and a checkout POST both redirect
+correctly with the `/kautilya` prefix; `/kautilya/api/cron` still 401s as before;
+HTTP→HTTPS 308 still intact.
+
+**Left open, Josh's call:** `ramanujtech.in` is still parked (Hostinger's parking page, not
+this VPS) — pointing it here needs a decision (mirror the same content, or a plain redirect
+to `.com`, which is better for SEO and avoids duplicate-content issues) plus a DNS change in
+hPanel, neither of which happened this session.
+
 ## What is done
 
 The full product: multilingual ingestion, the Chinese glossary and PRC escalation-ladder

@@ -46,5 +46,12 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // '/' as its own entry, not folded into the pattern below: with basePath set, Next
+  // concatenates basePath directly onto that pattern's own leading "/", so a request for
+  // exactly the basePath root ("/kautilya", no trailing slash, nothing after it) has no
+  // second "/" left to match and this middleware silently never runs for it — found by
+  // curling a real build, where it showed up as both the splash keeping its Nav/footer
+  // (app/layout.tsx never learned the route was chromeless) and the device cookie never
+  // being minted on that specific request. A bare '/' matcher entry covers it.
+  matcher: ['/', '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };

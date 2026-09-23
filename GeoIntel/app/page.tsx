@@ -1,6 +1,7 @@
 import { WorldMap } from '@/components/WorldMap';
 import { corpus, corpusStats, countryRisks, hotspotActivity, countryName } from '@/lib/queries';
 import { worldShapes, project } from '@/lib/map';
+import { BASE_PATH } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,14 +113,14 @@ export default function Splash() {
           */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
-            href="/board"
+            href={`${BASE_PATH}/board`}
             className="splash-fade-up rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
             style={{ animationDelay: '560ms' }}
           >
             Enter →
           </a>
           <a
-            href="/demo"
+            href={`${BASE_PATH}/demo`}
             className="splash-fade-up rounded-md border border-[color:var(--color-accent-dim)] px-6 py-3 text-[16px] font-medium text-[color:var(--color-accent)] transition-colors hover:border-[color:var(--color-accent)]"
             style={{ animationDelay: '600ms' }}
           >
@@ -127,7 +128,7 @@ export default function Splash() {
           </a>
         </div>
 
-        <a href="/about" className="splash-fade-up mt-6 text-[13px] text-faint underline decoration-dotted hover:text-muted"
+        <a href={`${BASE_PATH}/about`} className="splash-fade-up mt-6 text-[13px] text-faint underline decoration-dotted hover:text-muted"
           style={{ animationDelay: '620ms' }}>
           Why Kautilya
         </a>

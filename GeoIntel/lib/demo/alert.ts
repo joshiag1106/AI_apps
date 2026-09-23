@@ -1,7 +1,10 @@
-import { isLoopbackOrigin, siteOrigin } from '@/lib/site';
+import { isLoopbackOrigin, siteUrl, BASE_PATH } from '@/lib/site';
 
 /** Used when no real origin is available. `.example` is reserved and can never be a real host. */
 export const PLACEHOLDER_ORIGIN = 'https://kautilya.example';
+
+/** `PLACEHOLDER_ORIGIN` with this app's own path prefix, matching what `siteUrl` returns. */
+const PLACEHOLDER_URL = PLACEHOLDER_ORIGIN + BASE_PATH;
 
 /**
  * The origin printed in the example alert email.
@@ -13,9 +16,11 @@ export const PLACEHOLDER_ORIGIN = 'https://kautilya.example';
  */
 export function demoOrigin(env: Record<string, string | undefined> = process.env): string {
   try {
-    const origin = siteOrigin(PLACEHOLDER_ORIGIN, env);
-    return isLoopbackOrigin(origin) ? PLACEHOLDER_ORIGIN : origin;
+    // The bare origin, not PLACEHOLDER_URL: siteUrl appends BASE_PATH itself, unconditionally,
+    // so a fallback that already carried it would come back with the path doubled.
+    const url = siteUrl(PLACEHOLDER_ORIGIN, env);
+    return isLoopbackOrigin(url) ? PLACEHOLDER_URL : url;
   } catch {
-    return PLACEHOLDER_ORIGIN;
+    return PLACEHOLDER_URL;
   }
 }

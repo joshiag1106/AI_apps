@@ -114,15 +114,15 @@ describe('the closing scene', () => {
   });
 
   it('offers real links as plain anchors, because a soft navigation out of /demo would keep the chrome hidden', () => {
-    expect(out).toContain('<a href="/board"');
-    expect(out).toContain('<a href="/pricing"');
+    expect(out).toContain('<a href="/kautilya/board"');
+    expect(out).toContain('<a href="/kautilya/pricing"');
     expect(out).not.toContain('data-nextjs');
   });
 
   it('offers only Enter while plans cannot be bought', () => {
     const closed = html(createElement(CloseScene, { data: closingFor({ enforced: false, mode: 'closed', freeLimit: 5 }) }));
-    expect(closed).toContain('href="/board"');
-    expect(closed).not.toContain('href="/pricing"');
+    expect(closed).toContain('href="/kautilya/board"');
+    expect(closed).not.toContain('href="/kautilya/pricing"');
   });
 });
 

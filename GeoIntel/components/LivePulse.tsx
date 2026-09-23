@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BASE_PATH } from '@/lib/site';
 
 /**
  * Keeps the page current without a reload.
@@ -28,7 +29,7 @@ export function LivePulse({ initialVersion }: { initialVersion: string }) {
 
     async function check() {
       try {
-        const res = await fetch('/api/pulse', { cache: 'no-store' });
+        const res = await fetch(`${BASE_PATH}/api/pulse`, { cache: 'no-store' });
         if (!res.ok) throw new Error(String(res.status));
         const data: { version: string } = await res.json();
         if (cancelled) return;

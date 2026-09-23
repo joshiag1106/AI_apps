@@ -35,24 +35,26 @@ describe('ranking articles for an example', () => {
 });
 
 describe('demoOrigin', () => {
+  // demoOrigin now returns the app's own base (origin + /kautilya, siteUrl's job), not the
+  // bare origin — every caller appends one of this app's routes to whatever comes back.
   it('uses the configured origin when there is one', () => {
-    expect(demoOrigin({ KAUTILYA_ORIGIN: 'https://reader.example' })).toBe('https://reader.example');
+    expect(demoOrigin({ KAUTILYA_ORIGIN: 'https://reader.example' })).toBe('https://reader.example/kautilya');
   });
 
   it('falls back to the placeholder when nothing is configured', () => {
-    expect(demoOrigin({})).toBe('https://kautilya.example');
+    expect(demoOrigin({})).toBe('https://kautilya.example/kautilya');
   });
 
   it('falls back when the configured origin is loopback, which renderDigest refuses', () => {
-    expect(demoOrigin({ KAUTILYA_ORIGIN: 'http://localhost:3111' })).toBe('https://kautilya.example');
+    expect(demoOrigin({ KAUTILYA_ORIGIN: 'http://localhost:3111' })).toBe('https://kautilya.example/kautilya');
   });
 
   it('falls back rather than throwing in production with no origin set', () => {
-    expect(demoOrigin({ NODE_ENV: 'production' })).toBe('https://kautilya.example');
+    expect(demoOrigin({ NODE_ENV: 'production' })).toBe('https://kautilya.example/kautilya');
   });
 
   it('falls back on a malformed value', () => {
-    expect(demoOrigin({ KAUTILYA_ORIGIN: 'not a url' })).toBe('https://kautilya.example');
+    expect(demoOrigin({ KAUTILYA_ORIGIN: 'not a url' })).toBe('https://kautilya.example/kautilya');
   });
 });
 

@@ -179,7 +179,7 @@ export function DemoAudio(
       title={enabled ? 'Turn off music and narration' : 'Turn on music and narration'}
       onClick={() => setEnabled((v) => !v)}
     >
-      {enabled ? '♫' : '♪'}
+      {enabled ? '♫ Sound on' : '♪ Sound'}
     </button>
   );
 }

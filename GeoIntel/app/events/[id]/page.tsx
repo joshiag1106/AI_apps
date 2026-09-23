@@ -10,6 +10,7 @@ import { consume } from '@/lib/quota';
 import { fmtDate, timeAgo, escalationLabel } from '@/lib/format';
 import { LANGUAGE_LABEL } from '@/lib/lang/detect';
 import { ZH_GLOSSARY } from '@/data/glossary.zh';
+import { BASE_PATH } from '@/lib/site';
 import { FramingAnalysis } from '@/components/FramingAnalysis';
 import { VideoWall } from '@/components/VideoWall';
 import { cachedAnalysis } from '@/lib/llm/analyse';
@@ -185,9 +186,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   action={
                     <span className="flex items-center gap-2 text-[13px] text-faint">
                       Export
-                      <a href={`/api/export?event=${encodeURIComponent(id)}&format=csv`}
+                      <a href={`${BASE_PATH}/api/export?event=${encodeURIComponent(id)}&format=csv`}
                         className="rounded border border-[color:var(--color-line)] px-1.5 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">CSV</a>
-                      <a href={`/api/export?event=${encodeURIComponent(id)}&format=json`}
+                      <a href={`${BASE_PATH}/api/export?event=${encodeURIComponent(id)}&format=json`}
                         className="rounded border border-[color:var(--color-line)] px-1.5 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">JSON</a>
                     </span>
                   }

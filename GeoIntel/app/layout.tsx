@@ -49,7 +49,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // The splash (app/page.tsx) and the demo tour (app/demo) are the two routes that get no Nav, no
   // footer, no skip link — a front door and a film, rather than pages with the usual chrome on top.
   // The root layout has no built-in way to know the current route, so middleware.ts forwards it as
-  // a header; see the comment there for why it has to be set on both of its branches.
+  // a header; see the comment there for why it has to be set on both of its branches. Next strips
+  // BASE_PATH before handing middleware the pathname, so this compares against the bare paths —
+  // see middleware.ts's matcher for the one request shape that took real testing to get right.
   const path = (await headers()).get('x-pathname');
   const chromeless = path === '/' || path === '/demo';
   return (

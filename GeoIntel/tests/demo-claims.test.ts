@@ -47,7 +47,7 @@ describe('the closing chapter', () => {
     expect(c.copy).toBe(
       'The board, the event and analysis views, the network and Ask are open while Kautilya is in preview. '
       + 'Email alerts are part of Desk Pro, which is not open yet.');
-    expect(c.buttons).toEqual([{ label: 'Enter the threat board', href: '/board', primary: true }]);
+    expect(c.buttons).toEqual([{ label: 'Enter the threat board', href: '/kautilya/board', primary: true }]);
   });
 
   it('preview, billing open: same, without "not open yet", and offers the plans', () => {
@@ -55,7 +55,7 @@ describe('the closing chapter', () => {
     expect(c.copy).toBe(
       'The board, the event and analysis views, the network and Ask are open while Kautilya is in preview. '
       + 'Email alerts are part of Desk Pro.');
-    expect(c.buttons.map((b) => b.href)).toEqual(['/board', '/pricing']);
+    expect(c.buttons.map((b) => b.href)).toEqual(['/kautilya/board', '/kautilya/pricing']);
   });
 
   it('enforced, billing closed: the free allowance, and that subscriptions are not open', () => {

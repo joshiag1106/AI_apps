@@ -13,6 +13,7 @@ import {
 import { VECTORS, riskBand } from '@/lib/risk';
 import { LANGUAGE_LABEL } from '@/lib/lang/detect';
 import { timeAgo } from '@/lib/format';
+import { BASE_PATH } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Dashboard' };
@@ -50,9 +51,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </p>
           <span className="flex items-center gap-2 text-[13px] text-faint">
             Export corpus
-            <a href="/api/export?format=csv"
+            <a href={`${BASE_PATH}/api/export?format=csv`}
               className="rounded border border-[color:var(--color-line)] px-2 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">CSV</a>
-            <a href="/api/export?format=json"
+            <a href={`${BASE_PATH}/api/export?format=json`}
               className="rounded border border-[color:var(--color-line)] px-2 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">JSON</a>
           </span>
         </div>

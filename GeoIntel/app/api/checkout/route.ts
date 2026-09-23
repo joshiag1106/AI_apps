@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { currentUser, setPlan } from '@/lib/auth';
-import { siteOrigin } from '@/lib/site';
+import { siteUrl } from '@/lib/site';
 import { billing } from '@/lib/billing';
 
 /**
@@ -12,8 +12,9 @@ import { billing } from '@/lib/billing';
 export async function POST(req: Request) {
   const user = await currentUser();
   // Not `new URL(req.url).origin`: behind a proxy that is the server's own address, and
-  // every redirect below would send the reader to localhost. See lib/site.ts.
-  const origin = siteOrigin(new URL(req.url).origin);
+  // every redirect below would send the reader to localhost. siteUrl (not siteOrigin) because
+  // every path built from `origin` below is one of this app's own routes. See lib/site.ts.
+  const origin = siteUrl(new URL(req.url).origin);
   if (!user) return NextResponse.redirect(`${origin}/login?next=/pricing`, 303);
 
   const setup = billing();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { siteOrigin, isLoopbackOrigin } from '@/lib/site';
+import { siteOrigin, siteUrl, isLoopbackOrigin } from '@/lib/site';
 
 /**
  * Behind a reverse proxy, Next builds a route handler's `req.url` from the host and port the
@@ -44,6 +44,31 @@ describe('the public origin', () => {
     for (const raw of ['kautilya.example', 'localhost:3111', 'ftp://kautilya.example']) {
       expect(() => siteOrigin(DEV, { KAUTILYA_ORIGIN: raw, NODE_ENV: 'development' })).toThrow(/KAUTILYA_ORIGIN/);
     }
+  });
+});
+
+/**
+ * The app is mounted under /kautilya, not at its host's root — the host also serves the
+ * production company site at "/". Every link that leaves the page wants the app's own
+ * base, not the bare origin, or it lands one level up from where the app actually lives.
+ */
+describe('the address to link into the app itself', () => {
+  const DEV = 'http://localhost:3111';
+
+  it('appends the app\'s own path to the configured origin', () => {
+    expect(siteUrl(DEV, { KAUTILYA_ORIGIN: 'https://kautilya.example', NODE_ENV: 'production' }))
+      .toBe('https://kautilya.example/kautilya');
+    // A path on the configured value is still reduced to its origin first.
+    expect(siteUrl(DEV, { KAUTILYA_ORIGIN: 'https://kautilya.example/events', NODE_ENV: 'production' }))
+      .toBe('https://kautilya.example/kautilya');
+  });
+
+  it('appends it to the fallback too, outside production', () => {
+    expect(siteUrl(DEV, {})).toBe(`${DEV}/kautilya`);
+  });
+
+  it('still throws in production with nothing configured', () => {
+    expect(() => siteUrl(DEV, { NODE_ENV: 'production' })).toThrow(/KAUTILYA_ORIGIN/);
   });
 });
 

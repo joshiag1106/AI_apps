@@ -6,6 +6,7 @@ import { keyResult } from '@/lib/demo/keys';
 import { stageFlags } from '@/lib/demo/stage';
 import { DemoAudio } from './DemoAudio';
 import { StillContext } from './StageState';
+import { BASE_PATH } from '@/lib/site';
 
 export interface TourChapter {
   id: string;
@@ -102,7 +103,7 @@ export function DemoTour({ chapters }: { chapters: TourChapter[] }) {
       if (!r) return;
       // A plain navigation, not the router: / is chromeless and so is /demo, but the splash still
       // needs a genuine server round-trip (see app/page.tsx).
-      if ('exit' in r) { window.location.assign('/'); return; }
+      if ('exit' in r) { window.location.assign(BASE_PATH); return; }
       // The tour's own keys never also scroll: several chapters are taller than a screen.
       e.preventDefault();
       dispatch(r.action);
@@ -119,7 +120,7 @@ export function DemoTour({ chapters }: { chapters: TourChapter[] }) {
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-5">
       <header className="flex items-center justify-between">
         <span className="text-[12px] uppercase tracking-[0.28em] text-faint">Kautilya · Demo</span>
-        <a href="/" className="text-[13px] text-muted underline decoration-dotted hover:text-text">Close demo</a>
+        <a href={BASE_PATH} className="text-[13px] text-muted underline decoration-dotted hover:text-text">Close demo</a>
       </header>
 
       <main className="flex flex-1 flex-col justify-center">

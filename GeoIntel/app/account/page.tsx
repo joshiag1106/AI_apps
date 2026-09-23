@@ -8,6 +8,7 @@ import { alertsEnabled, setAlertsEnabled } from '@/lib/alerts/state';
 import { listWatch } from '@/lib/watchlist/store';
 import { quotaState, usageLog, METERED, FREE_LIMIT } from '@/lib/quota';
 import { fmtDate } from '@/lib/format';
+import { BASE_PATH } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Account' };
@@ -103,7 +104,7 @@ export default async function AccountPage() {
           {mode === 'closed' ? (
             <p className="text-[15px] text-muted">Subscriptions are not open yet.</p>
           ) : (
-            <form action="/api/checkout" method="post">
+            <form action={`${BASE_PATH}/api/checkout`} method="post">
               <button className="rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[15px] font-medium text-[#0a0d13] hover:opacity-90">
                 {mode === 'stripe' ? 'Continue to checkout' : 'Activate Pro (test mode)'}
               </button>

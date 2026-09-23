@@ -54,8 +54,8 @@ describe('the demo code', () => {
 
 describe('the splash demo button', () => {
   it('is a genuine link to /demo, not a router link and not a handler', () => {
-    const at = splash.indexOf('href="/demo"');
-    expect(at, 'href="/demo" not found in app/page.tsx').toBeGreaterThan(-1);
+    const at = splash.indexOf('href={`${BASE_PATH}/demo`}');
+    expect(at, 'href={`${BASE_PATH}/demo`} not found in app/page.tsx').toBeGreaterThan(-1);
     expect(splash.slice(Math.max(0, at - 40), at + 20)).not.toMatch(/<Link\b/);
     // The attribute form: the file's own comments discuss onClick in prose.
     expect(splash).not.toMatch(/\bonClick\s*=/);
@@ -64,8 +64,8 @@ describe('the splash demo button', () => {
 
   it('says what it is, and Enter stays the primary button', () => {
     expect(splash).toContain('Watch the 2-minute demo');
-    const enter = splash.indexOf('href="/board"');
-    const demo = splash.indexOf('href="/demo"');
+    const enter = splash.indexOf('href={`${BASE_PATH}/board`}');
+    const demo = splash.indexOf('href={`${BASE_PATH}/demo`}');
     expect(enter).toBeGreaterThan(-1);
     expect(enter).toBeLessThan(demo);
     expect(splash.slice(enter, demo)).toContain('bg-[color:var(--color-accent)]');
