@@ -96,10 +96,28 @@ the local build; unauthenticated `/kautilya/account` and a checkout POST both re
 correctly with the `/kautilya` prefix; `/kautilya/api/cron` still 401s as before;
 HTTP→HTTPS 308 still intact.
 
-**Left open, Josh's call:** `ramanujtech.in` is still parked (Hostinger's parking page, not
-this VPS) — pointing it here needs a decision (mirror the same content, or a plain redirect
-to `.com`, which is better for SEO and avoids duplicate-content issues) plus a DNS change in
-hPanel, neither of which happened this session.
+**A second real deploy bug, found later the same day by actually looking at the live site in
+a browser rather than trusting curl status codes.** Every `/kautilya/_next/static/*` asset —
+every CSS file, every JS chunk — 404'd, so the site loaded (200 on the page itself) but
+rendered as unstyled HTML with a broken console full of 404s. Cause: `next build`'s
+standalone output deliberately does not include `.next/static` — the deploy runbook's own
+"Deploying an update" section says to `cp -r .next/static .next/standalone/.next/static`
+before the rsync, and that step was skipped on the first deploy. The local smoke test earlier
+in the day never caught this because it only checked that pages served 200 and that the HTML
+referenced the right `/kautilya`-prefixed asset URLs — it never actually requested those
+asset URLs and checked *they* 200'd too. Fixed by running the copy, re-syncing (clean dry
+run), restarting, and this time verifying in a real browser: no console errors, every
+`_next/static` request 200s, the splash renders fully styled, `/board` shows real live data
+(2,288 events, 146 corroborated, 774 Chinese-language, 12 active flashpoints) with full
+Nav/footer chrome as it should. **Lesson for next time: after any deploy, load the page in
+an actual browser and check the console/network tab, not only `curl -I`.**
+
+**`ramanujtech.in` no longer left open — redirected to `.com` the same day.** DNS pointed at
+the VPS (Hostinger's CDN disabled first, per the documented trap; no AAAA record), then a
+Caddy site block added: `ramanujtech.in, www.ramanujtech.in { redir
+https://ramanujtech.com{uri} permanent }`. Verified live: HTTP→HTTPS→301 to `.com`, path and
+query preserved (`/kautilya` redirects to `/kautilya`, not dropped), `www.in` too. TLS
+certificate issuance for the new domain went through cleanly on the first try.
 
 ## What is done
 
