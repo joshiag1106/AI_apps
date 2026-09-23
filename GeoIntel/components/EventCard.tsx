@@ -6,6 +6,7 @@ import { ChineseText, ChineseCompact, chineseTitle } from '@/components/ChineseT
 import { glossHeadline } from '@/lib/analyze/score';
 import { dictionaryGloss } from '@/lib/lang/dictionary';
 import { hasChinese } from '@/lib/lang/pinyin';
+import { hasKana, japaneseGloss } from '@/lib/lang/japanese';
 import type { GeoEvent } from '@/lib/types';
 
 /**
@@ -17,7 +18,10 @@ import type { GeoEvent } from '@/lib/types';
  * on the corpus it left 234 of 473 Chinese events with no English line at all. The lexicon
  * stays behind it as a backstop for the rare string the dictionary cannot resolve.
  */
-export function titleGloss(title: string): string | null {
+export function titleGloss(title: string, language?: string): string | null {
+  // Japanese is full of kanji, so it passes hasChinese — but its words are not Chinese ones, and the
+  // Chinese dictionary read 首脳会談 (summit) as "head · can". Kana, or a stated 'ja', means Japanese.
+  if (language === 'ja' || hasKana(title)) return japaneseGloss(title);
   if (!hasChinese(title)) return null;
   return dictionaryGloss(title) ?? glossHeadline(title, 'zh');
 }

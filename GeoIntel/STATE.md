@@ -119,6 +119,19 @@ https://<production-domain>{uri} permanent }`. Verified live: HTTP→HTTPS→301
 query preserved (`/kautilya` redirects to `/kautilya`, not dropped), `www.in` too. TLS
 certificate issuance for the new domain went through cleanly on the first try.
 
+## Phone header menu, and Japanese headlines glossed in Japanese (2026-09-23, late)
+
+Two fixes Josh asked for after checking Language Lens on a phone. **Header:** at 375px the sticky
+header took 171px of 812 on every page (12 links on three rows); below `md` the links now sit behind
+a native `<details>` "Menu" (works with JS off) that `NavMenuCloser` shuts after a soft navigation
+and on Escape — now 101px; `md`+ unchanged. **Japanese headlines** were glossed by the CHINESE
+dictionary on every event page (首脳会談 "summit" came out "head · can") and had no English in Lens:
+kana or a stated 'ja' now routes `titleGloss` to `lib/lang/japanese.ts` + `data/glossary.ja.ts`, a
+glossary built from the corpus's own recurring terms, matched longest-first, ignoring the outlet tag
+aggregators append (Mezha's "ウクライナニュース" had put "Ukraine" on its China–Taiwan headlines). All
+130 local Japanese headlines now get an English line. Lens prefers a headline's stored key terms and
+falls back to the gloss — preferring the gloss had made Chinese lines noisy. Both caught in a browser.
+
 ## Language Lens — built, verified and deployed (2026-09-23, late)
 
 Josh: "go ahead with what you think best to add". Chosen, designed and built by Claude —

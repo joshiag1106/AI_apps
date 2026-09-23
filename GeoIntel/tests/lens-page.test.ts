@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { LensBeat } from '@/components/LensBeat';
+import { titleGloss } from '@/components/EventCard';
 import type { BeatLens, LensColumn } from '@/lib/lens/compare';
 
 /** One Language Lens section, rendered as the page renders it. */
@@ -57,7 +58,18 @@ describe('a Language Lens section', () => {
   it('links a headline to its event, marks its language, and glosses it', () => {
     expect(out).toContain('href="/events/evt-1"');
     expect(out).toMatch(/lang="zh"[^>]*>中印边境/);
+    // The stored key-terms line, when there is one, over the noisier word-by-word dictionary gloss.
     expect(out).toContain('China–India border');
+    expect(out).not.toContain(titleGloss('中印边境', 'zh')!);
+  });
+
+  it('glosses a Japanese headline in English, as the event pages do', () => {
+    const ja = col({
+      language: 'ja', framing: [],
+      latest: [{ id: 'j1', title: '米中首脳会談、中国が台湾への武器売却停止を要求か', titleEn: null, outlet: '共同', publishedAt: '2026-09-23T00:00:00.000Z', eventId: null }],
+    });
+    const page = html({ ...BEAT, columns: [BEAT.columns[0], ja] });
+    expect(page).toContain('US–China · summit · China · Taiwan · arms sales · halt · demands');
   });
 
   it('says how many reports the framing was read from', () => {

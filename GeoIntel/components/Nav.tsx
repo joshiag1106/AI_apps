@@ -5,6 +5,7 @@ import { CountrySearch } from '@/components/CountrySearch';
 import { quotaState } from '@/lib/quota';
 import { currentUser } from '@/lib/auth';
 import { LivePulse } from '@/components/LivePulse';
+import { NavMenuCloser } from '@/components/NavMenuCloser';
 import { getMeta } from '@/lib/db';
 
 const LINKS = [
@@ -39,7 +40,25 @@ export async function Nav() {
           </span>
         </Link>
 
-        <nav className="order-3 flex flex-wrap items-center gap-x-4 gap-y-1 md:order-none">
+        {/* Phones: the links behind one button instead of three wrapped rows (171px of an 812px
+            screen). A native <details> so it opens with JavaScript off; NavMenuCloser shuts it after
+            a soft navigation, which the persistent root layout would otherwise leave open. */}
+        <details className="relative ml-auto md:hidden">
+          <summary className="cursor-pointer list-none rounded-md border border-[color:var(--color-line)] px-3 py-1.5 text-[14px] text-text [&::-webkit-details-marker]:hidden">
+            Menu
+          </summary>
+          <nav aria-label="Site" className="absolute right-0 top-full z-50 mt-2 grid w-64 grid-cols-2 gap-x-3 rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-ink)] p-2 shadow-lg">
+            {LINKS.map((l) => (
+              <Link key={l.href} href={l.href}
+                className="rounded px-2 py-2 text-[14px] text-muted transition-colors hover:text-[color:var(--color-accent)]">
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          <NavMenuCloser />
+        </details>
+
+        <nav className="order-3 hidden flex-wrap items-center gap-x-4 gap-y-1 md:order-none md:flex">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href}
               className="text-[14px] text-muted transition-colors hover:text-[color:var(--color-accent)]">
