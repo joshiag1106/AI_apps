@@ -89,7 +89,7 @@ to `/var/www/ramanujtech` on the same VPS; the Caddyfile changed from a single
 `kautilya.env` and the Caddyfile were backed up (timestamped) before editing; the old
 Caddyfile is one `reverse_proxy` line, easy to restore by hand if ever needed.
 
-**Verified live, not just locally:** `ramanujtech.com/` and `www.ramanujtech.com/` both serve
+**Verified live, not just locally:** the production domain's root and its `www.` both serve
 the new homepage; `/kautilya` and `/kautilya/board` serve Kautilya; the chromeless-splash fix
 and the device-cookie-on-bare-root fix both confirmed working on the real domain, not only
 the local build; unauthenticated `/kautilya/account` and a checkout POST both redirect
@@ -112,12 +112,45 @@ run), restarting, and this time verifying in a real browser: no console errors, 
 Nav/footer chrome as it should. **Lesson for next time: after any deploy, load the page in
 an actual browser and check the console/network tab, not only `curl -I`.**
 
-**`ramanujtech.in` no longer left open — redirected to `.com` the same day.** DNS pointed at
+**The second (`.in`) domain no longer left open — redirected to the primary the same day.** DNS pointed at
 the VPS (Hostinger's CDN disabled first, per the documented trap; no AAAA record), then a
-Caddy site block added: `ramanujtech.in, www.ramanujtech.in { redir
-https://ramanujtech.com{uri} permanent }`. Verified live: HTTP→HTTPS→301 to `.com`, path and
+Caddy site block added: `<second-domain>, www.<second-domain> { redir
+https://<production-domain>{uri} permanent }`. Verified live: HTTP→HTTPS→301 to the primary, path and
 query preserved (`/kautilya` redirects to `/kautilya`, not dropped), `www.in` too. TLS
 certificate issuance for the new domain went through cleanly on the first try.
+
+## Language Lens — built, verified and deployed (2026-09-23, late)
+
+Josh: "go ahead with what you think best to add". Chosen, designed and built by Claude —
+`docs/specs/2026-09-23-language-lens-design.md` and `docs/plans/2026-09-23-language-lens.md`.
+`/lens` (live `/kautilya/lens`, in the nav after China Watch) puts each topic search that is run in
+several languages side by side: what each language was literally asked (non-English searches now
+carry English glosses in `data/feeds.ts`), how its reporting frames the topic, which other states it
+names, and its three newest headlines. One sentence per topic names the sharpest framing difference
+— only when it is ≥ 10 points AND passes a two-proportion z-test at 2.58.
+
+**Two more obvious designs were measured and dropped first** — "what English readers are missing"
+(only 50 of 4,376 events span two languages; the clustering links languages almost only through
+hotspots, so absence would mostly be its blind spot) and "what each language's press attends to"
+across the corpus (that measures which searches run in which language: Japanese is 100% the
+China–Taiwan search). Comparing WITHIN one topic is the like-for-like version.
+
+**A real bug found by running the first build on the real corpus, not by any test.** It said
+China–Taiwan was framed diplomatically by "100% of Japanese reports" and the Middle East by "96% of
+Arabic". The stored `domain` falls back to 'Diplomatic' when a report's words match nothing, and only
+3% of Japanese and 4% of Arabic topic-search reports match anything (English 45%, Chinese 45%, Hindi
+52%). Fixed with `evidencedDomain()` in `lib/analyze/score.ts` (shares `classifyDomain`'s tally;
+`scoreText` output unchanged): framing is counted only from reports whose wording shows one, each
+column says how many that is, and a language with < 25 readable reports says its framing "cannot be
+read yet" and sits out the test. **The lexicon's near-absent Japanese and Arabic vocabulary is now a
+visible, known gap** — adding terms there would let those columns speak.
+
+Verified: 1,006 tests, `tsc` clean, a clean standalone build against a copy of the real corpus
+(9 topics; no console errors; every `_next/static` request 200; no overflow at 375px; headline links
+carry `/kautilya` and open their events), then deployed per the runbook and re-checked live.
+One local-verification slip worth remembering: a stale server from the first check still held port
+4321, so the second build failed to bind (`EADDRINUSE`) and curl silently read the OLD page — the
+identical output was the tell. Check `lsof -i :<port>` before trusting a re-run.
 
 ## What is done
 

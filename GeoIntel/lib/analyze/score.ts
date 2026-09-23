@@ -24,7 +24,8 @@ function hasTerm(term: string, lower: string, raw: string): boolean {
   return LATIN.test(term) ? lower.includes(term.toLowerCase()) : raw.includes(term);
 }
 
-function classifyDomain(lower: string, raw: string, lexDomains: Domain[]): Domain {
+/** The domain the text's own vocabulary points to most, or null when none of it does. */
+function evidencedFrom(lower: string, raw: string, lexDomains: Domain[]): Domain | null {
   const tally = new Map<Domain, number>();
   for (const d of lexDomains) tally.set(d, (tally.get(d) ?? 0) + 2);
   for (const [domain, hints] of Object.entries(DOMAIN_HINTS) as [Domain, string[]][]) {
@@ -32,10 +33,30 @@ function classifyDomain(lower: string, raw: string, lexDomains: Domain[]): Domai
       if (hasTerm(h, lower, raw)) tally.set(domain, (tally.get(domain) ?? 0) + 1);
     }
   }
-  let best: Domain = 'Diplomatic';
+  let best: Domain | null = null;
   let bestN = 0;
   for (const [d, n] of tally) if (n > bestN) { best = d; bestN = n; }
   return best;
+}
+
+function classifyDomain(lower: string, raw: string, lexDomains: Domain[]): Domain {
+  return evidencedFrom(lower, raw, lexDomains) ?? 'Diplomatic';
+}
+
+/**
+ * An article's domain ONLY when its own words show one; null otherwise.
+ *
+ * ScoreResult.domain falls back to 'Diplomatic' when nothing matches, which is fine for filing a
+ * report but not for comparing languages: measured 2026-09-23 over topic-search reports, only 4%
+ * of Arabic and 3% of Japanese ones carry any vocabulary the lexicon knows (45–52% of English,
+ * Chinese and Hindi), so their "Diplomatic" is almost entirely "unclassified". Language Lens
+ * counts framing from this, never from the stored fallback.
+ */
+export function evidencedDomain(title: string, snippet = ''): Domain | null {
+  const raw = `${title} ${snippet}`;
+  const lower = raw.toLowerCase();
+  const lexDomains = LEXICON.filter((e) => e.domain && hasTerm(e.term, lower, raw)).map((e) => e.domain as Domain);
+  return evidencedFrom(lower, raw, lexDomains);
 }
 
 /**
