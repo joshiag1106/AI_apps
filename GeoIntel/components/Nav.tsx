@@ -12,6 +12,7 @@ const LINKS = [
   { href: '/ask', label: 'Ask' },
   { href: '/india', label: 'India Focus' },
   { href: '/china', label: 'China Watch' },
+  { href: '/lens', label: 'Language Lens' },
   { href: '/events', label: 'Events' },
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/network/CHN', label: 'Network' },

@@ -121,7 +121,11 @@ export interface Beat {
   label: string;
   dyad?: [string, string];
   priority: 1 | 2 | 3;
-  queries: { locale: LocaleKey; q: string }[];
+  /**
+   * `en` glosses a non-English query in English. The ingest never reads it; Language Lens shows it,
+   * because a comparison between languages is only readable alongside what each was actually asked.
+   */
+  queries: { locale: LocaleKey; q: string; en?: string }[];
 }
 
 export const BEATS: Beat[] = [
@@ -130,10 +134,10 @@ export const BEATS: Beat[] = [
     queries: [
       { locale: 'en-IN', q: 'India China border LAC' },
       { locale: 'en-IN', q: 'India China relations' },
-      { locale: 'zh-CN', q: '中印边境' },
-      { locale: 'zh-CN', q: '中印关系' },
-      { locale: 'zh-CN', q: '印度 边界 谈判' },
-      { locale: 'hi-IN', q: 'भारत चीन सीमा' },
+      { locale: 'zh-CN', q: '中印边境', en: 'China–India border' },
+      { locale: 'zh-CN', q: '中印关系', en: 'China–India relations' },
+      { locale: 'zh-CN', q: '印度 边界 谈判', en: 'India border negotiations' },
+      { locale: 'hi-IN', q: 'भारत चीन सीमा', en: 'India China border' },
       { locale: 'en-US', q: 'India China Himalayan border' },
     ],
   },
@@ -141,33 +145,33 @@ export const BEATS: Beat[] = [
     id: 'ind-pak', label: 'India–Pakistan', dyad: ['IND', 'PAK'], priority: 1,
     queries: [
       { locale: 'en-IN', q: 'India Pakistan Line of Control' },
-      { locale: 'ur-PK', q: 'بھارت پاکستان کشیدگی' },
-      { locale: 'hi-IN', q: 'भारत पाकिस्तान तनाव' },
-      { locale: 'zh-CN', q: '印巴 冲突' },
+      { locale: 'ur-PK', q: 'بھارت پاکستان کشیدگی', en: 'India Pakistan tension' },
+      { locale: 'hi-IN', q: 'भारत पाकिस्तान तनाव', en: 'India Pakistan tension' },
+      { locale: 'zh-CN', q: '印巴 冲突', en: 'India–Pakistan conflict' },
     ],
   },
   {
     id: 'chn-twn', label: 'China–Taiwan', dyad: ['CHN', 'TWN'], priority: 1,
     queries: [
-      { locale: 'zh-CN', q: '台海 军演' },
-      { locale: 'zh-TW', q: '共機 台海 中線' },
+      { locale: 'zh-CN', q: '台海 军演', en: 'Taiwan Strait military drills' },
+      { locale: 'zh-TW', q: '共機 台海 中線', en: 'Chinese military aircraft, Taiwan Strait, median line' },
       { locale: 'en-US', q: 'Taiwan Strait PLA incursion' },
-      { locale: 'ja-JP', q: '台湾海峡 中国軍' },
+      { locale: 'ja-JP', q: '台湾海峡 中国軍', en: 'Taiwan Strait, Chinese military' },
     ],
   },
   {
     id: 'chn-usa', label: 'China–United States', dyad: ['CHN', 'USA'], priority: 1,
     queries: [
       { locale: 'en-US', q: 'US China export controls semiconductors' },
-      { locale: 'zh-CN', q: '中美关系 出口管制' },
-      { locale: 'zh-CN', q: '美国 制裁 中国 反制' },
+      { locale: 'zh-CN', q: '中美关系 出口管制', en: 'China–US relations, export controls' },
+      { locale: 'zh-CN', q: '美国 制裁 中国 反制', en: 'US sanctions China, countermeasures' },
     ],
   },
   {
     id: 'scs', label: 'South China Sea', priority: 1,
     queries: [
       { locale: 'en-US', q: 'South China Sea Philippines coast guard' },
-      { locale: 'zh-CN', q: '南海 仁爱礁 菲律宾' },
+      { locale: 'zh-CN', q: '南海 仁爱礁 菲律宾', en: 'South China Sea, Second Thomas Shoal, Philippines' },
       { locale: 'en-GB', q: 'South China Sea freedom of navigation' },
     ],
   },
@@ -175,7 +179,7 @@ export const BEATS: Beat[] = [
     id: 'ior', label: 'Indian Ocean & PLAN', priority: 1,
     queries: [
       { locale: 'en-IN', q: 'Chinese navy Indian Ocean research vessel' },
-      { locale: 'zh-CN', q: '印度洋 海军 补给' },
+      { locale: 'zh-CN', q: '印度洋 海军 补给', en: 'Indian Ocean, navy, resupply' },
       { locale: 'en-IN', q: 'Gwadar Hambantota port China' },
     ],
   },
@@ -184,7 +188,7 @@ export const BEATS: Beat[] = [
     queries: [
       { locale: 'en-IN', q: 'Bangladesh Nepal Sri Lanka Maldives India relations' },
       { locale: 'en-IN', q: 'Myanmar border India insurgency' },
-      { locale: 'zh-CN', q: '中国 尼泊尔 斯里兰卡 马尔代夫 合作' },
+      { locale: 'zh-CN', q: '中国 尼泊尔 斯里兰卡 马尔代夫 合作', en: 'China, Nepal, Sri Lanka, Maldives cooperation' },
     ],
   },
   {
@@ -192,44 +196,44 @@ export const BEATS: Beat[] = [
     queries: [
       { locale: 'en-IN', q: 'Indian Army Navy Air Force procurement deployment' },
       { locale: 'en-IN', q: 'India defence missile test DRDO' },
-      { locale: 'hi-IN', q: 'भारतीय सेना सुरक्षा' },
+      { locale: 'hi-IN', q: 'भारतीय सेना सुरक्षा', en: 'Indian Army security' },
     ],
   },
   {
     id: 'pla', label: 'PLA Activity', priority: 1,
     queries: [
-      { locale: 'zh-CN', q: '解放军 演习 战备' },
-      { locale: 'zh-CN', q: '西部战区' },
+      { locale: 'zh-CN', q: '解放军 演习 战备', en: 'PLA exercises, combat readiness' },
+      { locale: 'zh-CN', q: '西部战区', en: 'Western Theatre Command' },
       { locale: 'en-US', q: 'PLA military exercise' },
     ],
   },
   {
     id: 'prc-mofa', label: 'PRC Official Statements', priority: 1,
     queries: [
-      { locale: 'zh-CN', q: '外交部 发言人 表示' },
-      { locale: 'zh-CN', q: '严正交涉 抗议' },
-      { locale: 'zh-CN', q: '国防部 回应' },
+      { locale: 'zh-CN', q: '外交部 发言人 表示', en: 'Foreign Ministry spokesperson says' },
+      { locale: 'zh-CN', q: '严正交涉 抗议', en: 'solemn representations, protest' },
+      { locale: 'zh-CN', q: '国防部 回应', en: 'Defence Ministry responds' },
     ],
   },
   {
     id: 'rus-ukr', label: 'Russia–Ukraine', dyad: ['RUS', 'UKR'], priority: 2,
     queries: [
       { locale: 'en-GB', q: 'Ukraine Russia front line' },
-      { locale: 'ru-RU', q: 'Украина фронт переговоры' },
+      { locale: 'ru-RU', q: 'Украина фронт переговоры', en: 'Ukraine front, negotiations' },
     ],
   },
   {
     id: 'mideast', label: 'Middle East', priority: 2,
     queries: [
       { locale: 'en-GB', q: 'Israel Iran Lebanon escalation' },
-      { locale: 'ar-EG', q: 'إسرائيل إيران تصعيد' },
+      { locale: 'ar-EG', q: 'إسرائيل إيران تصعيد', en: 'Israel Iran escalation' },
       { locale: 'en-GB', q: 'Red Sea Houthi shipping' },
     ],
   },
   {
     id: 'korea', label: 'Korean Peninsula', dyad: ['PRK', 'KOR'], priority: 3,
     queries: [
-      { locale: 'ko-KR', q: '북한 미사일 도발' },
+      { locale: 'ko-KR', q: '북한 미사일 도발', en: 'North Korea missile provocation' },
       { locale: 'en-US', q: 'North Korea missile launch' },
     ],
   },
@@ -238,14 +242,14 @@ export const BEATS: Beat[] = [
     queries: [
       { locale: 'en-US', q: 'state-sponsored cyberattack critical infrastructure' },
       { locale: 'en-IN', q: 'India cyberattack China hackers' },
-      { locale: 'zh-CN', q: '网络攻击 黑客 国家' },
+      { locale: 'zh-CN', q: '网络攻击 黑客 国家', en: 'cyberattack, hackers, state' },
     ],
   },
   {
     id: 'tech', label: 'Technology & Export Controls', priority: 2,
     queries: [
       { locale: 'en-US', q: 'semiconductor export controls entity list' },
-      { locale: 'zh-CN', q: '芯片 出口管制 稀土' },
+      { locale: 'zh-CN', q: '芯片 出口管制 稀土', en: 'chips, export controls, rare earths' },
     ],
   },
 ];

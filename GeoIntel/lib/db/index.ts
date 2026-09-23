@@ -337,6 +337,11 @@ export function articlesByLanguage(language: string, limit = 2000): Article[] {
     .all(language, limit).map(rowToArticle);
 }
 
+/** Every report a beat's topic search returned — what Language Lens compares. Direct feeds have no beat. */
+export function beatArticles(): Article[] {
+  return getDb().prepare('SELECT * FROM articles WHERE beat_id IS NOT NULL').all().map(rowToArticle);
+}
+
 export function setMeta(key: string, value: string) {
   getDb().prepare('INSERT OR REPLACE INTO meta (key,value) VALUES (?,?)').run(key, value);
 }

@@ -1,6 +1,9 @@
 import 'server-only';
 import { cache } from 'react';
-import { allEvents, articlesByIds, eventById, getMeta, articleCountByLanguage, articlesByLanguage, ladderTrailArticles, corpusSince, eventIdsByArticle } from '@/lib/db';
+import { allEvents, articlesByIds, eventById, getMeta, articleCountByLanguage, articlesByLanguage, ladderTrailArticles, corpusSince, eventIdsByArticle, beatArticles } from '@/lib/db';
+import { BEATS } from '@/data/feeds';
+import { lens, type BeatLens } from '@/lib/lens/compare';
+import { evidencedDomain } from '@/lib/analyze/score';
 import { countryRisk, dyadTension, type CountryRisk } from '@/lib/risk';
 import { COUNTRIES, BY_ISO, HOTSPOTS } from '@/data/countries';
 import { dyadKey } from '@/lib/analyze/entities';
@@ -94,6 +97,14 @@ export const languageStats = cache((language: string) => ({
 
 /** All stored articles in one language — for vocabulary tallies over the full corpus. */
 export const articlesIn = cache((language: string, limit = 2000) => articlesByLanguage(language, limit));
+
+/** Language Lens: each topic run in several languages, compared within itself. See lib/lens/compare. */
+export const lensData = cache((): BeatLens[] => {
+  const articles = beatArticles();
+  // Framing from each report's own words, not the stored fallback domain — see LensArticle.framed.
+  const reports = articles.map((a) => ({ ...a, framed: evidencedDomain(a.title, a.snippet) }));
+  return lens(reports, BEATS, eventIdsByArticle(articles.map((a) => a.id)));
+});
 
 /** Chinese-language reporting stream, for the China Watch page. */
 export function chineseStream(events = corpus(), limit = 40) {
