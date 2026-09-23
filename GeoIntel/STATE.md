@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-19.** Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-21** (the demo tour, on branch `demo-tour`; `main` and the live site are as of 2026-09-19). Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,7 +21,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 526 passing (`npm test`) |
+| Tests | 939 passing on branch `demo-tour` (`npm test`); `main` has fewer, the tour is not merged |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
@@ -1294,7 +1294,8 @@ recall lost on purpose, and printed in the report.
    as unclear.
 4. **The `analyse-route` test is a latent flake.** Under the full suite its file takes 4.9-6.6 s on both
    `main` and this branch against vitest's 5 s limit, and it failed once right after a restart. Not
-   caused by this work; flagged as its own task.
+   caused by this work; flagged as its own task. **Fixed 2026-09-20** (`b58e1a2`): the file now sets a
+   20 s `testTimeout` with `vi.setConfig`; the file takes ~2 s in the full suite.
 
 **Verified in a real browser.** An India-Pakistan event shows no ladder gauge and two article rows reading
 "rung 8 · not Beijing"; a Beijing event keeps its gauge and plain rung badges; `/china` and `/methodology`
@@ -1379,7 +1380,7 @@ Beijing formula about India found in headlines since 22 Jun." Contrast: dot vs l
 panel 10.94:1; all three palettes are identical because the trail uses fixed tokens; the site is
 dark-only. No console errors, no server errors.
 
-**What was NOT verified — do this once.** **Nobody has looked at the pixels.** The Browser pane was
+**What was NOT verified — do this once.** **Nobody has looked at the pixels.** *(Done later the same day, live in real Chrome — see "Where 2026-09-20 continued"; a phone, real touch and reduced motion are still unseen.)* The Browser pane was
 hidden, so screenshots came back blank at the wrong size and everything above is measured from the DOM
 (geometry, hit-testing, computed styles), not seen. Reduced-motion could not be emulated (the markup test
 and the hook's own early return cover it). Real touch was not tried. Open `/china` and scroll to
@@ -1418,12 +1419,200 @@ guard with `|| true` (`grep -c` exits 1 on zero matches).
 CPU uploading the fresh 600 MB `.next` from the synced Desktop. Moving the repo out of the synced
 Desktop is still Josh's decision, and now has a second reason.
 
-**Still open.** Nobody has looked at the pixels of the live page (see above) — open `/china` and scroll
-to "Evidence trail". The flaky-test branch `analyse-route-test-timeout` (`6ea49c0`) is still local and
-unmerged. The public `AI_apps` mirror of this work is a separate PR, opened and not merged until Josh
-says. The weekly audit now has a second list to read: `npm run ladder:shift` prints every resolved
+**Still open.** ~~Nobody has looked at the pixels of the live page~~ — done, see "Where 2026-09-20 continued". The public `AI_apps` mirror carries this work (PR #85, merged @ `e25ad77`); the
+flaky-test merge (`b58e1a2`, six lines of a test file) is not mirrored yet — it needs its own small
+PR whenever Josh wants one. The weekly audit now has a second list to read: `npm run ladder:shift` prints every resolved
 target and every unstated headline — run it against a restored nightly backup once the live corpus has
 weeks in it, since that is the held-out sample the rule has never seen.
+The demo tour built on 2026-09-20 is a third thing waiting on a mirror: see "The demo tour — built".
+
+## Where 2026-09-20 continued — the pixels, both audits, and two findings
+
+Nothing was built. A pass to look at what shipped, run the two weekly audits, and chase the loose ends the
+last section named. `main` unchanged in code; 724 tests as before.
+
+**Both audits held their baselines.** Corpus 8,381 articles after an ingest (70 of 73 feeds; Indian Express
+and Dawn answered locally this time). `roster:audit`: the same four flags as 2026-09-10 and nothing new —
+Lula (noise: "ex-leader" is Bolsonaro), Xi (noise: he is the one doing the purging), Vietnam's 黎明兴 (still
+one story, still no romanisation, still not guessed at), and the DPRK defence minister the corpus reports
+dismissed (seat stays empty). Seats confirmed by the corpus 23 → 25; named 80, silent 42. `ladder:shift`:
+51 rung-bearing articles, **29 Beijing's, 19 another party's, 3 unclear**; 24 of 29 Beijing formulae resolve
+to a target (was 22 of 27) and the same five stay unstated. Every one of the 22 excluded headlines was read
+and reads right; nothing was moved. That is a THIN held-out sample: rung-bearing headlines went from 47 to 51
+since the rule was shaped, and the fixture is still the whole hit set it was built from. Four new cases that
+all read right is a good sign and not a verdict — read the excluded list again next week.
+
+**The three YouTube 404s are YouTube's, not ours.** `channel_id` was suspected stale. It is not: YouTube's own
+channel and two others also return 404 from the same endpoint, the body is served by "YouTube RSS Feeds
+server", a retry twenty seconds later is identical, and the channel *pages* return 200. Local ingest fails
+exactly those three and nothing else. No change to `data/feeds.ts`. If it is still 404 in a week, that is when
+to think about the feed rather than the IDs — re-run `curl -I` on a channel that certainly exists first.
+
+**Somebody has now looked at the pixels of the evidence trail** — live, in real Chrome, at ~1000 px. It renders
+as designed: three rows (United States, Japan, "target not stated"), a dated axis, the "Collecting since 10
+Sep" caption, dots sized by rung, and the table under it with pinyin beneath each headline. Dot positions
+match the audit's dates. Still not seen: a phone, real touch, and reduced motion.
+
+**One finding, and it is about the data, not the drawing: a stale reprint from a junk site made a fresh dot.**
+The live Japan row holds exactly one dot, 17 Sep, rung 8, and its headline is
+`众赢国际手机版_体育_8·15日本政要又“拜鬼”…` from an outlet Google News labels 体坛. The prefix is
+casino-style SEO, and "8·15" is the 15 August Yasukuni visits — so a page republished a month-old story and
+the feed dated it 17 Sep. The formula in it is genuinely Beijing's; the DATE is not evidence of anything on
+that day. It is the only spam-shaped headline among the 51 rung-bearing articles locally, so this is one case,
+not a leak, but on the live site it is the whole basis of the Japan row. **Reprint collapse does not help** —
+it folds duplicates of a story within a window, and this is an old story arriving new. Not fixed, because the
+fix is a design choice: an outlet denylist (cheap, needs upkeep, and the prefix pattern is exactly what a
+denylist is for) versus dating a formula by the event it names (a much larger job). Decide before the trail
+has weeks in it, since every dot after this one inherits the question.
+Still undecided; the demo tour built later that day guards against junk in its own selectors and does not
+wait on it — see "The demo tour — built".
+
+## The demo tour — built (2026-09-20)
+
+Branch `demo-tour`, sixteen tasks: **not merged and not deployed.** `main` is untouched, the VPS is
+untouched, and the public `AI_apps` mirror does not carry it. **939 tests** (915 when the code was
+finished; the rest came with the fixes and the 2026-09-21 wave below), `tsc --noEmit` clean. Design:
+`docs/specs/2026-09-20-demo-tour-design.md`; plan: `docs/plans/2026-09-20-demo-tour.md`.
+
+**What it is.** `/demo`: eleven chapters that autoplay once and stop — the board, a Chinese headline
+read syllable by syllable, reprint collapse and the confidence meter, the ladder and whose formula,
+the evidence trail, the risk radar, a dyad, a walk through the network, Ask, what a reader can make
+their own, and a closing button. Reached from a second splash button ("▶ Watch the 2-minute demo",
+outlined, beside the filled "Enter →"), a plain `<a>`, so it is a full page load onto a chromeless
+route. Scenes are the real components on the real corpus; a chapter with nothing to show is left out,
+and one whose data is thin falls back to a captured example from `npm run demo:capture`.
+
+**Watched in real Chrome, on a production build served from a scratch copy of the database** (ports
+3199 full, 3198 empty — never the `kautilya.db` that `next build` traces into `.next/standalone`).
+`/demo` is **506,903 B** and `/board` **643,787 B**: the tour renders all eleven scenes up front and is
+still smaller than the board, so the spec's "stream the rest" risk did not materialise. `/demo` carries
+no nav and no footer; the closing button is a plain anchor and lands on `/board` **with** its nav,
+footer and the reader's palette.
+
+**Every chapter was watched to its end.** Counters count from 0 to the real values (7,465 / 24 / 7 / 4,000;
+radar 99; tension 99); 31 pinyin syllables arrive one at a time and the highlight sweeps 0 → 100% over
+坚决反对; the reprint folds into its lead while the meter bars grow beside it; the gauge fills and both
+headline badges land (rung 6 Beijing, "rung 8 · not Beijing"); the trail's ten dots draw staggered; the radar
+scales out from its centre, visible from the first frame; the walked USA → CHN edge lights gold, and the
+network chapter **does** appear on the live corpus; the question types and its reading appears ~1.2 s before
+the answer; the star pops, the email slides in, the export control appears, the palette swaps and returns.
+The dyad's defining-event markers sit on the right columns but do not animate — RevealOnView has no hook for
+them, so that chapter's only motion is its count-up.
+
+**Autoplay** ran **112.4 s** from hydration, every chapter within 100 ms of its registered length, and
+**stopped** on chapter 11 without looping. Space freezes the bar and all ten map pulses and resumes them;
+Home/End/←/→ work and Esc leaves for `/`; next on the last chapter, prev on the first and clicking the
+current dot are true no-ops. Tab goes Close demo → ‹ → Play → ›, and the eight anchors inside the dyad
+scene **cannot** take focus — the stage is `inert`. With Monochrome chosen on `/board`, chapter 10 swapped
+to the accessible ramp at 7.4 s and returned to **monochrome** at 11.0 s, with
+`localStorage['kautilya-palette']` read but never written. **Reduced motion** (emulated over CDP) opens
+paused on chapter 1 with "Motion is off. Use ‹ and › to move between chapters.", every `.demo-*` animation
+`none`, beats already at opacity 1, and the palette swap skipped. **With JavaScript really disabled**,
+chapter 1 renders finished — coloured map, four real numbers, controls, dots, transcript. **At 375 px** no
+chapter scrolls sideways, the radar fits, chapter 10 fits, the trail's headline table stays inside its own
+`overflow-x-auto` behind a closed `<details>`, and the dots wrap to two rows (ten and one), still usable.
+**On an empty corpus** `/demo` was 200 with eight chapters — risk, network and Ask left out, "Example
+captured 20 Sep" on the other six. (Since 2026-09-21 it is seven: see "Re-watched after the last fixes".) The 体坛 casino headline of 17 Sep appears in neither chapter 2 nor
+chapter 5. No console message of any kind on either port; both server logs clean.
+
+**Three things were found by looking and fixed** (`2c388fe`, `47a6e9b`, `b879495`, each with a test): the
+risk radar asked for size 340, at which `Radar` puts its MILI and INTE labels outside the viewBox and the
+svg clipped them at every width (now 280, with a test pinning all six inside); the alert email's event link
+is one unbroken token and lost its tail past the panel at 375 px (`break-words`); and the palette swatches
+are the reader's live tokens, so a reduced-motion or no-JS reader saw their own ramp — grey under
+Monochrome — captioned "Colour-blind-safe palette" (now "Choose a colour-blind-safe palette").
+
+**One defect was found by looking, and is now FIXED** ("Demo tour: a scene entered while paused shows its
+finished state instead of a frozen blank one"). Move to another chapter while the tour was paused and the new
+scene's beats froze at their first keyframe, opacity 0: press Space then Home and the stage was blank but for
+the caption. It was the mirror of the no-JS fix in `165d20d`. The stage now has three states, chosen by the
+pure `stageFlags` in `lib/demo/stage.ts` and written by `DemoTour` as `data-paused` and `data-still`: paused or
+tab-hidden MID-chapter (`elapsedMs > 0`) still freezes in place, and a scene entered while paused
+(`elapsedMs === 0`, which includes the reduced-motion first paint) gets `data-still`, for which one CSS rule
+shows every beat in its finished state, the same as the reduced-motion twin. From reading the CSS, not from
+watching it: in the still state only the four `.demo-*` beat kinds are forced, so at this point the board's
+continuous `.pulse-ring` flashpoint pulses (not `.demo-*`) were not frozen there and kept pulsing on a paused
+tour. **Fixed the same day in `14dd8a6`**: `.demo-stage[data-still="true"] .pulse-ring` now gets
+`animation-play-state: paused`, pinned by `tests/demo-css.test.ts` — the pulses do stop with everything else.
+
+**Two known limitations, measured** (hard load, 6× CPU throttle): chapter 1's numbers paint at their final
+server-rendered values for ~680 ms before hydration resets them to 0 to count up, and the beats start at that
+paint while the clock starts at hydration, so the bar lags the scene by the same gap. Both are the price of the
+no-JS fix; neither shows at full speed.
+
+**What was NOT seen: a real phone, real touch, a screen reader.** Reduced motion and the JavaScript-disabled
+render were emulated over CDP in a headless Chrome, not set by a person in their own browser. The watching ran
+in a second Chrome over CDP because the extension's tab was occluded and `document.hidden` was true — the tour
+paused itself, which is the hidden-tab rule working, but nothing animates in a background tab.
+
+**Rules a maintainer must keep.** Every link out of `/demo` is a plain `<a>` — a guard test scans
+`components/demo/**` for `next/link` imports, because a soft navigation off a chromeless route carries the
+hidden chrome with it. Every `.demo-*` animation needs a reduced-motion twin; the CSS test counts them. A
+component that animates itself on mount must not sit under a delayed `Beat`, or its effect finishes behind
+opacity 0. `data/demo-fallbacks.ts` is generated by `npm run demo:capture`, never hand-edited — the capture
+sanitises corpus links out of it.
+
+**Re-watched after the last fixes (2026-09-21).** A clean production build (`.next` moved aside, static assets
+copied, no ` 2`/` 3` conflict copies; the traced `.next/standalone/kautilya.db` present and never served), served
+from scratch copies of the database on ports 3199 (full) and 3198 (empty), and driven in a visible, focused
+Chrome over the chrome-devtools MCP. Seen: **paused mid-chapter freezes in place** (35 beat elements held identical
+opacities over 1.2 s, `animation-play-state: paused`, `data-still` false); **pause, then →, lands on a finished
+chapter 3** (`data-still="true"`, every beat at opacity 1, the reports, fold and meter all on screen, not blank);
+**pause, then Home, gives a finished chapter 1**, and pressing Play from that still scene restarts its animation;
+**the empty corpus now opens on the language chapter with seven chapters and no board scene in the DOM**; the full
+corpus still has all eleven in the approved order (chapter 1 "The world, scored", chapter 6 "Six vectors of risk").
+Console silent on both, both server logs clean, `kautilya-palette` never written, both servers stopped. **Not
+re-watched:** the ask-scene timing change (unit-tested and mutation-checked, not looked at), and everything the
+first pass did not see (a real phone, real touch, a screen reader).
+
+**The 2026-09-21 wave**, four commits after `2f26cda`: the stage's third state (above), the empty-board chapter
+omitted (`289104e`), the ask reading beat derived from the question's length so the longest country pair no longer
+has a 20 ms margin over its own typing (`fe47399`), a scene-level pinyin timeline test, the "no delayed Beat"
+guards rewritten as exact beat lists so a wrapper of ANY delay fails them rather than one named value, the stale
+"splash is the only chromeless route" comments corrected, and the a11y h1 waiver for `/demo` now also asserts the
+page renders `<DemoTour` (a first draft used `toContain` and passed on `<DemoTourX`; found by mutation, fixed with a
+tag-boundary regex). It was done inline, without the independent whole-branch review the process calls for.
+
+**Two decisions still open**, neither blocking: free versus billing (the tour reads `QUOTA_ENFORCED` and
+`billing()`, so opening subscriptions turns the closing chapter's one button into two with no edit here), and
+the junk-outlet denylist at ingest, which the tour guards against in its own selectors.
+
+**Sound, added 2026-09-22** (`3c8024c`, on top of the wave above): a new toggle in the controls row, off by
+default, that turns on a synthesized tanpura drone (`lib/demo/audio.ts` — Bhairavi's ratios, four sustained
+tones voiced Sa-Pa-Sa-Sa′, a fixed seven-note pluck phrase) under spoken narration of each chapter's own
+title and caption, read by the browser's own `speechSynthesis` — nothing said that is not already shown.
+Every tone is an oscillator built from ratios at the moment it plays; nothing is fetched, sampled, or
+downloaded, so nothing here can carry a copyright claim. `components/demo/DemoAudio.tsx` owns the
+`AudioContext` and speech calls, ducks the drone under the voice, and mirrors the tour's pause/hidden-tab
+state by pausing and resuming speech with it. No localStorage — resets every visit, like the palette.
+973 tests, `tsc` clean. **Verified in a real running server**, not just tests: the button toggles with no
+console errors across several enable/disable/navigate/pause cycles, `speechSynthesis.speaking` genuinely
+flips true within 700 ms of enabling and again on every chapter change, and the five-control row does not
+overflow at 375px. **Not yet seen:** whether it actually sounds good to a human ear, or how it reads on a
+screen reader that also has its own speech going. This did not touch the independent whole-branch review
+gap above, which is still open.
+
+**One caveat worth writing down:** some platforms' `speechSynthesis` voices (Chrome's "Google" voices in
+particular) are cloud-synthesized, so turning sound on can send the shown chapter caption — public copy
+already on screen, after an explicit opt-in — to a speech backend. No app-side telemetry is added (the
+spec's "no analytics on tour views" non-goal still holds), but that browser-level request is real and
+outside this app's control.
+
+**2026-09-23 — reviewed and fixed.** The independent whole-branch review found 0 Critical, 4 Important, 10
+Minor across the full branch. All 4 Important and 3 of the Minors were fixed in one wave: the chapter-dot targets grew to a 24x28 hit area (WCAG 2.5.8) while keeping the visible 10px pill; the
+stage now also gets `pointer-events-none` when inert, so a browser without `inert` support can't reach the
+scene's links; the drone now suspends/resumes the AudioContext in step with speechSynthesis, so it actually
+stops on pause, a hidden tab, or the tour reaching its end (before, only the voice stopped); the toggle's
+start/teardown moved out of the `enabled` state updater into an effect, closing a Strict-Mode double-
+AudioContext leak; voices are now cached via `voiceschanged` so the very first narration also gets the en-IN
+preference; `aria-pressed` was dropped in favour of the site's existing flipping-label convention (matches
+Play/Pause); and a new test (`tests/demo-audio.test.ts`) scans the source for any audio file, sample, or
+third-party audio dependency, any `fetch`, and any `localStorage` use, making the copyright and no-tracking
+claims self-enforcing rather than only a comment. Left open, all low-impact and explained in the review: the
+dyad chapter's markers still don't animate, one pre-existing captured fallback string still embeds an event
+id inside a URL (harmless — inert text on an inert stage), and narration is not reconciled against each
+chapter's length (the longest captions can be cut off by the next chapter change — unverified by ear).
+
 
 ## The accessibility pass (2026-09-07)
 

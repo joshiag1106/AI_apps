@@ -17,8 +17,9 @@ export function middleware(req: NextRequest) {
 
   /*
    * Forwarded on every request, both branches below, so app/layout.tsx can tell whether it
-   * is rendering the splash (app/page.tsx, the one route with no Nav or footer) without a
-   * Server Component needing its own way to read the current URL — Next does not hand the
+   * is rendering a chromeless route (the splash at /, app/page.tsx, or the demo tour at /demo;
+   * the two routes with no Nav or footer) without a Server Component needing its own way to
+   * read the current URL — Next does not hand the
    * root layout the path for free. This has to be set on BOTH branches: the early return
    * for a visitor who already has the device cookie is the common case on every request
    * after the first, and setting it only in the mint-a-cookie branch below would have left

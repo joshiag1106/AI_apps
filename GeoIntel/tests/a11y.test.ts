@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Sparkline, Radar, Columns } from '@/components/charts';
@@ -110,6 +110,12 @@ describe('page structure', () => {
     readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
       e.isDirectory() ? pages(join(dir, e.name)) : e.name === 'page.tsx' ? [join(dir, e.name)] : []);
 
+  // A page whose own source only hands the render to a component keeps its h1 in that component:
+  // /demo gathers data and returns <DemoTour>, whose chapter title is the page's one h1. The check
+  // follows it there instead of waiving the route, so if that file loses its h1 this fails exactly
+  // as it would for a page that lost its own.
+  const delegated: Record<string, string> = { 'app/demo/page.tsx': 'components/demo/DemoTour.tsx' };
+
   it('gives every route an h1, in every branch it can return from', () => {
     const routes = pages('app');
     // A guard on the guard: if the walk stops finding files, the loop below passes vacuously.
@@ -117,8 +123,15 @@ describe('page structure', () => {
 
     for (const file of routes) {
       const src = readFileSync(file, 'utf8');
-      const heads = (src.match(/<h1[\s>]/g) ?? []).length
-        + (src.match(/<SectionTitle level=\{1\}/g) ?? []).length;
+      if (delegated[file]) {
+        // The waiver is only true while the page actually renders the component it borrows an h1 from.
+        const name = basename(delegated[file], '.tsx');
+        expect(src, `${file} borrows its h1 from ${delegated[file]} but no longer renders <${name}`)
+          .toMatch(new RegExp(`<${name}[\\s/>]`));
+      }
+      const headingSrc = delegated[file] ? src + readFileSync(delegated[file], 'utf8') : src;
+      const heads = (headingSrc.match(/<h1[\s>]/g) ?? []).length
+        + (headingSrc.match(/<SectionTitle level=\{1\}/g) ?? []).length;
       expect(heads, `${file} renders no top-level heading`).toBeGreaterThan(0);
 
       /*

@@ -67,7 +67,7 @@ export default function Splash() {
         </div>
         {/* The category line the splash otherwise has none of: Nav carries "Geopolitical
             Risk Intelligence" as its own subtitle everywhere else on the site, and the
-            splash renders no Nav — see app/layout.tsx's isSplash branch. So this is the
+            splash renders no Nav — see app/layout.tsx's `chromeless` branch. So this is the
             only place on the whole page that names what the product actually is. */}
         <div className="splash-fade-up mb-4 text-[13px] font-medium uppercase tracking-[0.16em] text-[color:var(--color-accent)]"
           style={{ animationDelay: '300ms' }}>
@@ -92,8 +92,8 @@ export default function Splash() {
 
         {/*
           * Plain <a> tags, DELIBERATELY not next/link's <Link> — both of these once broke
-          * because they were. / is the only route with no Nav/footer (app/layout.tsx's
-          * isSplash), and Next's client-side router specifically REUSES a layout shared by
+          * because they were. / is one of two routes with no Nav/footer (app/layout.tsx's
+          * `chromeless`; /demo is the other), and Next's client-side router specifically REUSES a layout shared by
           * the from- and to-route rather than re-rendering it on a <Link> navigation — the
           * entire point of the App Router's shared-layout model. Since every route shares
           * this one root layout, clicking either link here carried /'s chrome-suppressed
@@ -101,7 +101,8 @@ export default function Splash() {
           * that visit. A bare <a> gets no client-side interception, so the browser gives it
           * an ordinary full page load instead — a fresh server round-trip, fresh middleware,
           * a freshly evaluated root layout, the same as typing the URL. See
-          * tests/splash.test.ts, which pins both links, not only Enter.
+          * tests/splash.test.ts, which pins both links, not only Enter. /demo is chromeless too,
+          * so the demo button needs the same full page load as Enter.
           *
           * No onClick either — the unrelated reason is that this page has no 'use client',
           * and a Server Component cannot hand a function to an element it renders. It used
@@ -109,13 +110,22 @@ export default function Splash() {
           * be sent straight to /board; that whole mechanism is gone, on purpose, as of
           * 2026-09-18 — see the note at this file's top.
           */}
-        <a
-          href="/board"
-          className="splash-fade-up mt-6 rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
-          style={{ animationDelay: '560ms' }}
-        >
-          Enter →
-        </a>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="/board"
+            className="splash-fade-up rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px] font-semibold text-[#0a0d13] transition-opacity hover:opacity-90"
+            style={{ animationDelay: '560ms' }}
+          >
+            Enter →
+          </a>
+          <a
+            href="/demo"
+            className="splash-fade-up rounded-md border border-[color:var(--color-accent-dim)] px-6 py-3 text-[16px] font-medium text-[color:var(--color-accent)] transition-colors hover:border-[color:var(--color-accent)]"
+            style={{ animationDelay: '600ms' }}
+          >
+            ▶ Watch the 2-minute demo
+          </a>
+        </div>
 
         <a href="/about" className="splash-fade-up mt-6 text-[13px] text-faint underline decoration-dotted hover:text-muted"
           style={{ animationDelay: '620ms' }}>

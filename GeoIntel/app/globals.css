@@ -343,3 +343,65 @@ body {
   .star-pop { animation: none; }
   .dropdown-in { animation: none; }
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * The demo tour (app/demo, components/demo).
+ *
+ * Scenes are timed by "beats": each element takes its delay from --beat, set inline by
+ * components/demo/scenes/Beat, so a scene is re-timed by editing a number and not a stylesheet.
+ * Every rule here that animates has a twin in the reduced-motion block below, and
+ * tests/demo-css.test.ts fails if one is added without it.
+ * ------------------------------------------------------------------------------------------- */
+@keyframes demo-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.demo-beat { animation: demo-rise 520ms ease-out both; animation-delay: var(--beat, 0ms); }
+
+@keyframes demo-slide-in {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: none; }
+}
+.demo-slide { animation: demo-slide-in 520ms cubic-bezier(0.22, 0.68, 0, 1) both; animation-delay: var(--beat, 0ms); }
+
+@keyframes demo-email-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.demo-email { animation: demo-email-in 640ms cubic-bezier(0.22, 0.68, 0, 1.1) both; animation-delay: var(--beat, 0ms); }
+
+/* A highlight that sweeps across a phrase — the ladder formula inside a Chinese headline. */
+@keyframes demo-mark-sweep {
+  from { background-size: 0% 100%; }
+  to   { background-size: 100% 100%; }
+}
+.demo-mark {
+  background-color: transparent;
+  color: inherit;
+  border-radius: 3px;
+  background-image: linear-gradient(
+    color-mix(in oklab, var(--color-zh) 35%, transparent),
+    color-mix(in oklab, var(--color-zh) 35%, transparent));
+  background-repeat: no-repeat;
+  background-position: left;
+  animation: demo-mark-sweep 700ms ease-out both;
+  animation-delay: var(--beat, 0ms);
+}
+
+/* Pausing the tour freezes CSS motion too, including the components' own continuous pulses. */
+.demo-stage[data-paused="true"] * { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.demo-beat, .demo-slide, .demo-email, .demo-mark) { animation: none; opacity: 1; transform: none; }
+}
+
+/* A scene entered while paused shows its finished state, the same as the reduced-motion twin above.
+ * Freezing it instead would hold every beat at its `from` keyframe, opacity 0: a blank stage.
+ * components/demo/DemoTour sets data-still (lib/demo/stage); it is never set together with data-paused. */
+.demo-stage[data-still="true"] :is(.demo-beat, .demo-slide, .demo-email, .demo-mark) { animation: none; opacity: 1; transform: none; }
+
+/* The components' own looping pulses (the map's flashpoint rings) are not `.demo-*`, so the rule above
+ * misses them and a paused tour would keep pulsing. A loop has no finished state to jump to, so it is
+ * paused in place. Deliberately NOT `.demo-stage[data-still="true"] *`: that would also freeze the
+ * entry animations at their first keyframe, opacity 0, which is the blank stage this state exists to end. */
+.demo-stage[data-still="true"] .pulse-ring { animation-play-state: paused; }

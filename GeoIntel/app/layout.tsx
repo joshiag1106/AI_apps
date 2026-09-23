@@ -46,11 +46,12 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const ingested = lastIngest();
   const empty = corpusStats().events === 0;
-  // The splash (app/page.tsx) is the one route that gets no Nav, no footer, no skip link —
-  // a true front door rather than another page with the usual chrome on top. The root
-  // layout has no built-in way to know the current route, so middleware.ts forwards it as
+  // The splash (app/page.tsx) and the demo tour (app/demo) are the two routes that get no Nav, no
+  // footer, no skip link — a front door and a film, rather than pages with the usual chrome on top.
+  // The root layout has no built-in way to know the current route, so middleware.ts forwards it as
   // a header; see the comment there for why it has to be set on both of its branches.
-  const isSplash = (await headers()).get('x-pathname') === '/';
+  const path = (await headers()).get('x-pathname');
+  const chromeless = path === '/' || path === '/demo';
   return (
     // suppressHydrationWarning is required, not cosmetic: the inline script below sets
     // data-palette on this element BEFORE React hydrates, so the client tree legitimately
@@ -73,14 +74,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="min-h-screen">
-        {isSplash ? children : (
+        {chromeless ? children : (
           <>
             {/*
               Bypass blocks (WCAG 2.4.1). Every page opens with the wordmark, nine navigation
               links and a search box, and a keyboard or screen-reader user had to walk all of
               them again on every single page before reaching anything they came for. The
-              splash has neither, so it skips this block rather than offering a skip link to
-              nothing.
+              splash and the demo tour have neither, so they skip this block rather than offering
+              a skip link to nothing.
 
               Off-screen until focused, so it costs the sighted layout nothing and appears the
               moment it is tabbed to — the first tab stop on the page, deliberately. The

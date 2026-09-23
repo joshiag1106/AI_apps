@@ -26,7 +26,7 @@ describe('the splash page', () => {
    * read /board, but document.querySelector('header'/'footer') both came back null.
    *
    * The cause is Next's App Router client-side router, not a caching problem. app/layout.tsx
-   * decides isSplash by reading a per-request `x-pathname` header, which is only freshly
+   * decides `chromeless` by reading a per-request `x-pathname` header, which is only freshly
    * evaluated on a genuine server round-trip. But / and /board share the SAME root layout,
    * and Next's client-side navigation (what a <Link> click does) is specifically built to
    * REUSE a layout that is common to the from- and to-route rather than re-render it — that
@@ -37,8 +37,9 @@ describe('the splash page', () => {
    * freshly evaluated root layout — confirmed by curling /board directly and by a hard
    * location.replace() in a real browser, both of which correctly showed the chrome.
    *
-   * / is the only route where chrome is ever suppressed, so the Enter link is the ONLY
-   * transition in the whole app that crosses that boundary via a client-side navigation.
+   * / and /demo are the only routes where chrome is ever suppressed, so the splash's Enter and
+   * demo links are the ONLY transitions in the whole app that cross that boundary via a
+   * client-side navigation.
    * Fixed by keeping it a plain, uninterpreted anchor — Next's Link component intercepts
    * clicks specifically to perform that soft, layout-reusing navigation; a bare <a> does
    * not, and the browser gives it an ordinary full page load instead, the same as typing
@@ -48,6 +49,7 @@ describe('the splash page', () => {
   it.each([
     ['/board', 'Enter'],
     ['/about', 'Why Kautilya'],
+    ['/demo', 'Watch the demo'],
   ])('%s (%s) is a plain anchor, not next/link\'s <Link> — every link off the splash needs this', (href) => {
     // Not only the Enter button. / is the ONLY route where chrome is suppressed, so ANY
     // client-side navigation whose FROM route is / carries that suppressed layout state to
