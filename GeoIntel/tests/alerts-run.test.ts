@@ -152,7 +152,7 @@ describe('where the links point', () => {
     await m.run.runAlerts([ev(8, ['CHN'])], { send });
 
     expect(bodies).toHaveLength(1);
-    expect(bodies[0]).toMatch(/https:\/\/kautilya\.example\/events\/x\d+/);
+    expect(bodies[0]).toMatch(/https:\/\/kautilya\.example\/kautilya\/events\/x\d+/);
     expect(bodies[0]).not.toContain('localhost');
   });
 

@@ -2,7 +2,7 @@ import { detectJumps } from '@/lib/alerts/detect';
 import { renderDigest, sendDigest, type Digest, type SendResult } from '@/lib/alerts/send';
 import { alertRecipients, marksFor, recordMark } from '@/lib/alerts/state';
 import { listWatch } from '@/lib/watchlist/store';
-import { siteOrigin } from '@/lib/site';
+import { siteUrl } from '@/lib/site';
 import type { GeoEvent } from '@/lib/types';
 
 /**
@@ -38,7 +38,7 @@ export async function runAlerts(events: GeoEvent[], opts: RunOptions = {}): Prom
   // Throws in production when KAUTILYA_ORIGIN is unset: mail full of links to the server's
   // own address is worse than no mail, and nothing is marked sent, so it goes out once the
   // address is configured. The ingest contains the failure.
-  const origin = opts.origin ?? siteOrigin('http://localhost:3111');
+  const origin = opts.origin ?? siteUrl('http://localhost:3111');
   const log = opts.log ?? (() => {});
 
   const recipients = alertRecipients();

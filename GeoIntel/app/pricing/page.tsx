@@ -3,6 +3,7 @@ import { Panel, Badge } from '@/components/ui';
 import { FREE_LIMIT, METERED, quotaState } from '@/lib/quota';
 import { currentUser } from '@/lib/auth';
 import { billing } from '@/lib/billing';
+import { BASE_PATH } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Plans' };
@@ -89,7 +90,7 @@ export default async function PricingPage() {
               Subscriptions are not open yet
             </div>
           ) : user ? (
-            <form action="/api/checkout" method="post" className="mt-5">
+            <form action={`${BASE_PATH}/api/checkout`} method="post" className="mt-5">
               <button className="w-full rounded-md bg-[color:var(--color-accent)] px-4 py-2 text-[15px] font-medium text-[#0a0d13] hover:opacity-90">
                 {mode === 'stripe' ? 'Continue to checkout' : 'Activate Pro (test mode)'}
               </button>

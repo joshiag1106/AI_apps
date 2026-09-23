@@ -59,6 +59,8 @@ out
 * [0-9][0-9].css
 * [0-9].patch
 * [0-9][0-9].patch
+* [0-9].svg
+* [0-9][0-9].svg
 # Extensionless duplicates: the same client produced a bare `.gitignore 2`. Safe to match
 # broadly in a way `* [0-9].*` is not — the asset that rule would have hidden silently,
 # "Figure 1.png", has an extension by definition, and a real file called "Figure 1" with

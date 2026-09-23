@@ -3,6 +3,7 @@ import { SectionTitle, Panel, Badge, Empty } from '@/components/ui';
 import { EventCard } from '@/components/EventCard';
 import { corpus, eventsFor, countryName } from '@/lib/queries';
 import { COUNTRIES } from '@/data/countries';
+import { BASE_PATH } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Event feed' };
@@ -48,7 +49,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
       </div>
 
       <Panel className="space-y-3 p-3.5">
-        <form action="/events" className="flex gap-2">
+        <form action={`${BASE_PATH}/events`} className="flex gap-2">
           <input name="q" defaultValue={sp.q ?? ''} placeholder="Search event headlines…"
             className="flex-1 rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-3 py-1.5 text-[15px] outline-none focus:border-[color:var(--color-accent-dim)]" />
           <button className="rounded-md border border-[color:var(--color-line)] px-3 py-1.5 text-[14px] text-text hover:border-[color:var(--color-accent-dim)]">Search</button>
@@ -89,9 +90,9 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         {sp.actor && <span className="text-[13px] text-muted">involving {countryName(sp.actor)}</span>}
         <span className="ml-auto flex items-center gap-2 text-[13px] text-faint">
           Export this view
-          <a href={`/api/export${base({}).replace('/events', '')}${base({}).includes('?') ? '&' : '?'}format=csv`}
+          <a href={`${BASE_PATH}/api/export${base({}).replace('/events', '')}${base({}).includes('?') ? '&' : '?'}format=csv`}
             className="rounded border border-[color:var(--color-line)] px-2 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">CSV</a>
-          <a href={`/api/export${base({}).replace('/events', '')}${base({}).includes('?') ? '&' : '?'}format=json`}
+          <a href={`${BASE_PATH}/api/export${base({}).replace('/events', '')}${base({}).includes('?') ? '&' : '?'}format=json`}
             className="rounded border border-[color:var(--color-line)] px-2 py-0.5 hover:border-[color:var(--color-accent-dim)] hover:text-[color:var(--color-accent)]">JSON</a>
         </span>
       </div>

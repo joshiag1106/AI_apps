@@ -17,7 +17,8 @@ describe('the splash page', () => {
     // The redirect-if-already-visited behaviour is progressive enhancement, layered on top
     // of an Enter control that is a genuine navigable link. A visitor with JavaScript off,
     // or the localStorage read blocked by a privacy mode, must still be able to get in.
-    expect(src).toMatch(/href="\/board"/);
+    // Templated on BASE_PATH (the app moved under /kautilya), not a literal "/board" any more.
+    expect(src).toContain('href={`${BASE_PATH}/board`}');
   });
 
   /*
@@ -26,7 +27,7 @@ describe('the splash page', () => {
    * read /board, but document.querySelector('header'/'footer') both came back null.
    *
    * The cause is Next's App Router client-side router, not a caching problem. app/layout.tsx
-   * decides isSplash by reading a per-request `x-pathname` header, which is only freshly
+   * decides `chromeless` by reading a per-request `x-pathname` header, which is only freshly
    * evaluated on a genuine server round-trip. But / and /board share the SAME root layout,
    * and Next's client-side navigation (what a <Link> click does) is specifically built to
    * REUSE a layout that is common to the from- and to-route rather than re-render it — that
@@ -37,8 +38,9 @@ describe('the splash page', () => {
    * freshly evaluated root layout — confirmed by curling /board directly and by a hard
    * location.replace() in a real browser, both of which correctly showed the chrome.
    *
-   * / is the only route where chrome is ever suppressed, so the Enter link is the ONLY
-   * transition in the whole app that crosses that boundary via a client-side navigation.
+   * / and /demo are the only routes where chrome is ever suppressed, so the splash's Enter and
+   * demo links are the ONLY transitions in the whole app that cross that boundary via a
+   * client-side navigation.
    * Fixed by keeping it a plain, uninterpreted anchor — Next's Link component intercepts
    * clicks specifically to perform that soft, layout-reusing navigation; a bare <a> does
    * not, and the browser gives it an ordinary full page load instead, the same as typing
@@ -48,13 +50,15 @@ describe('the splash page', () => {
   it.each([
     ['/board', 'Enter'],
     ['/about', 'Why Kautilya'],
+    ['/demo', 'Watch the demo'],
   ])('%s (%s) is a plain anchor, not next/link\'s <Link> — every link off the splash needs this', (href) => {
     // Not only the Enter button. / is the ONLY route where chrome is suppressed, so ANY
     // client-side navigation whose FROM route is / carries that suppressed layout state to
     // wherever it goes next — the Why Kautilya link to /about is exactly as exposed as the
     // Enter link to /board, and was fixed alongside it for the same reason.
-    const at = src.indexOf(`href="${href}"`);
-    expect(at, `href="${href}" not found in app/page.tsx`).toBeGreaterThan(-1);
+    const needle = 'href={`${BASE_PATH}' + href + '`}';
+    const at = src.indexOf(needle);
+    expect(at, `${needle} not found in app/page.tsx`).toBeGreaterThan(-1);
     const block = src.slice(Math.max(0, at - 40), at + 20);
     expect(block, `the ${href} link must not be a <Link>, which soft-navigates and would keep the chrome suppressed`)
       .not.toMatch(/<Link\b/);
@@ -241,7 +245,7 @@ describe('the splash names what it is and gives a reason to click Enter', () => 
   it('gives the Enter button a reason above it, distinct from the stats paragraph', () => {
     // Not just restating "5 languages, 990 events" again — a punchy, separate line whose
     // only job is to make clicking feel worth it.
-    const enterAt = splashSrc.indexOf('href="/board"');
+    const enterAt = splashSrc.indexOf('href={`${BASE_PATH}/board`}');
     expect(enterAt, 'Enter link not found').toBeGreaterThan(-1);
     const before = splashSrc.slice(0, enterAt);
     expect(before).toMatch(/headlines catch up/i);

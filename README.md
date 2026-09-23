@@ -11,6 +11,7 @@ own dependencies, tests and build pipeline.
 | --- | --- | --- |
 | [**Josh**](Josh/) | A fast, secure terminal emulator with tabs, split panes and GPU rendering | macOS, Windows, Linux |
 | [**Kautilya**](GeoIntel/) | Multilingual geopolitical risk intelligence, with real depth on Chinese-language sources | Web |
+| [**RamanujTech**](RamanujTech/) | The company portfolio homepage — Kautilya is its first linked product | Web |
 
 ## Josh
 
@@ -56,6 +57,17 @@ cd GeoIntel && npm install && npm run ingest && npm run dev
 Runs fully without any API keys. See [GeoIntel/README.md](GeoIntel/README.md) for
 the scoring model and its stated limitations, and [GeoIntel/STATE.md](GeoIntel/STATE.md)
 for what is verified, what is not, and where to pick the work up.
+
+## RamanujTech
+
+The company site: a single self-contained static page (no build step, no framework)
+serving the production domain's root now that Kautilya has moved under its own
+`/kautilya` path. A product grid names Kautilya as the one live product, alongside
+placeholder cards for what comes next.
+
+```bash
+open RamanujTech/index.html
+```
 
 ## Builds
 

@@ -1,7 +1,7 @@
 // tests/middleware.test.ts
 import { describe, it, expect } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from '../middleware';
+import { middleware, config } from '../middleware';
 
 /**
  * NextResponse.next({ request: { headers } }) does not put an overridden request header
@@ -45,5 +45,26 @@ describe('the pathname header', () => {
   it('reports the exact path, not a prefix, so /board never reads as the splash', () => {
     const res = middleware(req('/board', 'kautilya_device=x'));
     expect(forwardedHeader(res, 'x-pathname')).not.toBe('/');
+  });
+});
+
+/**
+ * Found by curling a real build with basePath set, not by any unit test: with `basePath:
+ * '/kautilya'` in next.config.mjs, Next concatenates that prefix directly onto a matcher
+ * pattern's own leading "/" to decide whether to run this middleware at all. A pattern of
+ * only `/((?!...).*)"` becomes, in effect, "/kautilya/((?!...).*)"` — which requires a SECOND
+ * "/" after the prefix, so it never matches a request for exactly "/kautilya" (no trailing
+ * slash, nothing after it). Middleware silently never ran for that one request shape: no
+ * x-pathname header (app/layout.tsx couldn't tell the splash was chromeless, so it kept its
+ * Nav and footer), and no device cookie minted either.
+ *
+ * Calling `middleware()` directly, as every test above does, cannot reproduce this — that
+ * decision is Next's own routing layer, upstream of ever invoking this function. This pins
+ * the actual fix (a bare '/' entry, matched as its own pattern rather than concatenated onto
+ * the general one) so it cannot quietly disappear in a later "simplification".
+ */
+describe('the matcher, with a basePath in front of it', () => {
+  it('matches the exact basePath root as its own entry, not folded into the general pattern', () => {
+    expect(config.matcher).toContain('/');
   });
 });

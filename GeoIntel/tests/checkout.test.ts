@@ -109,7 +109,7 @@ describe('checkout with no billing configured', () => {
     const res = await checkout.POST(new Request(`${INTERNAL}/api/checkout`, { method: 'POST' }));
 
     expect(await planOf(user.id)).toBe('free');
-    expect(res.headers.get('location')).toBe(`${PUBLIC}/pricing?error=billing_closed`);
+    expect(res.headers.get('location')).toBe(`${PUBLIC}/kautilya/pricing?error=billing_closed`);
   });
 
   it('still activates Pro in test mode on a development server', async () => {
@@ -122,7 +122,7 @@ describe('checkout with no billing configured', () => {
     const res = await checkout.POST(new Request('http://localhost:3111/api/checkout', { method: 'POST' }));
 
     expect(await planOf(user.id)).toBe('pro');
-    expect(res.headers.get('location')).toBe('http://localhost:3111/account');
+    expect(res.headers.get('location')).toBe('http://localhost:3111/kautilya/account');
   });
 });
 
@@ -144,7 +144,7 @@ describe('what the plan pages offer', () => {
     expect(account).toContain(user.email);
 
     for (const html of [signedOut, pricing, account]) {
-      expect(html).not.toContain('action="/api/checkout"');
+      expect(html).not.toContain('action="/kautilya/api/checkout"');
       expect(html).not.toMatch(/test mode/i);
       expect(html).not.toContain('STRIPE_');
       expect(html).not.toContain('Create an account to subscribe');
@@ -175,8 +175,8 @@ describe('what the plan pages offer', () => {
     await fresh();
     await signIn('dev-pages@example.test');
 
-    expect(await renderPricing()).toContain('action="/api/checkout"');
-    expect(await renderAccount()).toContain('action="/api/checkout"');
+    expect(await renderPricing()).toContain('action="/kautilya/api/checkout"');
+    expect(await renderAccount()).toContain('action="/kautilya/api/checkout"');
   });
 });
 
@@ -189,7 +189,7 @@ describe('checkout redirects', () => {
     const res = await checkout.POST(new Request(`${INTERNAL}/api/checkout`, { method: 'POST' }));
 
     expect(res.status).toBe(303);
-    expect(res.headers.get('location')).toBe(`${PUBLIC}/login?next=/pricing`);
+    expect(res.headers.get('location')).toBe(`${PUBLIC}/kautilya/login?next=/pricing`);
   });
 
   it('brings a reader back from Stripe to the public address', async () => {
@@ -200,6 +200,6 @@ describe('checkout redirects', () => {
     const res = await confirm.GET(new Request(`${INTERNAL}/api/checkout/confirm?session_id=cs_test_1`));
 
     expect(res.status).toBe(303);
-    expect(res.headers.get('location')).toBe(`${PUBLIC}/pricing`);
+    expect(res.headers.get('location')).toBe(`${PUBLIC}/kautilya/pricing`);
   });
 });

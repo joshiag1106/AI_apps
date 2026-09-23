@@ -227,6 +227,16 @@ export function ladderTrailArticles(): Article[] {
     .all().map(rowToArticle);
 }
 
+/**
+ * Another party's rung-bearing articles, newest first — the "not Beijing" half of the demo tour's
+ * ladder chapter. The mirror of ladderTrailArticles, which reads Beijing's own.
+ */
+export function otherPartyLadderArticles(limit = 60): Article[] {
+  return getDb()
+    .prepare("SELECT * FROM articles WHERE ladder_rung IS NOT NULL AND ladder_speaker = 'other' ORDER BY published_at DESC LIMIT ?")
+    .all(limit).map(rowToArticle);
+}
+
 /** How far back a feed reaches when it is first read: the aggregator queries look about a week. */
 const FEED_LOOKBACK_MS = 7 * 86_400_000;
 

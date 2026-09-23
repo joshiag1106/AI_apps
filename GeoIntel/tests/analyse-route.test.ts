@@ -16,6 +16,12 @@ process.env.KAUTILYA_DB = join(mkdtempSync(join(tmpdir(), 'kautilya-analyse-')),
  */
 const jar = new Map<string, string>();
 
+// loadRoute() re-imports the analyse route's whole graph after vi.resetModules(). That cold
+// import is about 1 s alone but 5-6 s when the full suite runs files in parallel, which is
+// the default 5 s test timeout, so the first test flaked once. Nothing here is slow in
+// itself; the ceiling only has to clear the import under load.
+vi.setConfig({ testTimeout: 20_000 });
+
 async function loadRoute() {
   vi.resetModules();
   vi.doMock('next/headers', () => ({

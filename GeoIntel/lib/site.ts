@@ -59,3 +59,20 @@ export function siteOrigin(fallback: string, env: Record<string, string | undefi
   }
   return url.origin;
 }
+
+/**
+ * Must match next.config.mjs's `basePath`. The app is mounted under this path rather than at
+ * its host's root, because the host also serves other things (the production company site,
+ * at "/").
+ */
+export const BASE_PATH = '/kautilya';
+
+/**
+ * The address to build a link to one of this app's OWN routes from: `siteOrigin` plus
+ * `BASE_PATH`. Every caller that appends a path of its own — a redirect out of an API route,
+ * a link inside alert mail — wants this, not `siteOrigin` alone, or the link lands one level
+ * up from where the app actually lives.
+ */
+export function siteUrl(fallback: string, env: Record<string, string | undefined> = process.env): string {
+  return siteOrigin(fallback, env) + BASE_PATH;
+}

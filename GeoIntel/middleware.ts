@@ -17,8 +17,9 @@ export function middleware(req: NextRequest) {
 
   /*
    * Forwarded on every request, both branches below, so app/layout.tsx can tell whether it
-   * is rendering the splash (app/page.tsx, the one route with no Nav or footer) without a
-   * Server Component needing its own way to read the current URL — Next does not hand the
+   * is rendering a chromeless route (the splash at /, app/page.tsx, or the demo tour at /demo;
+   * the two routes with no Nav or footer) without a Server Component needing its own way to
+   * read the current URL — Next does not hand the
    * root layout the path for free. This has to be set on BOTH branches: the early return
    * for a visitor who already has the device cookie is the common case on every request
    * after the first, and setting it only in the mint-a-cookie branch below would have left
@@ -45,5 +46,12 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // '/' as its own entry, not folded into the pattern below: with basePath set, Next
+  // concatenates basePath directly onto that pattern's own leading "/", so a request for
+  // exactly the basePath root ("/kautilya", no trailing slash, nothing after it) has no
+  // second "/" left to match and this middleware silently never runs for it — found by
+  // curling a real build, where it showed up as both the splash keeping its Nav/footer
+  // (app/layout.tsx never learned the route was chromeless) and the device cookie never
+  // being minted on that specific request. A bare '/' matcher entry covers it.
+  matcher: ['/', '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };

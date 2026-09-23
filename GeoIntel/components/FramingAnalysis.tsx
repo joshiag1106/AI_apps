@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { EventAnalysis } from '@/lib/llm/analyse';
+import { BASE_PATH } from '@/lib/site';
 
 type State =
   | { k: 'idle' }
@@ -53,7 +54,7 @@ export function FramingAnalysis({ eventId, initial, enabled, signedIn }: {
   async function run() {
     setState({ k: 'loading' });
     try {
-      const res = await fetch('/api/analyse', {
+      const res = await fetch(`${BASE_PATH}/api/analyse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: eventId }),
