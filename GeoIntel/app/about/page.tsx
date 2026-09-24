@@ -10,7 +10,8 @@ import { corpus, corpusStats } from '@/lib/queries';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Why Kautilya',
+  // Absolute: the page's name already says Kautilya, so the layout's " · Kautilya" would repeat it.
+  title: { absolute: 'Why Kautilya' },
   description: 'What this engine does, what it is for, and where it fails.',
 };
 

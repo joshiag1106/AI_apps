@@ -8,7 +8,7 @@ import { corpus } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Ask · Kautilya' };
+export const metadata = { title: 'Ask' };
 
 /**
  * Questions answered from the corpus.
