@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { describeSharpest, lens, twoProportionZ, queryLanguage, MIN_ARTICLES, type LensArticle } from '@/lib/lens/compare';
 import { BEATS, type Beat } from '@/data/feeds';
-import { DOMAIN_HINTS } from '@/data/lexicon';
+import { CONCEPTS } from '@/data/concepts';
 import { evidencedDomain, scoreText } from '@/lib/analyze/score';
 import type { Domain } from '@/lib/types';
 
@@ -204,10 +204,12 @@ describe('framing, counted only where a report shows it', () => {
     expect(scoreText('zzqx vvbn plok').domain).toBe('Diplomatic');
   });
 
-  it('agrees with the stored domain wherever there is evidence', () => {
-    for (const [domain, hints] of Object.entries(DOMAIN_HINTS)) {
-      const text = `report mentions ${hints[0]}`;
-      expect(evidencedDomain(text), `${domain}: ${hints[0]}`).toBe(scoreText(text).domain);
+  it('agrees with the stored domain wherever there is evidence, for every concept', () => {
+    for (const c of CONCEPTS) {
+      const [lang, words] = Object.entries(c.terms).find(([, w]) => w?.length)!;
+      const text = `report: ${words![0]}`;
+      expect(evidencedDomain(text), `${c.id} (${lang}): ${words![0]}`).toBe(c.domain);
+      expect(scoreText(text).domain).toBe(c.domain);
     }
   });
 });

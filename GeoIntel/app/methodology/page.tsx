@@ -161,7 +161,10 @@ export default function MethodologyPage() {
         tags and Chinese character bigrams, then merged with union-find. Two reports join the same
         event only if they share at least one actor, fall in the same domain, and land within a
         60-hour window. The glossed English terms are what allow a Chinese and an English report of
-        one event to merge at all, since they share no surface tokens.
+        one event to merge at all, since they share no surface tokens. A report&apos;s domain — the kind
+        of pressure it is about, military, maritime, diplomatic and so on — is read from one list of
+        concepts that has a word for each concept in every language compared, so no language is read
+        more closely than another.
       </P>
 
       <H>5. The corroboration score</H>

@@ -7,185 +7,118 @@ export type Domain =
   | 'Military' | 'Maritime' | 'Cyber' | 'Economic' | 'Energy'
   | 'Space' | 'Nuclear' | 'Diplomatic' | 'Internal' | 'Technology';
 
+/**
+ * An escalation term: how INTENSE a report reads. Which KIND of pressure it is about comes from
+ * data/concepts.ts — until 2026-09-24 these entries also voted on that, mostly in English.
+ */
 export interface LexEntry {
   term: string;
   lang: string;
   weight: number;
-  domain?: Domain;
 }
 
 export const LEXICON: LexEntry[] = [
   // English — escalatory
-  { term: 'invasion', lang: 'en', weight: 10, domain: 'Military' },
-  { term: 'airstrike', lang: 'en', weight: 9, domain: 'Military' },
-  { term: 'missile strike', lang: 'en', weight: 9, domain: 'Military' },
-  { term: 'incursion', lang: 'en', weight: 8, domain: 'Military' },
-  { term: 'troops killed', lang: 'en', weight: 9, domain: 'Military' },
-  { term: 'casualties', lang: 'en', weight: 7, domain: 'Military' },
-  { term: 'clash', lang: 'en', weight: 8, domain: 'Military' },
-  { term: 'skirmish', lang: 'en', weight: 7, domain: 'Military' },
-  { term: 'standoff', lang: 'en', weight: 6, domain: 'Military' },
-  { term: 'mobilisation', lang: 'en', weight: 8, domain: 'Military' },
-  { term: 'mobilization', lang: 'en', weight: 8, domain: 'Military' },
-  { term: 'troop buildup', lang: 'en', weight: 7, domain: 'Military' },
-  { term: 'ceasefire violation', lang: 'en', weight: 8, domain: 'Military' },
-  { term: 'infiltration', lang: 'en', weight: 7, domain: 'Military' },
-  { term: 'airspace violation', lang: 'en', weight: 7, domain: 'Military' },
-  { term: 'live-fire', lang: 'en', weight: 6, domain: 'Military' },
-  { term: 'military exercise', lang: 'en', weight: 4, domain: 'Military' },
-  { term: 'war game', lang: 'en', weight: 4, domain: 'Military' },
-  { term: 'scrambled jets', lang: 'en', weight: 6, domain: 'Military' },
-  { term: 'nuclear test', lang: 'en', weight: 10, domain: 'Nuclear' },
-  { term: 'ballistic missile', lang: 'en', weight: 8, domain: 'Nuclear' },
-  { term: 'hypersonic', lang: 'en', weight: 6, domain: 'Nuclear' },
-  { term: 'enrichment', lang: 'en', weight: 7, domain: 'Nuclear' },
-  { term: 'cyberattack', lang: 'en', weight: 7, domain: 'Cyber' },
-  { term: 'data breach', lang: 'en', weight: 5, domain: 'Cyber' },
-  { term: 'ransomware', lang: 'en', weight: 5, domain: 'Cyber' },
-  { term: 'espionage', lang: 'en', weight: 7, domain: 'Cyber' },
-  { term: 'spyware', lang: 'en', weight: 5, domain: 'Cyber' },
-  { term: 'critical infrastructure', lang: 'en', weight: 6, domain: 'Cyber' },
-  { term: 'disinformation', lang: 'en', weight: 5, domain: 'Cyber' },
-  { term: 'sanctions', lang: 'en', weight: 6, domain: 'Economic' },
-  { term: 'export controls', lang: 'en', weight: 6, domain: 'Technology' },
-  { term: 'entity list', lang: 'en', weight: 6, domain: 'Technology' },
-  { term: 'tariff', lang: 'en', weight: 5, domain: 'Economic' },
-  { term: 'trade war', lang: 'en', weight: 6, domain: 'Economic' },
-  { term: 'embargo', lang: 'en', weight: 7, domain: 'Economic' },
-  { term: 'blockade', lang: 'en', weight: 9, domain: 'Maritime' },
-  { term: 'rare earth', lang: 'en', weight: 6, domain: 'Economic' },
-  { term: 'chip ban', lang: 'en', weight: 6, domain: 'Technology' },
-  { term: 'pipeline', lang: 'en', weight: 4, domain: 'Energy' },
-  { term: 'oil supply', lang: 'en', weight: 4, domain: 'Energy' },
-  { term: 'strait closure', lang: 'en', weight: 8, domain: 'Energy' },
-  { term: 'freedom of navigation', lang: 'en', weight: 5, domain: 'Maritime' },
-  { term: 'water cannon', lang: 'en', weight: 6, domain: 'Maritime' },
-  { term: 'coast guard', lang: 'en', weight: 4, domain: 'Maritime' },
-  { term: 'anti-satellite', lang: 'en', weight: 8, domain: 'Space' },
-  { term: 'satellite jamming', lang: 'en', weight: 6, domain: 'Space' },
-  { term: 'expelled diplomat', lang: 'en', weight: 6, domain: 'Diplomatic' },
-  { term: 'recalled ambassador', lang: 'en', weight: 7, domain: 'Diplomatic' },
-  { term: 'summoned envoy', lang: 'en', weight: 5, domain: 'Diplomatic' },
-  { term: 'terror attack', lang: 'en', weight: 9, domain: 'Internal' },
-  { term: 'insurgency', lang: 'en', weight: 7, domain: 'Internal' },
-  { term: 'coup', lang: 'en', weight: 9, domain: 'Internal' },
-  { term: 'unrest', lang: 'en', weight: 5, domain: 'Internal' },
-  { term: 'protest', lang: 'en', weight: 3, domain: 'Internal' },
+  { term: 'invasion', lang: 'en', weight: 10 },
+  { term: 'airstrike', lang: 'en', weight: 9 },
+  { term: 'missile strike', lang: 'en', weight: 9 },
+  { term: 'incursion', lang: 'en', weight: 8 },
+  { term: 'troops killed', lang: 'en', weight: 9 },
+  { term: 'casualties', lang: 'en', weight: 7 },
+  { term: 'clash', lang: 'en', weight: 8 },
+  { term: 'skirmish', lang: 'en', weight: 7 },
+  { term: 'standoff', lang: 'en', weight: 6 },
+  { term: 'mobilisation', lang: 'en', weight: 8 },
+  { term: 'mobilization', lang: 'en', weight: 8 },
+  { term: 'troop buildup', lang: 'en', weight: 7 },
+  { term: 'ceasefire violation', lang: 'en', weight: 8 },
+  { term: 'infiltration', lang: 'en', weight: 7 },
+  { term: 'airspace violation', lang: 'en', weight: 7 },
+  { term: 'live-fire', lang: 'en', weight: 6 },
+  { term: 'military exercise', lang: 'en', weight: 4 },
+  { term: 'war game', lang: 'en', weight: 4 },
+  { term: 'scrambled jets', lang: 'en', weight: 6 },
+  { term: 'nuclear test', lang: 'en', weight: 10 },
+  { term: 'ballistic missile', lang: 'en', weight: 8 },
+  { term: 'hypersonic', lang: 'en', weight: 6 },
+  { term: 'enrichment', lang: 'en', weight: 7 },
+  { term: 'cyberattack', lang: 'en', weight: 7 },
+  { term: 'data breach', lang: 'en', weight: 5 },
+  { term: 'ransomware', lang: 'en', weight: 5 },
+  { term: 'espionage', lang: 'en', weight: 7 },
+  { term: 'spyware', lang: 'en', weight: 5 },
+  { term: 'critical infrastructure', lang: 'en', weight: 6 },
+  { term: 'disinformation', lang: 'en', weight: 5 },
+  { term: 'sanctions', lang: 'en', weight: 6 },
+  { term: 'export controls', lang: 'en', weight: 6 },
+  { term: 'entity list', lang: 'en', weight: 6 },
+  { term: 'tariff', lang: 'en', weight: 5 },
+  { term: 'trade war', lang: 'en', weight: 6 },
+  { term: 'embargo', lang: 'en', weight: 7 },
+  { term: 'blockade', lang: 'en', weight: 9 },
+  { term: 'rare earth', lang: 'en', weight: 6 },
+  { term: 'chip ban', lang: 'en', weight: 6 },
+  { term: 'pipeline', lang: 'en', weight: 4 },
+  { term: 'oil supply', lang: 'en', weight: 4 },
+  { term: 'strait closure', lang: 'en', weight: 8 },
+  { term: 'freedom of navigation', lang: 'en', weight: 5 },
+  { term: 'water cannon', lang: 'en', weight: 6 },
+  { term: 'coast guard', lang: 'en', weight: 4 },
+  { term: 'anti-satellite', lang: 'en', weight: 8 },
+  { term: 'satellite jamming', lang: 'en', weight: 6 },
+  { term: 'expelled diplomat', lang: 'en', weight: 6 },
+  { term: 'recalled ambassador', lang: 'en', weight: 7 },
+  { term: 'summoned envoy', lang: 'en', weight: 5 },
+  { term: 'terror attack', lang: 'en', weight: 9 },
+  { term: 'insurgency', lang: 'en', weight: 7 },
+  { term: 'coup', lang: 'en', weight: 9 },
+  { term: 'unrest', lang: 'en', weight: 5 },
+  { term: 'protest', lang: 'en', weight: 3 },
   // English — de-escalatory
-  { term: 'ceasefire', lang: 'en', weight: -7, domain: 'Diplomatic' },
-  { term: 'peace talks', lang: 'en', weight: -7, domain: 'Diplomatic' },
-  { term: 'disengagement', lang: 'en', weight: -7, domain: 'Military' },
-  { term: 'de-escalation', lang: 'en', weight: -7, domain: 'Diplomatic' },
-  { term: 'agreement signed', lang: 'en', weight: -6, domain: 'Diplomatic' },
-  { term: 'troop withdrawal', lang: 'en', weight: -6, domain: 'Military' },
-  { term: 'resumed flights', lang: 'en', weight: -4, domain: 'Diplomatic' },
-  { term: 'trade deal', lang: 'en', weight: -4, domain: 'Economic' },
-  { term: 'normalisation', lang: 'en', weight: -5, domain: 'Diplomatic' },
-  { term: 'normalization', lang: 'en', weight: -5, domain: 'Diplomatic' },
-  { term: 'bilateral talks', lang: 'en', weight: -4, domain: 'Diplomatic' },
-  { term: 'sanctions lifted', lang: 'en', weight: -6, domain: 'Economic' },
-  { term: 'prisoner exchange', lang: 'en', weight: -4, domain: 'Diplomatic' },
+  { term: 'ceasefire', lang: 'en', weight: -7 },
+  { term: 'peace talks', lang: 'en', weight: -7 },
+  { term: 'disengagement', lang: 'en', weight: -7 },
+  { term: 'de-escalation', lang: 'en', weight: -7 },
+  { term: 'agreement signed', lang: 'en', weight: -6 },
+  { term: 'troop withdrawal', lang: 'en', weight: -6 },
+  { term: 'resumed flights', lang: 'en', weight: -4 },
+  { term: 'trade deal', lang: 'en', weight: -4 },
+  { term: 'normalisation', lang: 'en', weight: -5 },
+  { term: 'normalization', lang: 'en', weight: -5 },
+  { term: 'bilateral talks', lang: 'en', weight: -4 },
+  { term: 'sanctions lifted', lang: 'en', weight: -6 },
+  { term: 'prisoner exchange', lang: 'en', weight: -4 },
 
   // Hindi
-  { term: 'घुसपैठ', lang: 'hi', weight: 8, domain: 'Military' },
-  { term: 'हमला', lang: 'hi', weight: 9, domain: 'Military' },
-  { term: 'झड़प', lang: 'hi', weight: 8, domain: 'Military' },
-  { term: 'तनाव', lang: 'hi', weight: 5, domain: 'Diplomatic' },
-  { term: 'सीमा विवाद', lang: 'hi', weight: 6, domain: 'Military' },
-  { term: 'आतंकी', lang: 'hi', weight: 8, domain: 'Internal' },
-  { term: 'युद्धविराम', lang: 'hi', weight: -7, domain: 'Diplomatic' },
-  { term: 'वार्ता', lang: 'hi', weight: -4, domain: 'Diplomatic' },
-  { term: 'समझौता', lang: 'hi', weight: -5, domain: 'Diplomatic' },
+  { term: 'घुसपैठ', lang: 'hi', weight: 8 },
+  { term: 'हमला', lang: 'hi', weight: 9 },
+  { term: 'झड़प', lang: 'hi', weight: 8 },
+  { term: 'तनाव', lang: 'hi', weight: 5 },
+  { term: 'सीमा विवाद', lang: 'hi', weight: 6 },
+  { term: 'आतंकी', lang: 'hi', weight: 8 },
+  { term: 'युद्धविराम', lang: 'hi', weight: -7 },
+  { term: 'वार्ता', lang: 'hi', weight: -4 },
+  { term: 'समझौता', lang: 'hi', weight: -5 },
 
   // Russian
-  { term: 'наступление', lang: 'ru', weight: 9, domain: 'Military' },
-  { term: 'обстрел', lang: 'ru', weight: 8, domain: 'Military' },
-  { term: 'удар', lang: 'ru', weight: 8, domain: 'Military' },
-  { term: 'санкции', lang: 'ru', weight: 6, domain: 'Economic' },
-  { term: 'мобилизация', lang: 'ru', weight: 8, domain: 'Military' },
-  { term: 'перемирие', lang: 'ru', weight: -7, domain: 'Diplomatic' },
-  { term: 'переговоры', lang: 'ru', weight: -4, domain: 'Diplomatic' },
+  { term: 'наступление', lang: 'ru', weight: 9 },
+  { term: 'обстрел', lang: 'ru', weight: 8 },
+  { term: 'удар', lang: 'ru', weight: 8 },
+  { term: 'санкции', lang: 'ru', weight: 6 },
+  { term: 'мобилизация', lang: 'ru', weight: 8 },
+  { term: 'перемирие', lang: 'ru', weight: -7 },
+  { term: 'переговоры', lang: 'ru', weight: -4 },
 
   // Urdu
-  { term: 'حملہ', lang: 'ur', weight: 9, domain: 'Military' },
-  { term: 'کشیدگی', lang: 'ur', weight: 5, domain: 'Diplomatic' },
-  { term: 'جنگ بندی', lang: 'ur', weight: -7, domain: 'Diplomatic' },
-  { term: 'مذاکرات', lang: 'ur', weight: -4, domain: 'Diplomatic' },
+  { term: 'حملہ', lang: 'ur', weight: 9 },
+  { term: 'کشیدگی', lang: 'ur', weight: 5 },
+  { term: 'جنگ بندی', lang: 'ur', weight: -7 },
+  { term: 'مذاکرات', lang: 'ur', weight: -4 },
 
   // Arabic / Persian
-  { term: 'غارة', lang: 'ar', weight: 9, domain: 'Military' },
-  { term: 'عقوبات', lang: 'ar', weight: 6, domain: 'Economic' },
-  { term: 'وقف إطلاق النار', lang: 'ar', weight: -7, domain: 'Diplomatic' },
-  { term: 'تنش', lang: 'fa', weight: 5, domain: 'Diplomatic' },
-  { term: 'تحریم', lang: 'fa', weight: 6, domain: 'Economic' },
+  { term: 'غارة', lang: 'ar', weight: 9 },
+  { term: 'عقوبات', lang: 'ar', weight: 6 },
+  { term: 'وقف إطلاق النار', lang: 'ar', weight: -7 },
+  { term: 'تنش', lang: 'fa', weight: 5 },
+  { term: 'تحریم', lang: 'fa', weight: 6 },
 ];
-
-/** Keyword hints used to classify an event into a domain when the lexicon is silent. */
-/**
- * Words that show which kind of pressure a report is about. Non-Latin terms match as substrings, so a
- * Japanese or Arabic stem also catches its inflections (نووي in النووية) — and a short one can catch an
- * unrelated word.
- *
- * The Japanese and Arabic lines (added 2026-09-24, from the corpus's own recurring words) follow ONE rule:
- * a word goes in only if the language it is compared with in Language Lens counts its counterpart. Japanese
- * is compared with Chinese (China–Taiwan), so it gets only what the Chinese line has — 軍 for 军, 空母 for
- * 航母, 会談 for 会晤. Arabic is compared with English (Middle East), so it gets only what the English line or
- * LEXICON has — جيش for army, غارات for airstrikes, مضيق for strait. A first cut that translated anything
- * SOME language counted gave Arabic "attack", "strikes", "missiles" and "military", which English counts
- * only in phrases, and produced a 65%-vs-16% "military framing" gap that was mostly vocabulary. A richer,
- * shared concept list across every language is the real fix, and would move every language's numbers.
- * Left out besides: تصعيد and 有事 ("escalation", "contingency" — no kind of pressure; the Arabic search asks
- * for تصعيد itself), 通信 (inside 時事通信, a news agency's name), حدود (mostly figurative, "limits").
- * See tests/lexicon-ja-ar.test.ts.
- */
-export const DOMAIN_HINTS: Record<Domain, string[]> = {
-  Military: [
-    'army', 'troops', 'soldier', 'border', 'brigade', 'artillery', 'drone strike', 'battalion', '军', '边境', '部队', 'सेना', 'सैनिक',
-    '軍', '国境', '部隊',
-    'جيش', 'قوات', 'جنود', 'حدودي', 'اجتياح', 'توغل', 'اشتباك', 'غارات', 'تعبئة', 'مناورات',
-  ],
-  Maritime: [
-    'navy', 'naval', 'warship', 'carrier', 'submarine', 'shoal', 'strait', 'vessel', '海军', '军舰', '航母', 'नौसेना',
-    '海軍', '軍艦', '空母',
-    'مضيق', 'بحري', 'سفينة', 'سفن', 'غواصة', 'حاملة طائرات', 'خفر السواحل', 'حصار',
-  ],
-  Cyber: [
-    'cyber', 'hacker', 'malware', 'phishing', 'apt group', 'network intrusion', '网络攻击', '黑客', 'साइबर',
-    'サイバー攻撃', 'ハッカー',
-    'سيبراني', 'قراصنة', 'تجسس',
-  ],
-  Economic: [
-    'trade', 'tariff', 'export', 'import', 'investment', 'currency', 'gdp', '贸易', '关税', 'व्यापार',
-    '貿易', '関税',
-    'تجارة', 'تجاري', 'جمارك', 'جمركية', 'صادرات', 'واردات', 'استثمار',
-  ],
-  Energy: [
-    'oil', 'gas', 'lng', 'refinery', 'pipeline', 'crude', 'nuclear plant', '石油', '天然气', 'तेल',
-    '天然ガス',
-    'نفط', 'الغاز', 'أنابيب', 'مصفاة',
-  ],
-  Space: [
-    'satellite', 'orbit', 'launch vehicle', 'space station', 'isro', '卫星', 'उपग्रह',
-    '衛星',
-    'قمر صناعي', 'أقمار صناعية',
-  ],
-  Nuclear: [
-    'nuclear', 'warhead', 'icbm', 'uranium', 'iaea', '核', 'परमाणु',
-    'نووي', 'نووى', 'يورانيوم', 'تخصيب',
-  ],
-  Diplomatic: [
-    'summit', 'ambassador', 'foreign minister', 'treaty', 'communique', 'visit', '外交', '会晤', 'राजनयिक',
-    '会談',
-    'هدنة', 'قمة', 'سفير', 'وزير الخارجية', 'معاهدة', 'زيارة',
-  ],
-  Internal: [
-    'riot', 'election', 'militant', 'separatist', 'crackdown', 'curfew', '骚乱', 'विद्रोह',
-    '暴動',
-    'انتخابات', 'احتجاجات', 'انقلاب', 'هجوم إرهابي', 'شغب', 'قمع', 'حظر تجول',
-  ],
-  Technology: [
-    'semiconductor', 'chip', 'ai model', '5g', 'huawei', 'telecom', '半导体', '芯片',
-    '半導体',
-    'أشباه الموصلات', 'رقائق', 'هواوي',
-  ],
-};

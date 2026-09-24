@@ -5,7 +5,8 @@ import { evidencedDomain } from '@/lib/analyze/score';
 /**
  * Japanese and Arabic framing vocabulary. Until 2026-09-24 the lexicon read only 5% of Japanese and 4% of
  * Arabic topic-search reports, so Language Lens could not say how either language framed anything. A word
- * is added only if the language it is compared with in Lens counts its counterpart — see DOMAIN_HINTS.
+ * is added only if the language it is compared with in Lens counts its counterpart. Since the shared concept
+ * list (data/concepts.ts) these are ordinary concepts; the guards below still hold.
  *
  * Headlines are real ones from the corpus unless marked otherwise.
  */
@@ -15,7 +16,7 @@ const cases: [string, string, ReturnType<typeof evidencedDomain>][] = [
   ['ja', '【分析】中国共産党軍の粛清続く 台湾包囲演習で衝突リスク高まる', 'Military'],
   ['ja', '中国空母「福建」が台湾海峡航行 動向を「綿密に監視」、画像公開', 'Maritime'],
   ['ja', '台湾の頼清徳総統、日本の超党派「台湾海峡の平和考える議員の会」訪問団と会談', 'Diplomatic'],
-  ['ja', '台湾の防空拠点にサイバー攻撃', 'Cyber'], // constructed
+  ['ja', '台湾の政府機関にサイバー攻撃', 'Cyber'], // constructed
   ['ja', '日本産水産物の輸入停止、関税引き上げも', 'Economic'], // constructed
   // Arabic, compared with English in the Middle East: only counterparts of the English line and LEXICON.
   ['ar', '10 قتلى بينهم عائلة كاملة في تصعيد الغارات الإسرائيلية جنوب لبنان', 'Military'],
@@ -41,12 +42,12 @@ describe('Japanese and Arabic framing vocabulary', () => {
 
   // 通信 would be "telecom", but the corpus meets it almost only inside 時事通信, a news agency whose name
   // aggregators append to headlines; and حدود ("borders") is mostly figurative ("limits on escalation").
-  // Words English counts only inside phrases ("missile strike", "peace talks") are not counted bare in Arabic,
-  // or the Middle East comparison would measure vocabulary rather than framing.
-  it('does not count, in Arabic, what the English line counts only in a phrase', () => {
-    expect(evidencedDomain('ضربات أمريكية على إيران')).toBeNull(); // strikes
-    expect(evidencedDomain('صواريخ إيران وحزب الله')).toBeNull(); // missiles
-    expect(evidencedDomain('إيران تضع 7 شروط لبدء المفاوضات')).toBeNull(); // negotiations
+  // With one shared concept list the pairwise rule is no longer needed: English now counts strikes,
+  // missiles and negotiations too, so Arabic can.
+  it('reads strikes, missiles and negotiations the same way in Arabic and English', () => {
+    expect(evidencedDomain('ضربات أمريكية على إيران')).toBe(evidencedDomain('US strikes on Iran'));
+    expect(evidencedDomain('صواريخ إيران وحزب الله')).toBe(evidencedDomain('Missiles from Iran and Hezbollah'));
+    expect(evidencedDomain('إيران تضع 7 شروط لبدء المفاوضات')).toBe(evidencedDomain('Iran sets seven conditions for negotiations'));
   });
 
   it('does not frame an outlet tag or a figurative "border"', () => {

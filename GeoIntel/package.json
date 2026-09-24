@@ -16,6 +16,7 @@
     "llm:check": "tsx --env-file-if-exists=.env.local --tsconfig tsconfig.scripts.json scripts/llm-check.ts",
     "alerts:check": "tsx --env-file-if-exists=.env.local --tsconfig tsconfig.scripts.json scripts/alerts-check.ts",
     "backfill:people": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-people.ts",
+    "concepts:report": "tsx --tsconfig tsconfig.scripts.json scripts/concepts-report.ts",
     "reprints:shift": "tsx --tsconfig tsconfig.scripts.json scripts/reprint-shift.ts",
     "ladder:shift": "tsx --tsconfig tsconfig.scripts.json scripts/ladder-shift.ts",
     "roster:audit": "tsx --tsconfig tsconfig.scripts.json scripts/roster-audit.ts",

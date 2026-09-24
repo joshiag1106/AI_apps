@@ -1,4 +1,5 @@
-import { LEXICON, DOMAIN_HINTS, type Domain } from '@/data/lexicon';
+import { LEXICON, type Domain } from '@/data/lexicon';
+import { matchConcepts, topDomain } from '@/lib/analyze/concepts';
 import { glossArticle, highestRung } from '@/lib/lang/chinese';
 import { formulaSpeaker, type LadderSpeaker } from '@/lib/lang/speaker';
 import { formulaTarget } from '@/lib/lang/target';
@@ -24,39 +25,22 @@ function hasTerm(term: string, lower: string, raw: string): boolean {
   return LATIN.test(term) ? lower.includes(term.toLowerCase()) : raw.includes(term);
 }
 
-/** The domain the text's own vocabulary points to most, or null when none of it does. */
-function evidencedFrom(lower: string, raw: string, lexDomains: Domain[]): Domain | null {
-  const tally = new Map<Domain, number>();
-  for (const d of lexDomains) tally.set(d, (tally.get(d) ?? 0) + 2);
-  for (const [domain, hints] of Object.entries(DOMAIN_HINTS) as [Domain, string[]][]) {
-    for (const h of hints) {
-      if (hasTerm(h, lower, raw)) tally.set(domain, (tally.get(domain) ?? 0) + 1);
-    }
-  }
-  let best: Domain | null = null;
-  let bestN = 0;
-  for (const [d, n] of tally) if (n > bestN) { best = d; bestN = n; }
-  return best;
-}
-
-function classifyDomain(lower: string, raw: string, lexDomains: Domain[]): Domain {
-  return evidencedFrom(lower, raw, lexDomains) ?? 'Diplomatic';
-}
-
 /**
- * An article's domain ONLY when its own words show one; null otherwise.
+ * An article's domain ONLY when its own words show one; null otherwise. Read from the shared concept
+ * list (data/concepts.ts), the same in every language — see lib/analyze/concepts for the matching rules.
  *
- * ScoreResult.domain falls back to 'Diplomatic' when nothing matches, which is fine for filing a
- * report but not for comparing languages: measured 2026-09-23 over topic-search reports, only 4%
- * of Arabic and 3% of Japanese ones carry any vocabulary the lexicon knows (45–52% of English,
- * Chinese and Hindi), so their "Diplomatic" is almost entirely "unclassified". Language Lens
- * counts framing from this, never from the stored fallback.
+ * Until 2026-09-24 this counted two lists that grew one language at a time (DOMAIN_HINTS, and the
+ * domains of LEXICON's escalation terms), so English was read far more closely than the rest and
+ * Language Lens partly measured vocabulary. Language Lens counts framing from this, never from the
+ * stored 'Diplomatic' fallback, which for a report with no evidence means "unclassified".
  */
 export function evidencedDomain(title: string, snippet = ''): Domain | null {
-  const raw = `${title} ${snippet}`;
-  const lower = raw.toLowerCase();
-  const lexDomains = LEXICON.filter((e) => e.domain && hasTerm(e.term, lower, raw)).map((e) => e.domain as Domain);
-  return evidencedFrom(lower, raw, lexDomains);
+  return topDomain(matchConcepts(`${title} ${snippet}`));
+}
+
+/** The stored domain: the evidenced one, or 'Diplomatic' when the words show none. */
+export function domainOf(title: string, snippet = ''): Domain {
+  return evidencedDomain(title, snippet) ?? 'Diplomatic';
 }
 
 /**
@@ -73,12 +57,10 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
 
   let score = 0;
   const matched: string[] = [];
-  const lexDomains: Domain[] = [];
   for (const e of LEXICON) {
     if (!hasTerm(e.term, lower, raw)) continue;
     score += e.weight;
     matched.push(e.term);
-    if (e.domain) lexDomains.push(e.domain);
   }
 
   const gloss = glossArticle(raw);
@@ -96,7 +78,7 @@ export function scoreText(title: string, snippet = ''): ScoreResult {
     // tanh-style squash keeps a long article from running away with the score.
     escalation: Math.round(Math.max(-100, Math.min(100, score * 1.6))),
     framing: gloss.framingScore,
-    domain: classifyDomain(lower, raw, lexDomains),
+    domain: domainOf(title, snippet),
     matchedTerms: matched,
     glossed: gloss.glossed,
     ladderRung: rung?.rung ?? null,

@@ -192,7 +192,7 @@ write its database while `ProtectSystem=full` keeps the rest of the filesystem r
 sudo systemctl daemon-reload
 sudo systemctl enable --now kautilya
 sudo systemctl status kautilya
-curl -I http://127.0.0.1:3000/          # expect 200
+curl -I http://127.0.0.1:3000/kautilya  # expect 200 (the app lives under /kautilya; bare / is 404)
 ```
 
 ---
@@ -286,8 +286,10 @@ new IP, then reload the site and confirm the padlock.
 sudo -u kautilya crontab -e
 ```
 
+Since 2026-09-23 Kautilya is served under `/kautilya` (`basePath` in `next.config.mjs`), so every path below carries that prefix; the bare paths 404.
+
 ```
-0 * * * * . /etc/kautilya.env && curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron >/dev/null 2>&1
+0 * * * * . /etc/kautilya.env && curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/kautilya/api/cron >/dev/null 2>&1
 ```
 
 Sourcing the env file keeps the secret out of the crontab, which is world-readable to
@@ -343,11 +345,11 @@ These are the exact checks that were run against the production build on 2026-09
 each one corresponds to a bug that existed before that date.
 
 ```bash
-curl -sI https://example.com/ | head -1                    # 200
-curl -sI https://example.com/_next/image?url=x&w=1&q=1     # 400 — the open image proxy is closed
-curl -s  -o /dev/null -w '%{http_code}\n' https://example.com/api/cron   # 401/403 without the secret
-curl -s  -X POST https://example.com/api/analyse   # see the note below before reading this one
-curl -s https://example.com/pricing | grep -ci stripe      # 0 — no env var names leak to visitors
+curl -sI https://example.com/kautilya | head -1            # 200
+curl -sI https://example.com/kautilya/_next/image?url=x&w=1&q=1  # 400 — the open image proxy is closed
+curl -s  -o /dev/null -w '%{http_code}\n' https://example.com/kautilya/api/cron   # 401/403 without the secret
+curl -s  -X POST https://example.com/kautilya/api/analyse   # see the note below before reading this one
+curl -s https://example.com/kautilya/pricing | grep -ci stripe      # 0 — no env var names leak to visitors
 ```
 
 **The `/api/analyse` probe cannot be read until `ANTHROPIC_API_KEY` is set.** Without a key
