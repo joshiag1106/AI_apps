@@ -22,7 +22,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 1,063 passing on `main` (`npm test`), `tsc --noEmit` clean |
+| Tests | 1,079 passing on `main` (`npm test`), `tsc --noEmit` clean |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
@@ -69,6 +69,40 @@ an ingest stamps it after its last write — pinned by `tests/lens-cache.test.ts
 ~0.54 → ~0.2 s and `/demo` ~1.08 → ~0.89 s; live, `/demo` answers in ~0.6–0.7 s. One `next build` failed
 inside `next/font` (`Cannot read properties of null (reading '1')`) and passed unchanged on the rerun —
 a transient font download at build time; the deploy build was then redone from an empty `.next`.
+
+## Japanese and Arabic framing vocabulary (2026-09-24, later)
+
+Lens could not read Japanese (5% of topic-search reports) or Arabic (4%). Added to `DOMAIN_HINTS`
+(`data/lexicon.ts`), from the corpus's own recurring words, under ONE rule: **a word goes in only if the
+language it is compared with in Lens counts its counterpart** — Japanese vs Chinese (China–Taiwan), Arabic
+vs English (Middle East). LEXICON (escalation weights) was not touched.
+
+**The first cut broke that and was caught by measuring, not by a test.** It translated anything SOME
+language counted, so Arabic got "attack", "strikes", "missiles", "military", "shelling" — which English
+counts only inside phrases — and Lens called a Middle East "military framing" gap of 65% vs 16% that was
+mostly vocabulary. Likewise Japanese 海峡 ("strait") counted while the Chinese search word 台海 did not.
+Tightened to the pairwise rule, re-measured: Japanese 47% readable (68 reports), Arabic 18% (40); Middle
+East now calls out energy (25% English vs 0% Arabic — the English searches include a separate Red Sea
+shipping query, disclosed under each column); China–Taiwan calls out military, 94% Chinese vs 69%
+Japanese. Chinese coverage also rose (China–Taiwan 68 → 122 readable) because Traditional-Chinese reports
+from Taiwan outlets write 軍, not 军, and were unread before.
+
+**Precision, read by hand:** Arabic 36 of 40 classified headlines clearly right, 4 debatable (mixed
+stories), none wrong. Japanese 47 of 58 right, 9 debatable, 2 wrong — both from a word describing the
+writer, not the story (外交評論家 "diplomacy commentator", 軍事専門ページ "military-affairs page").
+
+**Deployed; live, both columns are just under the threshold.** Production holds fewer reports than the
+local corpus (it has collected only since 2026-09-17): live Japanese reads 24 of 52 (46%), Arabic 22 of
+119 (18%) — the same rates as locally, but one and three short of `MIN_ARTICLES` = 25, so both still say
+"cannot be read yet". They cross on their own as the hourly ingest adds reports. Do NOT lower the
+threshold to make them appear; it is what stops Lens stating a framing from a handful of reports.
+
+**Side effect:** the same list sets each report's stored `domain` at ingest, so newly collected Japanese,
+Arabic and Traditional-Chinese reports stop defaulting to "Diplomatic" and the board's risk vectors get
+slightly more accurate; stored rows keep their old domain until they age out (no rescore script — none
+was asked for). **The real next step** is one shared concept list with a term for every language — it
+would also let English count "attack", "missile", "war", "defence", "energy" — but it moves every
+language's numbers, so it is Josh's call.
 
 ## The basePath migration to /kautilya — built and verified locally, NOT YET DEPLOYED (2026-09-23)
 
@@ -195,7 +229,8 @@ Arabic". The stored `domain` falls back to 'Diplomatic' when a report's words ma
 `scoreText` output unchanged): framing is counted only from reports whose wording shows one, each
 column says how many that is, and a language with < 25 readable reports says its framing "cannot be
 read yet" and sits out the test. **The lexicon's near-absent Japanese and Arabic vocabulary is now a
-visible, known gap** — adding terms there would let those columns speak.
+visible, known gap** — adding terms there would let those columns speak. **Closed 2026-09-24**, see the
+top section: Japanese 5% → 47% readable, Arabic 4% → 18%, both columns now speak.
 
 Verified: 1,006 tests, `tsc` clean, a clean standalone build against a copy of the real corpus
 (9 topics; no console errors; every `_next/static` request 200; no overflow at 375px; headline links
