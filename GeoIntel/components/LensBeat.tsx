@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LANGUAGE_LABEL } from '@/lib/lang/detect';
+import { titleGloss } from '@/components/EventCard';
 import type { BeatLens, LensColumn } from '@/lib/lens/compare';
 
 /** One Language Lens topic: its languages side by side. Presentational; see lib/lens/compare. */
@@ -8,6 +9,12 @@ const pct = (share: number) => `${Math.round(share * 100)}%`;
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const label = (language: string) => LANGUAGE_LABEL[language] ?? language;
+/**
+ * The stored key terms when a headline has them (clean: "sanctions · the Chinese side"), else the
+ * word-by-word gloss — which for Chinese is noisy ("abbr. for 中國共產黨|中国共产党, …") and for
+ * Japanese is the only English there is, since the stored line is Chinese-only.
+ */
+const english = (title: string, language: string, stored: string | null) => stored ?? titleGloss(title, language);
 const KICKER = 'mb-1 text-[12px] uppercase tracking-[0.16em] text-faint';
 
 function Column({ c, names }: { c: LensColumn; names: Record<string, string> }) {
@@ -74,7 +81,9 @@ function Column({ c, names }: { c: LensColumn; names: Record<string, string> }) 
       <div>
         <div className={KICKER}>Latest</div>
         <ul className="space-y-2">
-          {c.latest.map((h) => (
+          {c.latest.map((h) => {
+            const en = english(h.title, c.language, h.titleEn);
+            return (
             <li key={h.id} className="min-w-0 text-[14px] leading-snug">
               {h.eventId ? (
                 <Link href={`/events/${encodeURIComponent(h.eventId)}`} lang={c.language}
@@ -82,10 +91,11 @@ function Column({ c, names }: { c: LensColumn; names: Record<string, string> }) 
               ) : (
                 <span lang={c.language} className="text-text">{h.title}</span>
               )}
-              {h.titleEn && <span className="block text-faint">{h.titleEn}</span>}
+              {en && <span className="block text-faint">{en}</span>}
               <span className="block text-[13px] text-faint">{h.outlet} · {day(h.publishedAt)}</span>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </div>
