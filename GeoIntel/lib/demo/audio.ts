@@ -1,6 +1,6 @@
 /**
- * Pure building blocks for the tour's optional sound: a synthesized tanpura-style drone and the
- * text spoken over it. Every tone here is generated from ratios at runtime — no audio file, no
+ * Pure building blocks for the tour's optional sound: plucked tanpura notes and the text spoken
+ * between them. Every tone here is generated from ratios at runtime — no audio file, no
  * sample, nothing fetched or embedded — so nothing in this feature can carry a copyright claim.
  * The oscillator scheduling and speechSynthesis calls live in components/demo/DemoAudio.tsx, which
  * is the only place that touches the AudioContext or speech APIs; this file has no browser
@@ -19,12 +19,19 @@ export function raga(rootHz: number): number[] {
 }
 
 /**
- * A tanpura's four strings, tuned Pa-Sa-Sa-Sa (or Ma-Sa-Sa-Sa) — here the fifth below the root, the
- * root itself twice, and the root's octave. Returned low-to-high as the ear hears the chord, not in
- * string-plucking order.
+ * How loud the music (the plucked notes) sits: silent while the narration speaks, full between
+ * chapters. Only half-lowering it left notes cutting across the words.
  */
-export function droneTones(rootHz: number): number[] {
-  return [rootHz / 2, (rootHz * 3) / 2, rootHz, rootHz * 2];
+export function musicLevel(speaking: boolean): number {
+  return speaking ? 0 : 1;
+}
+
+/**
+ * Whether an utterance's end should bring the music back. cancel() on a chapter change makes the old
+ * utterance report its end after the new one has started speaking; only the current one may restore.
+ */
+export function shouldRestoreMusic(endedId: number, currentId: number): boolean {
+  return endedId === currentId;
 }
 
 /**
