@@ -121,15 +121,71 @@ export const LEXICON: LexEntry[] = [
 ];
 
 /** Keyword hints used to classify an event into a domain when the lexicon is silent. */
+/**
+ * Words that show which kind of pressure a report is about. Non-Latin terms match as substrings, so a
+ * Japanese or Arabic stem also catches its inflections (نووي in النووية) — and a short one can catch an
+ * unrelated word.
+ *
+ * The Japanese and Arabic lines (added 2026-09-24, from the corpus's own recurring words) follow ONE rule:
+ * a word goes in only if the language it is compared with in Language Lens counts its counterpart. Japanese
+ * is compared with Chinese (China–Taiwan), so it gets only what the Chinese line has — 軍 for 军, 空母 for
+ * 航母, 会談 for 会晤. Arabic is compared with English (Middle East), so it gets only what the English line or
+ * LEXICON has — جيش for army, غارات for airstrikes, مضيق for strait. A first cut that translated anything
+ * SOME language counted gave Arabic "attack", "strikes", "missiles" and "military", which English counts
+ * only in phrases, and produced a 65%-vs-16% "military framing" gap that was mostly vocabulary. A richer,
+ * shared concept list across every language is the real fix, and would move every language's numbers.
+ * Left out besides: تصعيد and 有事 ("escalation", "contingency" — no kind of pressure; the Arabic search asks
+ * for تصعيد itself), 通信 (inside 時事通信, a news agency's name), حدود (mostly figurative, "limits").
+ * See tests/lexicon-ja-ar.test.ts.
+ */
 export const DOMAIN_HINTS: Record<Domain, string[]> = {
-  Military:   ['army', 'troops', 'soldier', 'border', 'brigade', 'artillery', 'drone strike', 'battalion', '军', '边境', '部队', 'सेना', 'सैनिक'],
-  Maritime:   ['navy', 'naval', 'warship', 'carrier', 'submarine', 'shoal', 'strait', 'vessel', '海军', '军舰', '航母', 'नौसेना'],
-  Cyber:      ['cyber', 'hacker', 'malware', 'phishing', 'apt group', 'network intrusion', '网络攻击', '黑客', 'साइबर'],
-  Economic:   ['trade', 'tariff', 'export', 'import', 'investment', 'currency', 'gdp', '贸易', '关税', 'व्यापार'],
-  Energy:     ['oil', 'gas', 'lng', 'refinery', 'pipeline', 'crude', 'nuclear plant', '石油', '天然气', 'तेल'],
-  Space:      ['satellite', 'orbit', 'launch vehicle', 'space station', 'isro', '卫星', 'उपग्रह'],
-  Nuclear:    ['nuclear', 'warhead', 'icbm', 'uranium', 'iaea', '核', 'परमाणु'],
-  Diplomatic: ['summit', 'ambassador', 'foreign minister', 'treaty', 'communique', 'visit', '外交', '会晤', 'राजनयिक'],
-  Internal:   ['riot', 'election', 'militant', 'separatist', 'crackdown', 'curfew', '骚乱', 'विद्रोह'],
-  Technology: ['semiconductor', 'chip', 'ai model', '5g', 'huawei', 'telecom', '半导体', '芯片'],
+  Military: [
+    'army', 'troops', 'soldier', 'border', 'brigade', 'artillery', 'drone strike', 'battalion', '军', '边境', '部队', 'सेना', 'सैनिक',
+    '軍', '国境', '部隊',
+    'جيش', 'قوات', 'جنود', 'حدودي', 'اجتياح', 'توغل', 'اشتباك', 'غارات', 'تعبئة', 'مناورات',
+  ],
+  Maritime: [
+    'navy', 'naval', 'warship', 'carrier', 'submarine', 'shoal', 'strait', 'vessel', '海军', '军舰', '航母', 'नौसेना',
+    '海軍', '軍艦', '空母',
+    'مضيق', 'بحري', 'سفينة', 'سفن', 'غواصة', 'حاملة طائرات', 'خفر السواحل', 'حصار',
+  ],
+  Cyber: [
+    'cyber', 'hacker', 'malware', 'phishing', 'apt group', 'network intrusion', '网络攻击', '黑客', 'साइबर',
+    'サイバー攻撃', 'ハッカー',
+    'سيبراني', 'قراصنة', 'تجسس',
+  ],
+  Economic: [
+    'trade', 'tariff', 'export', 'import', 'investment', 'currency', 'gdp', '贸易', '关税', 'व्यापार',
+    '貿易', '関税',
+    'تجارة', 'تجاري', 'جمارك', 'جمركية', 'صادرات', 'واردات', 'استثمار',
+  ],
+  Energy: [
+    'oil', 'gas', 'lng', 'refinery', 'pipeline', 'crude', 'nuclear plant', '石油', '天然气', 'तेल',
+    '天然ガス',
+    'نفط', 'الغاز', 'أنابيب', 'مصفاة',
+  ],
+  Space: [
+    'satellite', 'orbit', 'launch vehicle', 'space station', 'isro', '卫星', 'उपग्रह',
+    '衛星',
+    'قمر صناعي', 'أقمار صناعية',
+  ],
+  Nuclear: [
+    'nuclear', 'warhead', 'icbm', 'uranium', 'iaea', '核', 'परमाणु',
+    'نووي', 'نووى', 'يورانيوم', 'تخصيب',
+  ],
+  Diplomatic: [
+    'summit', 'ambassador', 'foreign minister', 'treaty', 'communique', 'visit', '外交', '会晤', 'राजनयिक',
+    '会談',
+    'هدنة', 'قمة', 'سفير', 'وزير الخارجية', 'معاهدة', 'زيارة',
+  ],
+  Internal: [
+    'riot', 'election', 'militant', 'separatist', 'crackdown', 'curfew', '骚乱', 'विद्रोह',
+    '暴動',
+    'انتخابات', 'احتجاجات', 'انقلاب', 'هجوم إرهابي', 'شغب', 'قمع', 'حظر تجول',
+  ],
+  Technology: [
+    'semiconductor', 'chip', 'ai model', '5g', 'huawei', 'telecom', '半导体', '芯片',
+    '半導体',
+    'أشباه الموصلات', 'رقائق', 'هواوي',
+  ],
 };
