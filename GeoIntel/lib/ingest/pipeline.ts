@@ -5,6 +5,7 @@ import { resolveSource } from '@/data/sources';
 import { resolveActors, extractPeople } from '@/lib/analyze/entities';
 import { scoreText, glossHeadline } from '@/lib/analyze/score';
 import { clusterArticles } from '@/lib/verify/cluster';
+import { rescoreDomainsIfStale } from '@/lib/analyze/rescore';
 import { TREND_SERIES_DAYS } from '@/lib/risk';
 import { upsertArticles, replaceEvents, allArticles, deleteArticles, setMeta, updateLadders } from '@/lib/db';
 import type { LadderSpeaker } from '@/lib/lang/speaker';
@@ -246,6 +247,11 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
     deleteArticles(expired);
     log(`pruned ${expired.length} stored articles older than ${CORPUS_RETENTION_DAYS} days`);
   }
+
+  // A vocabulary change re-scores every stored report's domain before clustering, which never joins
+  // reports across domains. A no-op unless data/concepts.ts or the matching rules changed.
+  const rescored = rescoreDomainsIfStale();
+  if (rescored.rescored) log(`re-scored stored domains for a new vocabulary: ${rescored.changed} changed`);
 
   // Cluster over the whole stored corpus so today's reports can join an older event.
   const events = clusterArticles(allArticles(8000));

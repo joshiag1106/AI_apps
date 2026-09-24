@@ -22,7 +22,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 1,079 passing on `main` (`npm test`), `tsc --noEmit` clean |
+| Tests | 1,134 passing on `main` (`npm test`), `tsc --noEmit` clean |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
@@ -69,6 +69,62 @@ an ingest stamps it after its last write — pinned by `tests/lens-cache.test.ts
 ~0.54 → ~0.2 s and `/demo` ~1.08 → ~0.89 s; live, `/demo` answers in ~0.6–0.7 s. One `next build` failed
 inside `next/font` (`Cannot read properties of null (reading '1')`) and passed unchanged on the rerun —
 a transient font download at build time; the deploy build was then redone from an empty `.next`.
+
+## One shared concept list decides every report's kind of pressure (2026-09-24, latest) — SHIPPED
+
+**Deployed and live the same day.** Live DB backed up first (`/var/lib/kautilya/pre-concepts-2026-09-24-1256.db`,
+5,110 articles, restorable by one copy), deployed, one `/kautilya/api/cron` call re-scored it: Diplomatic
+3,113 → 2,042, Military 664 → 1,841, `domain_vocab` recorded. All probes pass, the Methodology sentence is
+live, and **the Japanese and Arabic Lens columns now show framing live** (they were just under the
+25-report threshold before). Live verdicts differ from local by corpus: India–China military 89% Hindi vs
+26% Chinese; China–Taiwan diplomatic 48% Japanese vs 2% Chinese; Middle East maritime 26% English vs 2%
+Arabic. The runbook's paths were corrected to `/kautilya/...` (they predated the basePath move).
+
+Branch `shared-concepts`. Spec `docs/specs/2026-09-24-shared-concepts-design.md`, plan
+`docs/plans/2026-09-24-shared-concepts.md`. Josh chose: reach **everywhere** (Lens and the Board) and
+**re-score stored reports on ship**.
+
+**What changed.** `data/concepts.ts` — 43 concepts, each with its words in en, zh (Simplified and
+Traditional), hi, ja, ar, ru, or a stated gap (only one: Russian "casualties") — is now the ONLY source of
+which-kind evidence. `DOMAIN_HINTS` is gone; `LEXICON` keeps its escalation weights but no longer votes on
+the domain (it was mostly English, which is why English was read most closely). `lib/analyze/concepts.ts`
+matches English on whole words (+ s/es/d/ed/ing), other scripts as substrings of lower-cased text, longest
+match first with overlaps masked ("trade war" does not also count "war"), each concept once. `NEUTRAL`
+phrases mask without counting (冠军 "champion", तेलंगाना, "bargaining chip", "war of words"…). Retired
+with reasons in `tests/concepts.test.ts`: bare "carrier", bare 核 (inside 核心, "core interests"),
+"protest" (also diplomatic), and "tension" (तनाव/کشیدگی/تنش — names no kind of pressure, and is the Hindi
+and Urdu India–Pakistan search word). `lib/analyze/rescore.ts` re-scores stored domains whenever a
+fingerprint of the table + matcher changes, called by ingest just before clustering — replacing the manual
+backfill script the spec first proposed. `npm run concepts:report` measures all of this; keep using it.
+
+**Measured locally (same corpus, both classifiers recomputed):**
+
+| | before | after |
+|---|---|---|
+| readable, en/zh/hi/ja/ar/ru | 46/48/53/47/18/74% | 73/80/74/89/47/92% |
+| stored domain Diplomatic / Military | 62% / 16% | 40% / 38% |
+| events / multi-report / largest | 5,183 / 22% / 66 | 5,183 / 23% / 89 |
+| cross-language events | 56 | 55 |
+
+Lens verdicts moved; several old ones were vocabulary artifacts — India Defence & Security "85% of Hindi
+military vs 23% of English" (English could not read "military") is now no call-out; South China Sea flipped
+to Chinese 72% maritime (Chinese reef/coast-guard/vessel words were unread). India–China now: military 83%
+Hindi vs 29% Chinese — the demo's widest-gap topic. Russia–Ukraine: diplomatic 61% Russian vs 8% English
+(the Russian search itself asks for "переговоры", negotiations — the disclosed query caveat).
+
+**Clustering, read not just counted.** Largest event (89) = LAC troop drawdown, Hindi+English, one story;
+next = Arunachal commanders' talks; the third (64, LoC drones) pulled in an unrelated Javelin deal — mild
+blobbing. The Houthi/Red Sea story now divides by angle (diplomatic 45, maritime 23, military 23; 173 → 180
+events) — the documented "divides by angle" property. Cross-language events: 11 lost / 13 gained, read one
+by one — the lost were mostly junk blobs, the gained mostly real (warship collision ×2, BRICS summit).
+
+**Precision by hand**, 30 classified headlines per language, first pass: en 21 right / 7 debatable / 2
+wrong; zh 23/6/1; hi 19/9/2; ja 23/6/1; ar 27/3/0; ru 19/7/4. Six systematic patterns were then fixed with
+tests (border talks and ending a war are diplomatic; "tariff war"/"economic war" economic; "peace and
+stability in the Strait" diplomatic; 攻击抹黑 and नई ऊर्जा figurative; "export curbs"; English "boundary").
+**Known limits:** ties go to Military first (DOMAIN_ORDER), and Military now has the broadest vocabulary, so
+a headline mixing a military word and one other kind leans Military; sports stories ("attack", "defence")
+can read as Military (low escalation, so risk scores barely move).
 
 ## Japanese and Arabic framing vocabulary (2026-09-24, later)
 
