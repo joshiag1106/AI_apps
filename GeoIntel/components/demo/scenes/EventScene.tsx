@@ -14,7 +14,7 @@ function Row({ r }: { r: Report }) {
 }
 
 /**
- * Chapter 3. Reports group under one event; a reprint folds under the report it repeats (EvidenceFamily's
+ * Chapter 4. Reports group under one event; a reprint folds under the report it repeats (EvidenceFamily's
  * own fold, closed by RevealOnView), counted once; the confidence meter fills from its named signals.
  * "Also printed by", never "copied from" — which outlet copied which cannot be known from a headline.
  *

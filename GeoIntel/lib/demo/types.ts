@@ -1,11 +1,12 @@
-import type { Article, ConfidenceSignal, EventFlag, GeoEvent } from '@/lib/types';
+import type { Article, ConfidenceSignal, Domain, EventFlag, GeoEvent } from '@/lib/types';
+import type { BeatLens } from '@/lib/lens/compare';
 import type { Trail } from '@/lib/verify/trail';
 import type { MapShape } from '@/lib/map';
 import type { MapDatum, MapMarker } from '@/components/WorldMap';
 import type { EgoView } from '@/lib/graph/ego';
 
 export const CHAPTER_IDS = [
-  'board', 'language', 'event', 'ladder', 'trail', 'risk', 'dyad', 'network', 'ask', 'yours', 'close',
+  'board', 'language', 'lens', 'event', 'ladder', 'trail', 'risk', 'dyad', 'network', 'ask', 'yours', 'close',
 ] as const;
 export type ChapterId = (typeof CHAPTER_IDS)[number];
 
@@ -22,6 +23,23 @@ export interface BoardData {
 }
 export interface LanguageData {
   headline: string; outlet: string; date: string; rung: number; ladderZh: string; ladderEn: string;
+}
+/** One language's side of the Lens chapter: a trimmed LensColumn. */
+export interface LensSide {
+  language: string; articles: number; classified: number;
+  /** The first thing this language's search asked, or null when its reports came from another language's search. */
+  asked: { q: string; en: string | null } | null;
+  /** At most three framings, always including the one that differs. */
+  framing: { key: Domain; share: number }[];
+  /** `english` is the stored key terms or the curated Japanese glossary — never the Chinese dictionary join. */
+  headline: { title: string; english: string | null; outlet: string } | null;
+}
+export interface LensData {
+  topic: string; domain: Domain;
+  /** Worded exactly as the Lens page words it — lib/lens/compare describeSharpest. */
+  sentence: string;
+  /** The language that frames the topic this way more often, then the one that does so less. */
+  high: LensSide; low: LensSide;
 }
 export interface EventData {
   title: string; confidence: number; signals: ConfidenceSignal[]; flags: EventFlag[];
@@ -45,6 +63,14 @@ export interface NetworkData {
   from: string; to: string; view: EgoView;
   topEvents: Map<string, { title: string }[]>;
   trail: string[];
+  /** The walk's third step, from `to` into the person graph; null when no official qualifies. */
+  person: PersonStep | null;
+}
+export interface PersonStep {
+  id: string; name: string; role: string; home: string;
+  view: EgoView;
+  topEvents: Map<string, { title: string }[]>;
+  trail: string[];
 }
 export interface AskData {
   question: string;
@@ -57,7 +83,7 @@ export interface YoursData extends AlertData { exportChip: string | null }
 export interface CloseData { copy: string; buttons: { label: string; href: string; primary: boolean }[] }
 
 export interface ChapterData {
-  board: BoardData; language: LanguageData; event: EventData; ladder: LadderData; trail: TrailData;
+  board: BoardData; language: LanguageData; lens: LensData; event: EventData; ladder: LadderData; trail: TrailData;
   risk: RiskData; dyad: DyadData; network: NetworkData; ask: AskData; yours: YoursData; close: CloseData;
 }
 
@@ -93,8 +119,10 @@ export interface DemoInput {
   otherArticles: Article[];
   /** article id → event id. */
   eventIdOf: Record<string, string>;
-  /** The best few events with their articles, for chapter 3. */
+  /** The best few events with their articles, for chapter 4. */
   eventCandidates: { event: GeoEvent; articles: Article[] }[];
+  /** The Language Lens topics, exactly as /lens computes them. */
+  lens: BeatLens[];
 }
 
 /** Real examples captured together on one day; see scripts/demo-capture.ts. */

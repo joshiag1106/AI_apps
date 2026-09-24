@@ -6,7 +6,7 @@ import type { RiskData } from '@/lib/demo/types';
 import { Beat, SceneFrame } from './Beat';
 
 /**
- * Chapter 6. The radar's polygon scales out from its centre (RevealOnView's `.reveal-scale`), and that
+ * Chapter 7. The radar's polygon scales out from its centre (RevealOnView's `.reveal-scale`), and that
  * is its own animation, started at mount. So the panel is NOT wrapped in a delayed Beat: a fade-in
  * would hold it at opacity 0 while the scale-out played, and the viewer would see the end of it only.
  * The radar is a fixed-size svg (width/height attributes), so the wrapper caps the panel at the stage

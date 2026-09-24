@@ -18,7 +18,7 @@ function Row({ badge, title, outlet, date }: { badge: ReactNode; title: string; 
 }
 
 /**
- * Chapter 4. The ladder's bars grow in to the detected rung (LadderGauge's own RevealOnView), then
+ * Chapter 5. The ladder's bars grow in to the detected rung (LadderGauge's own RevealOnView), then
  * two headlines carrying the same kind of language are labelled by whose it is — the badge wording
  * an event page already uses.
  *

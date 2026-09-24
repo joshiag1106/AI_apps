@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { droneTones, narrationFor, raga, PLUCK_PATTERN } from '@/lib/demo/audio';
+import { droneTones, narrationFor, pickVoice, raga, PLUCK_PATTERN } from '@/lib/demo/audio';
 
 /** F3 — a calm, low register for the drone. The note itself is math, not a recording. */
 const ROOT_HZ = 174.61;
@@ -101,13 +101,12 @@ export function DemoAudio(
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.92;
+    utter.rate = 1;
     utter.pitch = 1;
     // Chrome returns [] from getVoices() until 'voiceschanged' has fired once; voicesRef is kept
     // warm by the effect below so even the very first narration usually sees the real list.
     const voices = voicesRef.current.length > 0 ? voicesRef.current : window.speechSynthesis.getVoices();
-    const voice = voices.find((v) => v.lang?.toLowerCase().startsWith('en-in'))
-      ?? voices.find((v) => v.lang?.toLowerCase().startsWith('en'));
+    const voice = pickVoice(voices);
     if (voice) utter.voice = voice;
 
     const drone = droneGainRef.current;
@@ -125,7 +124,7 @@ export function DemoAudio(
   }, []);
 
   // Keeps a cached voice list warm from the moment sound could plausibly be used, so speak()'s
-  // en-IN preference does not lose its very first pick to Chrome's async voice loading.
+  // pickVoice does not lose its very first choice to Chrome's async voice loading.
   useEffect(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     const refresh = () => { voicesRef.current = window.speechSynthesis.getVoices(); };

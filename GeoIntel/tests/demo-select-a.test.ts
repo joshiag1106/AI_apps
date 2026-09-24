@@ -86,7 +86,7 @@ describe('chapter 2 — language', () => {
   });
 });
 
-describe('chapter 4 — ladder', () => {
+describe('chapter 5 — ladder', () => {
   it("uses the same Beijing article as chapter 2, and another party's article with its own rung", () => {
     const i = richInput();
     const d = selectLadder(i)!;
@@ -106,7 +106,7 @@ describe('chapter 4 — ladder', () => {
   });
 });
 
-describe('chapter 5 — trail', () => {
+describe('chapter 6 — trail', () => {
   it('passes the trail through when it has a dot', () => {
     const i = richInput();
     expect(selectTrail(i)!.trail).toBe(i.trail);
@@ -117,7 +117,7 @@ describe('chapter 5 — trail', () => {
   });
 });
 
-describe('chapter 10 — the alert email', () => {
+describe('chapter 11 — the alert email', () => {
   it("is the real digest for the country Beijing's formula was aimed at, with links on the given origin", () => {
     const a = selectAlert(richInput())!;
     expect(a.label).toBe('Japan');

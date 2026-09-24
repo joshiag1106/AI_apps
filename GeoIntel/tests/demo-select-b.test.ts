@@ -1,7 +1,7 @@
 // tests/demo-select-b.test.ts
 import { describe, it, expect } from 'vitest';
 import { selectEvent, selectRisk, selectDyad, selectNetwork, selectAsk } from '@/lib/demo/select';
-import { stateGraph } from '@/lib/graph/build';
+import { personGraph, stateGraph } from '@/lib/graph/build';
 import { egoView } from '@/lib/graph/ego';
 import { art, evt, input, richInput } from './fixtures/demo-fixtures';
 
@@ -13,7 +13,7 @@ const plain = () => ({
   articles: [en({ title: 'One report about ports', outlet: 'A' }), en({ title: 'Another about grain', outlet: 'B' }), en({ title: 'A third about oil', outlet: 'C' })],
 });
 
-describe('chapter 3 — event', () => {
+describe('chapter 4 — event', () => {
   it('folds a reprint into the report it repeats and lists the distinct reports', () => {
     const d = selectEvent(richInput())!;
     expect(d.title).toBe('Tokyo shrine dispute');
@@ -48,7 +48,7 @@ describe('chapter 3 — event', () => {
   });
 });
 
-describe('chapter 6 — risk', () => {
+describe('chapter 7 — risk', () => {
   it('takes the highest composite, with the axes in the fixed vector order', () => {
     const d = selectRisk(input({ risks: [
       { iso: 'JPN', composite: 30, vectors: {} },
@@ -65,7 +65,7 @@ describe('chapter 6 — risk', () => {
   });
 });
 
-describe('chapter 7 — dyad', () => {
+describe('chapter 8 — dyad', () => {
   it('takes the first dyad with three defining events that land on the series', () => {
     const d = selectDyad(richInput())!;
     expect(d).toMatchObject({ aName: 'China', bName: 'Japan', score: 55 });
@@ -82,7 +82,7 @@ describe('chapter 7 — dyad', () => {
   });
 });
 
-describe('chapter 8 — network', () => {
+describe('chapter 9 — network', () => {
   it('walks from the highest-risk state to its strongest neighbour', () => {
     const d = selectNetwork(richInput())!;
     expect(d.from).toBe('CHN');
@@ -131,9 +131,55 @@ describe('chapter 8 — network', () => {
     expect(d.view.neighbours).toContain('IND');
     expect(d.view.edges.some((e) => (e.a === 'IND' && e.b === 'PAK') || (e.a === 'PAK' && e.b === 'IND'))).toBe(true);
   });
+
+  // The walk's third step leaves the state graph for the person graph: from the state just reached to
+  // the official most often named with it. Takaichi is named with Japan in three events, Koizumi in one.
+  const withPeople = () => richInput({ events: [
+    ...richInput().events,
+    ...[0, 1, 2].map(() => evt({ actors: ['JPN'], people: ['takaichi-sanae'] })),
+    evt({ actors: ['JPN'], people: ['shinjiro-koizumi'] }),
+  ] });
+
+  it('continues the walk from the state reached to the official most named with it', () => {
+    const d = selectNetwork(withPeople())!;
+    expect(d.trail).toEqual(['CHN', 'JPN']);
+    expect(d.person).toMatchObject({
+      id: 'takaichi-sanae', name: 'Takaichi Sanae', role: 'Prime Minister', home: 'JPN',
+      trail: ['CHN', 'JPN', 'takaichi-sanae'],
+    });
+    // The step's edge is really in the view the graph will draw, so it can light up.
+    expect(d.person!.view.focus).toBe('takaichi-sanae');
+    expect(d.person!.view.neighbours).toContain('JPN');
+    expect(d.person!.topEvents.size).toBeGreaterThan(0);
+  });
+
+  it('has no person step when no official is named with the state reached', () => {
+    const d = selectNetwork(richInput())!;
+    expect(d.to).toBe('JPN');
+    expect(d.person).toBeNull();
+  });
+
+  // The hub shape again, one layer down. Takaichi is Japan's strongest official, but she is named with
+  // twelve other states three times each and with Japan once, so her own top-ten view hides Japan and
+  // the step's edge could not be drawn. Koizumi, named with Japan once at lower escalation, qualifies.
+  it('skips an official whose own top-10 view would hide the state walked from', () => {
+    const events = [
+      ...richInput().events,
+      evt({ actors: ['JPN'], people: ['takaichi-sanae'] }),
+      ...HUB_SPOKES.flatMap((s) => [0, 1, 2].map(() => evt({ actors: [s], people: ['takaichi-sanae'] }))),
+      evt({ actors: ['JPN'], people: ['shinjiro-koizumi'], escalation: 10 }),
+    ];
+    const graph = personGraph(events, input().now);
+    expect(egoView(graph, 'JPN').neighbours[0]).toBe('takaichi-sanae');
+    expect(egoView(graph, 'takaichi-sanae').neighbours).not.toContain('JPN');
+
+    const d = selectNetwork(richInput({ events }))!;
+    expect(d.person!.id).toBe('shinjiro-koizumi');
+    expect(d.person!.trail).toEqual(['CHN', 'JPN', 'shinjiro-koizumi']);
+  });
 });
 
-describe('chapter 9 — ask', () => {
+describe('chapter 10 — ask', () => {
   it('asks about the top dyad in the form the parser is proven to read, and the answer is not empty', () => {
     const d = selectAsk(richInput())!;
     expect(d.question).toBe('what is happening between China and Japan?');

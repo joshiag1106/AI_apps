@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lens, twoProportionZ, queryLanguage, MIN_ARTICLES, type LensArticle } from '@/lib/lens/compare';
+import { describeSharpest, lens, twoProportionZ, queryLanguage, MIN_ARTICLES, type LensArticle } from '@/lib/lens/compare';
 import { BEATS, type Beat } from '@/data/feeds';
 import { DOMAIN_HINTS } from '@/data/lexicon';
 import { evidencedDomain, scoreText } from '@/lib/analyze/score';
@@ -209,6 +209,21 @@ describe('framing, counted only where a report shows it', () => {
       const text = `report mentions ${hints[0]}`;
       expect(evidencedDomain(text), `${domain}: ${hints[0]}`).toBe(scoreText(text).domain);
     }
+  });
+});
+
+describe('the sharpest difference, in words', () => {
+  // The page and the demo tour both print this sentence, so it lives in one place.
+  it('names the framing and both languages with whole percentages', () => {
+    expect(describeSharpest({
+      domain: 'Military', high: { language: 'zh', share: 0.953 }, low: { language: 'hi', share: 0.248 }, z: 9.1,
+    })).toBe('Sharpest difference: military framing — 95% of Chinese reports, 25% of Hindi.');
+  });
+
+  it('falls back to the language code for a language it has no name for', () => {
+    expect(describeSharpest({
+      domain: 'Economic', high: { language: 'xx', share: 0.5 }, low: { language: 'en', share: 0.1 }, z: 3,
+    })).toBe('Sharpest difference: economic framing — 50% of xx reports, 10% of English.');
   });
 });
 

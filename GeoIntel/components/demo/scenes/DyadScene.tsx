@@ -6,7 +6,7 @@ import type { DyadData } from '@/lib/demo/types';
 import { Beat, SceneFrame } from './Beat';
 
 /**
- * Chapter 7. The 90-day tension columns draw in, and the defining events land on the days they
+ * Chapter 8. The 90-day tension columns draw in, and the defining events land on the days they
  * happened. Marker hrefs are inert (`#0`, `#1`, ...): the stage is inert while this scene plays, and a
  * captured example's events no longer exist to link to. Each one is unique because Columns keys a marker
  * by `${date}-${href}`, and two defining events can share a day.

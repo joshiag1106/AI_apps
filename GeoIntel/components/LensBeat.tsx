@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LANGUAGE_LABEL } from '@/lib/lang/detect';
 import { titleGloss } from '@/components/EventCard';
-import type { BeatLens, LensColumn } from '@/lib/lens/compare';
+import { describeSharpest, type BeatLens, type LensColumn } from '@/lib/lens/compare';
 
 /** One Language Lens topic: its languages side by side. Presentational; see lib/lens/compare. */
 
@@ -112,7 +112,7 @@ export function LensBeat({ beat, names }: { beat: BeatLens; names: Record<string
       </div>
       <p className="text-[15px] leading-relaxed text-text">
         {s
-          ? `Sharpest difference: ${s.domain.toLowerCase()} framing — ${pct(s.high.share)} of ${label(s.high.language)} reports, ${pct(s.low.share)} of ${label(s.low.language)}.`
+          ? describeSharpest(s)
           : 'No framing difference large enough to call out — none is both 10 points wide and unlikely to be chance.'}
       </p>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

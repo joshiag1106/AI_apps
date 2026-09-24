@@ -1,6 +1,7 @@
 # Where this project stands
 
-**Last worked: 2026-09-21** (the demo tour, on branch `demo-tour`; `main` and the live site are as of 2026-09-19). Everything below was verified, not assumed. Where something
+**Last worked: 2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female
+narrator — see the first section below). Everything below was verified, not assumed. Where something
 is unverified it says so.
 
 ## Pick up in 30 seconds
@@ -21,7 +22,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 939 passing on branch `demo-tour` (`npm test`); `main` has fewer, the tour is not merged |
+| Tests | 1,060 passing on `main` (`npm test`), `tsc --noEmit` clean |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
@@ -30,6 +31,40 @@ still renders every page and shows a first-run panel telling you to run the inge
 
 There is one real account in the local database (the one created while testing the
 signup flow). It is only in this local file.
+
+## The demo tour gains Lens, an official, and a female narrator (2026-09-24)
+
+Josh asked whether the new features were in the demo; they were not (the tour predates Lens). Now:
+
+- **Chapter 3, Language Lens** (12 s): the topic whose sharpest framing gap is widest, its two languages
+  side by side, then the verdict in the Lens page's own words (`describeSharpest`, now shared by both).
+  Only a difference `lib/lens/compare` already called out qualifies, and with none the chapter is left
+  out — there is deliberately no captured fallback. On the real corpus it picked India–Pakistan: 94% of
+  Chinese reports frame it as military, 23% of Hindi. English under a headline is the stored key terms or
+  the Japanese glossary, labelled "Key terms", never the Chinese dictionary join (chapter 2's rule).
+- **Chapter 9 walks on to an official** (9 → 12 s): the state walk, then at 4.5 s a crossfade in one grid
+  cell to the person graph, lighting the edge from the state to the official most named with it whose own
+  top ten still shows that state. Live data: USA → CHN → Donald Trump. No such official → the old 9 s walk
+  and caption (`WALK_ONLY`).
+- **Narrator**: `pickVoice` (`lib/demo/audio.ts`) picks a known female voice by name, neural/premium/online
+  first, Indian English among equals; male and robotic voices are passed over. Rate 1.0. Josh heard it
+  in the app's browser (Samantha, the Mac's standard voice) and found it robotic; offered recorded
+  narration from Kokoro (Apache 2.0) or a cloud voice, he chose to **stay with browser voices as the
+  safer option** — nothing recorded or shipped, so no licensing question at all. What a visitor hears
+  depends on their browser: Edge → Microsoft Neerja (natural, en-IN), Chrome → Google UK English Female,
+  Safari/plain Mac → Samantha. **Do not record Apple's or Chrome's voices into files** — their licences
+  do not cover redistribution. If a better voice is wanted later, Kokoro (checked: Apache 2.0, commercial
+  use allowed; the makers say training was public-domain, permissive and closed-provider synthetic audio —
+  a line for the legal review) is the free route.
+
+Verified against a from-scratch production build on a fresh ingest, in a browser: 12 chapters, both new
+scenes playing and at rest, no overflow at 375px, every `_next/static` request 200, narration spoken in
+Samantha at rate 1 (not Rishi, who is male and was the old pick), and no usage rows written by the graph
+nodes' link prefetches. The one console 404 is the browser's own `/favicon.ico` at the bare local root,
+outside `/kautilya`.
+
+**Measured, not acted on:** `/demo` now takes ~1.1 s locally, ~360 ms of it `lensData()`, recomputed per
+request (`/lens` pays the same). A memo keyed on `last_ingest` would remove it for both.
 
 ## The basePath migration to /kautilya — built and verified locally, NOT YET DEPLOYED (2026-09-23)
 

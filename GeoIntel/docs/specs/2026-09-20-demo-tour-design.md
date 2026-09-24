@@ -266,3 +266,28 @@ prior feature.
   crash mid-scene could leave the demo page recoloured until reload. Nothing persists.
 - **Eleven chapters in about two minutes is tight** at ten seconds each. Durations are per-chapter data,
   so timing is tuned after watching it, not fixed by this document.
+
+## Addendum 2026-09-24 — twelve chapters, a person step, a female narrator
+
+Chapter numbers above are as first written; from 3 on, each is now one higher.
+
+- **Chapter 3, "One story, told in different languages" (Language Lens), 12 s.** The Lens topic whose
+  sharpest framing difference is widest, its two languages side by side (what each search asked, up to
+  three framing bars with the differing one marked, the newest usable headline), then the verdict in the
+  Lens page's own words (`describeSharpest`, now shared by both). Only a difference `lib/lens/compare`
+  already called out qualifies; with none the chapter is left out. It has no capture: a framing gap is a
+  claim about today's reporting. No chip — `/lens` is not metered. A headline's English line is the stored
+  key terms or the curated Japanese glossary, labelled "Key terms", never the Chinese dictionary join —
+  chapter 2's rule.
+- **Chapter 9 walks on to an official**, 9 → 12 s. After the state walk, the graph crossfades
+  (`demo-leave` out, a Beat in, one grid cell) at 4.5 s to the person graph, one more step: the official
+  most often named with the state reached whose own top ten still shows that state. The walked edge inside
+  the Beat waits for it (`.demo-beat .edge-traveled`). With no such official the chapter is the old 9 s
+  walk with the old caption (`WALK_ONLY`).
+- **The narrator is a female voice** chosen by `pickVoice` (`lib/demo/audio.ts`): known female voices by
+  name, neural/premium/online quality first, Indian English among equals; male and robotic voices are
+  passed over, and a voice still beats silence. Rate 1.0. It is still the browser's own `speechSynthesis`,
+  so how natural it sounds depends on the device: Edge's "Natural" voices and Chrome's online ones are good,
+  a Mac with only standard voices gets Samantha.
+
+The tour now runs about 2:07.

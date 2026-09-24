@@ -1,6 +1,6 @@
 import 'server-only';
 import {
-  corpus, corpusStats, countryRisks, hotspotActivity, topDyads, countryName, lastIngest,
+  corpus, corpusStats, countryRisks, hotspotActivity, topDyads, countryName, lastIngest, lensData,
 } from '@/lib/queries';
 import {
   articlesByIds, corpusSince, eventIdsByArticle, ladderTrailArticles, otherPartyLadderArticles,
@@ -59,5 +59,6 @@ export function gatherDemoInput(claims: ClaimsState, now = Date.now()): DemoInpu
     otherArticles: otherPartyLadderArticles(),
     eventIdOf: Object.fromEntries(eventIdOf),
     eventCandidates,
+    lens: lensData(),
   };
 }

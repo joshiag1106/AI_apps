@@ -388,11 +388,28 @@ body {
   animation-delay: var(--beat, 0ms);
 }
 
+/* An exit — the network chapter's state walk fading out as the step to an official rises into its place in
+ * the same grid cell. `both` keeps it fully shown until its beat; the end state is gone, not just clear, so
+ * nothing in it can be hovered or found underneath the graph that replaced it. */
+@keyframes demo-leave-out {
+  from { opacity: 1; }
+  to   { opacity: 0; visibility: hidden; }
+}
+.demo-leave { animation: demo-leave-out 520ms ease-in both; animation-delay: var(--beat, 0ms); }
+
+/* The network graph's walked edge (.edge-traveled) draws itself on mount. Inside a timed beat it waits for
+ * that beat instead, starting as the beat's rise is under way; `both` holds its first keyframe, the undrawn
+ * line, while it waits. Without this the network chapter's second step would finish drawing, unseen,
+ * seconds before its graph appeared. */
+.demo-beat .edge-traveled { animation-delay: calc(var(--beat, 0ms) + 250ms); animation-fill-mode: both; }
+
 /* Pausing the tour freezes CSS motion too, including the components' own continuous pulses. */
 .demo-stage[data-paused="true"] * { animation-play-state: paused !important; }
 
 @media (prefers-reduced-motion: reduce) {
   :is(.demo-beat, .demo-slide, .demo-email, .demo-mark) { animation: none; opacity: 1; transform: none; }
+  /* An exit's finished state is gone. */
+  .demo-leave { animation: none; opacity: 0; visibility: hidden; }
 }
 
 /* A scene entered while paused shows its finished state, the same as the reduced-motion twin above.
@@ -405,3 +422,8 @@ body {
  * paused in place. Deliberately NOT `.demo-stage[data-still="true"] *`: that would also freeze the
  * entry animations at their first keyframe, opacity 0, which is the blank stage this state exists to end. */
 .demo-stage[data-still="true"] .pulse-ring { animation-play-state: paused; }
+
+/* The two finished states the rule above cannot give, since both are not "shown": an exit rests gone, and a
+ * walked edge rests drawn (no animation leaves its dash offset at 0). */
+.demo-stage[data-still="true"] .demo-leave { animation: none; opacity: 0; visibility: hidden; }
+.demo-stage[data-still="true"] .edge-traveled { animation: none; }

@@ -1,5 +1,6 @@
 import type { Article, Domain } from '@/lib/types';
 import type { Beat } from '@/data/feeds';
+import { LANGUAGE_LABEL } from '@/lib/lang/detect';
 
 /**
  * Language Lens: each topic search ("beat") that is run in several languages, compared within
@@ -69,6 +70,14 @@ export interface BeatLens {
   until: string;
   columns: LensColumn[];
   sharpest: Difference | null;
+}
+
+/** The one sentence that states a topic's sharpest difference. The Lens page and the demo tour both print it. */
+export function describeSharpest(d: Difference): string {
+  const pct = (share: number) => `${Math.round(share * 100)}%`;
+  const name = (language: string) => LANGUAGE_LABEL[language] ?? language;
+  return `Sharpest difference: ${d.domain.toLowerCase()} framing — ${pct(d.high.share)} of ${name(d.high.language)} reports, `
+    + `${pct(d.low.share)} of ${name(d.low.language)}.`;
 }
 
 export function queryLanguage(locale: string): string {

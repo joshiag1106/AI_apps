@@ -1,6 +1,7 @@
 import type { Article, GeoEvent } from '@/lib/types';
 import type { BoardData, DemoInput, Fallbacks } from '@/lib/demo/types';
 import type { Trail, TrailDot } from '@/lib/verify/trail';
+import type { BeatLens, LensColumn } from '@/lib/lens/compare';
 
 let n = 0;
 
@@ -63,7 +64,26 @@ export function input(p: Partial<DemoInput> = {}): DemoInput {
     origin: 'https://kautilya.example',
     claims: { enforced: false, mode: 'closed', freeLimit: 5 },
     names: NAMES, board: BOARD, risks: [], dyads: [], trail: trailOf(),
-    beijingArticles: [], otherArticles: [], eventIdOf: {}, eventCandidates: [], ...p,
+    beijingArticles: [], otherArticles: [], eventIdOf: {}, eventCandidates: [], lens: [], ...p,
+  };
+}
+
+const lensColumn = (language: string, military: number): LensColumn => ({
+  language, articles: 200, outlets: 40, classified: 100,
+  asked: [{ q: language === 'zh' ? '印巴冲突' : 'भारत पाकिस्तान', en: 'India Pakistan conflict' }],
+  framing: [{ key: 'Military', count: military, share: military / 100 }, { key: 'Diplomatic', count: 100 - military, share: (100 - military) / 100 }],
+  others: [],
+  latest: [{ id: `lens-${language}`, title: language === 'zh' ? '印巴边境局势紧张' : 'सीमा पर तनाव', titleEn: null, outlet: `${language} outlet`, publishedAt: '2026-09-18T00:00:00.000Z', eventId: null }],
+});
+
+/** A Language Lens topic whose two languages differ sharply, as lib/lens/compare would report it. */
+export function lensTopic(p: Partial<BeatLens> = {}): BeatLens {
+  return {
+    id: 'ind-pak', label: 'India–Pakistan', dyad: ['IND', 'PAK'],
+    since: '2026-06-20T00:00:00.000Z', until: '2026-09-20T00:00:00.000Z',
+    columns: [lensColumn('zh', 95), lensColumn('hi', 25)],
+    sharpest: { domain: 'Military', high: { language: 'zh', share: 0.95 }, low: { language: 'hi', share: 0.25 }, z: 10 },
+    ...p,
   };
 }
 
@@ -87,6 +107,7 @@ export function richInput(p: Partial<DemoInput> = {}): DemoInput {
     trail: trailOf([{ target: 'JPN', dots: [dot({ day: '2026-09-01', rung: 4 }), dot({ day: '2026-09-10', rung: 6 })] }]),
     beijingArticles: [beijing], otherArticles: [other],
     eventIdOf: { 'bj-1': 'ev-jp' },
+    lens: [lensTopic()],
     eventCandidates: [{
       event: evt({ title: 'Tokyo shrine dispute', confidence: 82 }),
       articles: [
