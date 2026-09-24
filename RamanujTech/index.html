@@ -51,7 +51,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   height: 100%;
   z-index: 0;
-  opacity: 0.55;
+  opacity: 0.9;
   pointer-events: none;
 }
 
@@ -664,7 +664,7 @@ if (toggle) {
   function resize() {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
-    const count = Math.max(24, Math.min(70, Math.floor((width * height) / 26000)));
+    const count = Math.max(24, Math.min(110, Math.floor((width * height) / 16000)));
     nodes = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -683,14 +683,14 @@ if (toggle) {
       if (n.y < 0 || n.y > height) n.vy *= -1;
     }
 
-    const linkDist = 150;
+    const linkDist = 170;
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[i].x - nodes[j].x;
         const dy = nodes[i].y - nodes[j].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < linkDist) {
-          ctx.strokeStyle = `rgba(109, 91, 255, ${0.28 * (1 - dist / linkDist)})`;
+          ctx.strokeStyle = `rgba(109, 91, 255, ${0.5 * (1 - dist / linkDist)})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
@@ -703,7 +703,7 @@ if (toggle) {
     for (const n of nodes) {
       ctx.fillStyle = 'rgba(34, 211, 238, 1)';
       ctx.beginPath();
-      ctx.arc(n.x, n.y, 1.6, 0, Math.PI * 2);
+      ctx.arc(n.x, n.y, 2.2, 0, Math.PI * 2);
       ctx.fill();
     }
 
