@@ -22,7 +22,7 @@ still renders every page and shows a first-run panel telling you to run the inge
 | | |
 |---|---|
 | History | linear on `main`; backed up to the **private** repo `joshiag1106/GeoIntel` since 2026-09-10 |
-| Tests | 1,060 passing on `main` (`npm test`), `tsc --noEmit` clean |
+| Tests | 1,063 passing on `main` (`npm test`), `tsc --noEmit` clean |
 | Deployed | **LIVE on a VPS since 2026-09-17** — see "The first real deployment" below |
 | Build | `npm run build` passes; standalone server verified |
 | Corpus at last run | 1,735 articles, 990 events; drifts with every ingest, so re-measure |
@@ -63,8 +63,12 @@ Samantha at rate 1 (not Rishi, who is male and was the old pick), and no usage r
 nodes' link prefetches. The one console 404 is the browser's own `/favicon.ico` at the bare local root,
 outside `/kautilya`.
 
-**Measured, not acted on:** `/demo` now takes ~1.1 s locally, ~360 ms of it `lensData()`, recomputed per
-request (`/lens` pays the same). A memo keyed on `last_ingest` would remove it for both.
+**Then cached, the same day (c718307, deployed):** `/demo` had grown to ~1.1 s locally, ~360 ms of it
+`lensData()` recomputed per request (`/lens` paid the same). It is now kept until `last_ingest` moves —
+an ingest stamps it after its last write — pinned by `tests/lens-cache.test.ts`. Locally `/lens` went
+~0.54 → ~0.2 s and `/demo` ~1.08 → ~0.89 s; live, `/demo` answers in ~0.6–0.7 s. One `next build` failed
+inside `next/font` (`Cannot read properties of null (reading '1')`) and passed unchanged on the rerun —
+a transient font download at build time; the deploy build was then redone from an empty `.next`.
 
 ## The basePath migration to /kautilya — built and verified locally, NOT YET DEPLOYED (2026-09-23)
 

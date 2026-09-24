@@ -99,11 +99,23 @@ export const languageStats = cache((language: string) => ({
 export const articlesIn = cache((language: string, limit = 2000) => articlesByLanguage(language, limit));
 
 /** Language Lens: each topic run in several languages, compared within itself. See lib/lens/compare. */
+/**
+ * Scoring every topic-search report's wording takes ~360 ms on the real corpus, and /lens and /demo
+ * both paid it on every request. Its inputs change only when an ingest runs, and an ingest stamps
+ * last_ingest after its last write (lib/ingest/pipeline), so the result is kept until the stamp moves.
+ * A backfill run outside an ingest is picked up by the next one.
+ */
+let lensMemo: { stamp: string | null; value: BeatLens[] } | null = null;
+
 export const lensData = cache((): BeatLens[] => {
+  const stamp = lastIngest();
+  if (lensMemo && lensMemo.stamp === stamp) return lensMemo.value;
   const articles = beatArticles();
   // Framing from each report's own words, not the stored fallback domain — see LensArticle.framed.
   const reports = articles.map((a) => ({ ...a, framed: evidencedDomain(a.title, a.snippet) }));
-  return lens(reports, BEATS, eventIdsByArticle(articles.map((a) => a.id)));
+  const value = lens(reports, BEATS, eventIdsByArticle(articles.map((a) => a.id)));
+  lensMemo = { stamp, value };
+  return value;
 });
 
 /** Chinese-language reporting stream, for the China Watch page. */
