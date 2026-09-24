@@ -70,6 +70,16 @@ an ingest stamps it after its last write — pinned by `tests/lens-cache.test.ts
 inside `next/font` (`Cannot read properties of null (reading '1')`) and passed unchanged on the rerun —
 a transient font download at build time; the deploy build was then redone from an empty `.next`.
 
+## Demo sound: no drone, only plucked tanpura notes (2026-09-24, evening) — SHIPPED
+
+Josh heard "an unwanted hum with the narration". Cause: the sustained sine drone (with an 87 Hz
+sub-octave) only dipped to a third under the voice, and the plucks never dipped at all. He chose "voice
+first", then "remove the drone sound also, keep only tanpura sound". Now `components/demo/DemoAudio.tsx`
+makes only the plucked notes; `musicLevel(true)` = 0 silences them while the voice speaks and they fade
+back after; `shouldRestoreMusic` stops a cancelled utterance's late `onend` from bringing the music back
+under the next chapter's voice. `droneTones` is gone. Deployed and confirmed live (the demo chunk now
+creates one oscillator). In Josh's Chrome the narrator is a Google female voice.
+
 ## One shared concept list decides every report's kind of pressure (2026-09-24, latest) — SHIPPED
 
 **Deployed and live the same day.** Live DB backed up first (`/var/lib/kautilya/pre-concepts-2026-09-24-1256.db`,
