@@ -100,6 +100,9 @@ header, main, footer { position: relative; z-index: 1; }
 
 .main-nav a:hover { color: var(--text); }
 
+/* Phone-menu twin of the header's Launch Kautilya button, which the phone layout hides. */
+.main-nav .nav-app { display: none; }
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -428,6 +431,14 @@ header, main, footer { position: relative; z-index: 1; }
     gap: 18px;
   }
 
+  body.nav-open .main-nav .nav-app {
+    display: block;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
   .hero { padding: 88px 0 64px; }
   .footer-inner { flex-direction: column; text-align: center; }
 }
@@ -457,6 +468,7 @@ header, main, footer { position: relative; z-index: 1; }
       <a href="#products">Products</a>
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
+      <a href="/kautilya" class="nav-app">Launch Kautilya <span aria-hidden="true">→</span></a>
     </nav>
 
     <div class="header-actions">
