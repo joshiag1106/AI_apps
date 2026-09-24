@@ -1,7 +1,7 @@
 // tests/demo-audio.test.ts
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { BHAIRAVI_RATIOS, PLUCK_PATTERN, droneTones, narrationFor, pickVoice, raga } from '@/lib/demo/audio';
+import { BHAIRAVI_RATIOS, PLUCK_PATTERN, musicLevel, narrationFor, pickVoice, raga, shouldRestoreMusic } from '@/lib/demo/audio';
 
 const audioSource = readFileSync('lib/demo/audio.ts', 'utf8');
 const componentSource = readFileSync('components/demo/DemoAudio.tsx', 'utf8');
@@ -22,9 +22,32 @@ describe('raga', () => {
   });
 });
 
-describe('droneTones', () => {
-  it('returns the fifth below, the root twice, and the octave — a tanpura chord, low to high', () => {
-    expect(droneTones(200)).toEqual([100, 300, 200, 400]);
+// Josh, 2026-09-24: "unwanted hum with the narration", then "remove the drone sound also, keep only
+// tanpura sound". The sustained sine drone is gone; only the plucked notes remain.
+describe('no sustained drone', () => {
+  it('makes only plucked notes: one oscillator in the component, and it is stopped on a schedule', () => {
+    expect(componentSource.match(/createOscillator\(\)/g)).toHaveLength(1);
+    expect(componentSource).toMatch(/osc\.stop\(now \+ \d/);
+    expect(bothSources).not.toMatch(/droneTones|droneGain/);
+  });
+});
+
+describe('the voice comes first', () => {
+  it('silences the music completely while the narration speaks, and brings it back after', () => {
+    expect(musicLevel(true)).toBe(0);
+    expect(musicLevel(false)).toBeGreaterThan(0);
+  });
+
+  // speechSynthesis.cancel() on a chapter change makes the OLD utterance report its end after the new
+  // one has started; restoring on that would bring the music back up under the new voice.
+  it('restores the music only when the utterance that ended is the one still current', () => {
+    expect(shouldRestoreMusic(3, 3)).toBe(true);
+    expect(shouldRestoreMusic(2, 3)).toBe(false);
+  });
+
+  it('is what the narration does: the whole mix is silenced, and restored only by the current utterance', () => {
+    expect(componentSource).toMatch(/musicLevel\(true\)/);
+    expect(componentSource).toMatch(/shouldRestoreMusic\(/);
   });
 });
 

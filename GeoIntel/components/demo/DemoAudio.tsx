@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { droneTones, narrationFor, pickVoice, raga, PLUCK_PATTERN } from '@/lib/demo/audio';
+import { musicLevel, narrationFor, pickVoice, raga, shouldRestoreMusic, PLUCK_PATTERN } from '@/lib/demo/audio';
 
-/** F3 — a calm, low register for the drone. The note itself is math, not a recording. */
+/** F3 root; the plucks sound an octave above it. The note itself is math, not a recording. */
 const ROOT_HZ = 174.61;
 const PLUCK_INTERVAL_MS = 3200;
 const BTN = 'rounded-md border border-[color:var(--color-line)] px-3 py-1.5 text-[15px] text-text transition-colors hover:border-[color:var(--color-accent)]';
@@ -11,9 +11,11 @@ const BTN = 'rounded-md border border-[color:var(--color-line)] px-3 py-1.5 text
 interface DemoAudioChapter { title: string; caption: string }
 
 /**
- * The tour's optional sound: a synthesized tanpura drone (the scale math is in lib/demo/audio, kept
- * separate so it tests without a browser) under spoken narration of each chapter's own title and
- * caption — nothing said that is not also shown. Off by default: a browser refuses sound before a
+ * The tour's optional sound: plucked tanpura notes (the scale math is in lib/demo/audio, kept separate
+ * so it tests without a browser) between spoken narration of each chapter's own title and caption —
+ * nothing said that is not also shown. The notes fall silent while the voice speaks. There is no
+ * sustained drone any more: under the narration it came through as a hum (Josh, 2026-09-24).
+ * Off by default: a browser refuses sound before a
  * user gesture regardless, and a page should not force audio on a visitor either way. The choice
  * resets every visit (no localStorage), the same rule DemoTour already keeps for the colour palette.
  *
@@ -26,8 +28,8 @@ export function DemoAudio(
 ) {
   const [enabled, setEnabled] = useState(false);
   const ctxRef = useRef<AudioContext | null>(null);
-  const droneGainRef = useRef<GainNode | null>(null);
-  const oscillatorsRef = useRef<OscillatorNode[]>([]);
+  const masterGainRef = useRef<GainNode | null>(null);
+  const utteranceIdRef = useRef(0);
   const pluckTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pluckStepRef = useRef(0);
   const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,11 +39,9 @@ export function DemoAudio(
     if (pluckTimerRef.current !== null) { clearInterval(pluckTimerRef.current); pluckTimerRef.current = null; }
     if (speakTimerRef.current !== null) { clearTimeout(speakTimerRef.current); speakTimerRef.current = null; }
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-    for (const osc of oscillatorsRef.current) { try { osc.stop(); } catch { /* already stopped */ } }
-    oscillatorsRef.current = [];
     const ctx = ctxRef.current;
     ctxRef.current = null;
-    droneGainRef.current = null;
+    masterGainRef.current = null;
     if (ctx && ctx.state !== 'closed') void ctx.close();
   }, []);
 
@@ -73,25 +73,7 @@ export function DemoAudio(
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.linearRampToValueAtTime(1, ctx.currentTime + 2);
     master.connect(ctx.destination);
-
-    const drone = ctx.createGain();
-    drone.gain.value = 0.06;
-    drone.connect(master);
-    droneGainRef.current = drone;
-
-    // droneTones() is [fifth-below, root, root, octave] low to high; the two sustained roots (index
-    // 1 and 2) carry the chord, the fifth and octave sit under it.
-    oscillatorsRef.current = droneTones(ROOT_HZ).map((hz, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = hz;
-      const gain = ctx.createGain();
-      gain.gain.value = i === 1 || i === 2 ? 1 : 0.6;
-      osc.connect(gain);
-      gain.connect(drone);
-      osc.start();
-      return osc;
-    });
+    masterGainRef.current = master;
 
     pluckStepRef.current = 0;
     pluckTimerRef.current = setInterval(() => pluckOnce(ctx, master), PLUCK_INTERVAL_MS);
@@ -109,15 +91,20 @@ export function DemoAudio(
     const voice = pickVoice(voices);
     if (voice) utter.voice = voice;
 
-    const drone = droneGainRef.current;
+    // The voice comes first: the plucked notes go silent while it speaks and come
+    // back softly after. Ramping from the CURRENT value avoids a click when a ramp is interrupted.
+    const master = masterGainRef.current;
     const ctx = ctxRef.current;
-    const setDrone = (level: number, overSeconds: number) => {
-      if (!drone || !ctx || ctx.state === 'closed') return;
-      drone.gain.cancelScheduledValues(ctx.currentTime);
-      drone.gain.linearRampToValueAtTime(level, ctx.currentTime + overSeconds);
+    const setMusic = (level: number, overSeconds: number) => {
+      if (!master || !ctx || ctx.state === 'closed') return;
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(master.gain.value, now);
+      master.gain.linearRampToValueAtTime(level, now + overSeconds);
     };
-    setDrone(0.02, 0.4); // duck under the voice
-    const restore = () => setDrone(0.06, 0.8);
+    setMusic(musicLevel(true), 0.3);
+    const id = ++utteranceIdRef.current;
+    const restore = () => { if (shouldRestoreMusic(id, utteranceIdRef.current)) setMusic(musicLevel(false), 1.2); };
     utter.onend = restore;
     utter.onerror = restore;
     window.speechSynthesis.speak(utter);
@@ -158,7 +145,7 @@ export function DemoAudio(
   }, [enabled, start, teardown]);
 
   // Mirrors the visual pause: a paused tour, a hidden tab, or the tour having stopped at its last
-  // chapter (`playing` goes false there too) all silence the drone and stop the voice; both resume
+  // chapter (`playing` goes false there too) all silence the notes and stop the voice; both resume
   // with play. Suspending the context (not just muting) also frees the CPU the oscillators use.
   useEffect(() => {
     if (!enabled) return;
