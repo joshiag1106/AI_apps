@@ -41,3 +41,50 @@ export function narrationFor(chapter: { title: string; caption: string }): strin
   const caption = chapter.caption.trim();
   return caption ? `${title}. ${caption}` : title;
 }
+
+/**
+ * Female voices a browser may offer, by the name before any "Online (Natural)", "(Premium)" or " - "
+ * suffix: Microsoft's neural voices (Edge, Windows), Apple's (Safari, macOS, iOS) and Chrome's online
+ * ones. The speech API reports no gender, so a name is the only signal there is; en-IN first.
+ */
+const FEMALE = new Set([
+  'neerja', 'isha', 'veena', 'heera',
+  'aria', 'jenny', 'ava', 'emma', 'michelle', 'samantha', 'allison', 'susan', 'zoe', 'nicky', 'zira',
+  'sonia', 'libby', 'serena', 'kate', 'stephanie', 'fiona', 'moira', 'karen', 'catherine', 'natasha',
+  'tessa', 'victoria', 'clara',
+  'google uk english female', 'google us english',
+]);
+
+/** Male voices, and Apple's robotic Eloquence and novelty voices — nobody's idea of a live narrator. */
+const AVOID = new Set([
+  'rishi', 'prabhat', 'ravi', 'daniel', 'alex', 'fred', 'aaron', 'arthur', 'oliver', 'tom', 'guy', 'ryan',
+  'david', 'mark', 'george', 'gordon', 'lee', 'ralph', 'albert', 'junior', 'google uk english male',
+  'eddy', 'reed', 'rocko', 'grandpa', 'grandma', 'flo', 'sandy', 'shelley', 'kathy',
+  'bad news', 'good news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos', 'wobble', 'jester', 'organ',
+  'superstar', 'trinoids', 'whisper', 'zarvox',
+]);
+
+const baseName = (name: string) =>
+  name.replace(/^Microsoft\s+/i, '').split(/\s+(?:Online\b|\(|-)/)[0].trim().toLowerCase();
+const langOf = (v: { lang: string }) => (v.lang ?? '').replace('_', '-').toLowerCase();
+
+function score(v: { name: string; lang: string }): number {
+  const lang = langOf(v);
+  const quality = /\b(natural|neural|premium|enhanced)\b/i.test(v.name) ? 4 : baseName(v.name).startsWith('google ') ? 3 : 0;
+  return quality + (lang.startsWith('en-in') ? 2 : lang.startsWith('en-gb') || lang.startsWith('en-us') ? 1 : 0);
+}
+
+/**
+ * The narrator: the most natural-sounding female English voice this device offers, Indian English among
+ * equals. Quality comes first because the voices vary far more in naturalness than in accent — a neural
+ * or premium voice sounds like a person, a standard one like a machine. With no known female voice, any
+ * English voice not known to be male or robotic, then any English voice at all: a voice beats silence.
+ * Never a non-English voice, which would read English captions with the wrong phonetics.
+ */
+export function pickVoice<T extends { name: string; lang: string }>(voices: readonly T[]): T | null {
+  const english = voices.filter((v) => langOf(v).startsWith('en'));
+  const indianFirst = (xs: T[]) => xs.find((v) => langOf(v).startsWith('en-in')) ?? xs[0] ?? null;
+  const female = english.filter((v) => FEMALE.has(baseName(v.name)));
+  if (female.length) return female.reduce((best, v) => (score(v) > score(best) ? v : best));
+  return indianFirst(english.filter((v) => !AVOID.has(baseName(v.name)))) ?? indianFirst(english);
+}

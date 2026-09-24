@@ -7,7 +7,7 @@ const PRIMARY = 'rounded-md bg-[color:var(--color-accent)] px-8 py-3 text-[16px]
 const SECONDARY = 'rounded-md border border-[color:var(--color-line)] px-8 py-3 text-[16px] text-text transition-colors hover:border-[color:var(--color-accent)]';
 
 /**
- * Chapter 11 — the one interactive scene. Its buttons are plain anchors, NOT next/link: a soft
+ * Chapter 12 — the one interactive scene. Its buttons are plain anchors, NOT next/link: a soft
  * navigation from /demo (chromeless) to /board would carry the hidden chrome across, exactly as
  * app/page.tsx documents for the splash. The copy comes from lib/demo/claims, derived from the
  * billing state; this file never writes a price, a limit or a plan.

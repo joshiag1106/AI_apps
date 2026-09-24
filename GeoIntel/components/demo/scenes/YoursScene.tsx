@@ -8,7 +8,7 @@ import { Beat, SceneFrame } from './Beat';
 const RAMP = ['low', 'guarded', 'elevated', 'high', 'severe'] as const;
 
 /**
- * Chapter 10. Four beats: the watch star pops; the alert email — the real digest, see
+ * Chapter 11. Four beats: the watch star pops; the alert email — the real digest, see
  * lib/demo/select — slides in; an export control appears (drawn, never wired: the tour triggers no
  * real export); then the whole page switches to the colour-blind-safe palette and back.
  *

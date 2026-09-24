@@ -19,7 +19,7 @@ export function askBeats(questionLength: number): { reading: number; answer: num
 }
 
 /**
- * Chapter 9. The question types itself; then how it was READ, then the answer. The reading comes
+ * Chapter 10. The question types itself; then how it was READ, then the answer. The reading comes
  * first on purpose: pattern matching misreads things, and app/ask shows the reading beside every
  * answer so a reader can tell a misparse from an empty corpus.
  */

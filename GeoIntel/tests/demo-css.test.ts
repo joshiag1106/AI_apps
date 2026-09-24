@@ -3,13 +3,36 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const css = readFileSync('app/globals.css', 'utf8');
-const animated = [...css.matchAll(/\.(demo-[a-z-]+)\s*\{[^}]*\banimation\s*:/g)].map((m) => m[1]);
+// Each class once: `.demo-leave`'s twins name it directly (with `animation: none`), where the beat kinds'
+// twins go through `:is(...)`.
+const animated = [...new Set([...css.matchAll(/\.(demo-[a-z-]+)\s*\{[^}]*\banimation\s*:/g)].map((m) => m[1]))];
 const reduced = [...css.matchAll(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/g)]
   .map((m) => m[1]).join('\n');
 
 describe('the demo tour styles', () => {
-  it('animate the four beat kinds', () => {
-    expect(animated.sort()).toEqual(['demo-beat', 'demo-email', 'demo-mark', 'demo-slide']);
+  it('animate the four beat kinds, and the one exit', () => {
+    expect(animated.sort()).toEqual(['demo-beat', 'demo-email', 'demo-leave', 'demo-mark', 'demo-slide']);
+  });
+
+  // An exit's finished state is GONE, so its twins rest it at opacity 0, not 1 — and under data-still too,
+  // or a scene entered while paused would show both of the network chapter's graphs in one cell.
+  it('rest the exit hidden under reduced motion and on a scene entered while paused', () => {
+    const twin = reduced.match(/\.demo-leave[^{]*\{([^}]*)\}/)?.[1] ?? '';
+    expect(twin).toMatch(/animation:\s*none/);
+    expect(twin).toMatch(/opacity:\s*0/);
+    const still = css.match(/\.demo-stage\[data-still="true"\]\s+\.demo-leave\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(still).toMatch(/animation:\s*none/);
+    expect(still).toMatch(/opacity:\s*0/);
+  });
+
+  // The walked edge draws itself on mount. Inside a timed beat it must wait for that beat, or the network
+  // chapter's second step would finish drawing, unseen, seconds before its graph appears.
+  it('holds a walked edge inside a beat until the beat, hidden while it waits', () => {
+    const rule = css.match(/\.demo-beat\s+\.edge-traveled\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toContain('var(--beat');
+    expect(rule).toMatch(/animation-fill-mode:\s*both/);
+    const still = css.match(/\.demo-stage\[data-still="true"\]\s+\.edge-traveled\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(still).toMatch(/animation:\s*none/);
   });
 
   it('give every animated .demo-* rule a reduced-motion twin', () => {

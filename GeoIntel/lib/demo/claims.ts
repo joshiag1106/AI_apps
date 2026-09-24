@@ -23,7 +23,7 @@ export const CHAPTER_ACTION: Partial<Record<ChapterId, MeteredAction>> = {
   network: 'network_graph',
 };
 
-/** The export control drawn in chapter 10. */
+/** The export control drawn in chapter 11. */
 export const EXPORT_ACTION: MeteredAction = 'export';
 
 export function chipFor(id: ChapterId, enforced: boolean): string | null {

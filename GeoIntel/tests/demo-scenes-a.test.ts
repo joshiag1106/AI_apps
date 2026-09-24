@@ -8,7 +8,7 @@ import { RiskScene } from '@/components/demo/scenes/RiskScene';
 import { NetworkScene } from '@/components/demo/scenes/NetworkScene';
 import { selectNetwork, selectRisk } from '@/lib/demo/select';
 import { nodeLabel } from '@/lib/graph/ego';
-import { BOARD, richInput } from './fixtures/demo-fixtures';
+import { BOARD, evt, richInput } from './fixtures/demo-fixtures';
 
 const html = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 /** Every `--beat` delay a scene rendered, in document order: the scene's whole timeline. */
@@ -114,5 +114,40 @@ describe('the network scene', () => {
   // Only the heading is beat-timed; a Beat of any delay or kind around the graph would add an entry.
   it('does not fade the graph in, so the walked edge is seen from the first frame', () => {
     expect(beatsOf(out)).toEqual([0]);
+  });
+
+  it('draws one graph and names no official when the walk has no person step', () => {
+    expect(data.person).toBeNull();
+    expect(out.match(/<svg/g)).toHaveLength(1);
+    expect(out).not.toContain('demo-leave');
+  });
+});
+
+describe('the network scene, walking on to an official', () => {
+  const base = richInput();
+  const data = selectNetwork(richInput({ events: [
+    ...base.events, ...[0, 1, 2].map(() => evt({ actors: ['JPN'], people: ['takaichi-sanae'] })),
+  ] }))!;
+  const out = html(createElement(NetworkScene, { data }));
+
+  it('names the official and their role', () => {
+    expect(out).toContain('Takaichi Sanae');
+    expect(out).toContain('Prime Minister');
+  });
+
+  it('draws the state walk, then the step to the official, each lighting the edge it crossed', () => {
+    expect(out.match(/<svg/g)).toHaveLength(2);
+    expect(out.match(/edge-traveled/g)).toHaveLength(2);
+  });
+
+  // The two graphs share one grid cell: the first fades out at the moment the second rises into its place,
+  // and the official's name arrives with it. The state walk still draws from the first frame.
+  it('crossfades from the state walk to the official at one moment in the timeline', () => {
+    expect(out).toContain('demo-leave');
+    const beats = beatsOf(out);
+    expect(beats[0]).toBe(0);
+    const step = beats[1];
+    expect(step).toBeGreaterThan(3000);
+    expect(beats.slice(1).every((b) => b === step)).toBe(true);
   });
 });

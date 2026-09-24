@@ -8,6 +8,7 @@ import { DyadScene } from './DyadScene';
 import { EventScene } from './EventScene';
 import { LadderScene } from './LadderScene';
 import { LanguageScene } from './LanguageScene';
+import { LensScene } from './LensScene';
 import { NetworkScene } from './NetworkScene';
 import { RiskScene } from './RiskScene';
 import { TrailScene } from './TrailScene';
@@ -18,6 +19,7 @@ export function renderScene(c: AnyChapter): ReactNode {
   switch (c.id) {
     case 'board': return <BoardScene data={c.data} />;
     case 'language': return <LanguageScene data={c.data} />;
+    case 'lens': return <LensScene data={c.data} />;
     case 'event': return <EventScene data={c.data} />;
     case 'ladder': return <LadderScene data={c.data} />;
     case 'trail': return <TrailScene data={c.data} />;

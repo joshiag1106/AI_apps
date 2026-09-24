@@ -5,7 +5,7 @@ import type { TrailData } from '@/lib/demo/types';
 import { Beat, SceneFrame } from './Beat';
 
 /**
- * Chapter 5. The dots draw in (LadderTrail's RevealOnView), one row per country Beijing aimed a formula at.
+ * Chapter 6. The dots draw in (LadderTrail's RevealOnView), one row per country Beijing aimed a formula at.
  *
  * The panel has no Beat around it on purpose: LadderTrail animates itself on mount, and `.demo-beat` holds
  * an element at opacity 0 until its delay, so the dots would finish drawing before anyone could see them.
