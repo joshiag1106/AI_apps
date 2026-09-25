@@ -1,12 +1,12 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (Farsi feed coverage, committed, not yet deployed). Before that, same
-day, World Focus + Ukrainian/Hebrew feed coverage (deployed and live), mandatory accounts + exit
-survey (deployed and live) and the new logo (deployed and live), and before that, **2026-09-24**
-(the demo tour's Lens chapter, its step to an official, and a female narrator — see the first
-section below). Everything below was verified, not assumed. Where something is unverified it says so.
+**Last worked: 2026-09-25** (Farsi feed coverage, deployed and live). Before that, same day, World
+Focus + Ukrainian/Hebrew feed coverage (deployed and live), mandatory accounts + exit survey
+(deployed and live) and the new logo (deployed and live), and before that, **2026-09-24** (the demo
+tour's Lens chapter, its step to an official, and a female narrator — see the first section below).
+Everything below was verified, not assumed. Where something is unverified it says so.
 
-## Farsi feed coverage (2026-09-25) — COMMITTED, NOT DEPLOYED
+## Farsi feed coverage (2026-09-25) — LIVE
 
 Josh, after the Ukrainian/Hebrew work: "build the Farsi locale next" — the same gap, one more time.
 Iran is a named actor in the Middle East beat, and `data/concepts.ts` and `data/countries.ts` had
@@ -28,7 +28,12 @@ Middle East Eye, actors `["IRN","ISR"]`, now correctly classified via a new SOUR
 title is in English even though the query that found it was Farsi — the locale hint tags an article
 by the query, not by the script it happens to be written in, same as every other locale.
 
-1,155 tests pass (1,154 + 1 new), `tsc --noEmit` clean. **NOT deployed.**
+1,155 tests pass (1,154 + 1 new), `tsc --noEmit` clean.
+
+**DEPLOYED 2026-09-25, same day.** Josh ran the deploy; a `/kautilya/api/cron` call right after
+(Bearer auth) confirmed it live on the real corpus: `"fa":1` in the report's `byLanguage`, alongside
+the still-expected `indianexpress.com`/`dawn.com` 403s (unrelated, left in place per Josh's call —
+see `data/feeds.ts`).
 
 ## Ukrainian and Hebrew feed coverage (2026-09-25) — LIVE
 
