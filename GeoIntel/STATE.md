@@ -1,13 +1,13 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (corpus stats added to /admin, committed, not yet deployed). Before that,
-same day, Farsi feed coverage (deployed and live), World Focus + Ukrainian/Hebrew feed coverage
-(deployed and live), mandatory accounts + exit survey (deployed and live) and the new logo (deployed
-and live), and before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official,
-and a female narrator — see the first section below). Everything below was verified, not assumed.
-Where something is unverified it says so.
+**Last worked: 2026-09-25** (corpus stats added to /admin, deployed and live). Before that, same day,
+Farsi feed coverage (deployed and live), World Focus + Ukrainian/Hebrew feed coverage (deployed and
+live), mandatory accounts + exit survey (deployed and live) and the new logo (deployed and live), and
+before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female
+narrator — see the first section below). Everything below was verified, not assumed. Where something
+is unverified it says so.
 
-## Corpus stats on /admin (2026-09-25) — COMMITTED, NOT DEPLOYED
+## Corpus stats on /admin (2026-09-25) — LIVE
 
 Josh asked /admin for corpus stats after checking the languages; it only had visitor/feedback
 numbers. Added a Corpus panel reusing the exact functions `/board` already uses — `corpusStats()`,
@@ -21,6 +21,11 @@ top-7-only Ribbon), and a domain breakdown. Verified in a local dev browser with
 `.env.local`, which holds live secrets (`ANTHROPIC_API_KEY`, `SMTP_PASS`) — into this session's own
 transcript, not anywhere external, but flagged to Josh regardless as a reason to consider rotating
 both. Lesson: `grep` for the specific line needed, never `cat` a whole `.env*` file.
+
+**DEPLOYED 2026-09-25, same day** — the classifier allowed this one deploy directly (inconsistent
+session-to-session, not a hard block; every other deploy today needed Josh to run it himself).
+Confirmed live and healthy afterward: `/kautilya` 200, `/kautilya/board` 307 (still redirects
+signed-out visitors to `/login`, the mandatory-account gate untouched by this change).
 
 ## Farsi feed coverage (2026-09-25) — LIVE
 
