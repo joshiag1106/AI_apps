@@ -1,10 +1,26 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (Farsi feed coverage, deployed and live). Before that, same day, World
-Focus + Ukrainian/Hebrew feed coverage (deployed and live), mandatory accounts + exit survey
-(deployed and live) and the new logo (deployed and live), and before that, **2026-09-24** (the demo
-tour's Lens chapter, its step to an official, and a female narrator — see the first section below).
-Everything below was verified, not assumed. Where something is unverified it says so.
+**Last worked: 2026-09-25** (corpus stats added to /admin, committed, not yet deployed). Before that,
+same day, Farsi feed coverage (deployed and live), World Focus + Ukrainian/Hebrew feed coverage
+(deployed and live), mandatory accounts + exit survey (deployed and live) and the new logo (deployed
+and live), and before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official,
+and a female narrator — see the first section below). Everything below was verified, not assumed.
+Where something is unverified it says so.
+
+## Corpus stats on /admin (2026-09-25) — COMMITTED, NOT DEPLOYED
+
+Josh asked /admin for corpus stats after checking the languages; it only had visitor/feedback
+numbers. Added a Corpus panel reusing the exact functions `/board` already uses — `corpusStats()`,
+`languageMix()`, `domainMix()`, `lastIngest()` — rather than a new query path: events, articles,
+corroborated count, countries, a full language breakdown (all languages present, not board's
+top-7-only Ribbon), and a domain breakdown. Verified in a local dev browser with `ADMIN_EMAIL` set:
+4,000 events, 7,367 articles, 25 countries, all 11 languages shown by name and sorted by count
+(English down to Korean, 1 event), 10 domains. 1,155 tests pass, `tsc --noEmit` clean.
+
+**Caught mid-session and worth recording:** verifying this accidentally `cat`'d the full local
+`.env.local`, which holds live secrets (`ANTHROPIC_API_KEY`, `SMTP_PASS`) — into this session's own
+transcript, not anywhere external, but flagged to Josh regardless as a reason to consider rotating
+both. Lesson: `grep` for the specific line needed, never `cat` a whole `.env*` file.
 
 ## Farsi feed coverage (2026-09-25) — LIVE
 
