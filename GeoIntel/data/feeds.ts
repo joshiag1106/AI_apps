@@ -52,6 +52,12 @@ export const DIRECT_FEEDS: DirectFeed[] = [
   { id: 'france24', url: 'https://www.france24.com/en/rss', outlet: 'France 24', language: 'en' },
   { id: 'nikkei-asia', url: 'https://asia.nikkei.com/rss/feed/nar', outlet: 'Nikkei Asia', language: 'en' },
   { id: 'yonhap', url: 'https://en.yna.co.kr/RSS/news.xml', outlet: 'Yonhap', language: 'en' },
+  // Both 403 from the VPS's IP as of 2026-09-25 — Indian Express (CloudFront) and Dawn
+  // (Cloudflare) both flat-block the whole site, not just this feed path, confirmed by
+  // hand (both return 200 from a residential connection, so it's IP-reputation blocking
+  // of the hosting provider, not a broken URL). Left in place at Josh's call rather than
+  // removed: `npm run ingest -- --health` already reports a feed like this as failed
+  // without breaking the run, and the block may not be permanent.
   { id: 'indian-express', url: 'https://indianexpress.com/section/india/feed/', outlet: 'The Indian Express', language: 'en' },
   { id: 'dawn', url: 'https://www.dawn.com/feeds/home', outlet: 'Dawn', language: 'en' },
 
