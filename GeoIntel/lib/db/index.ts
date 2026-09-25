@@ -77,6 +77,24 @@ function migrate(db: DatabaseSync) {
       key TEXT PRIMARY KEY, event_id TEXT, model TEXT, output TEXT, created_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_llm_event ON llm_cache(event_id);
+
+    -- One row per session start (sign-in or sign-up), now that every visit requires an
+    -- account. See lib/visits/store.ts. Distinct from 'sessions' above, which is only the
+    -- live cookie token and is deleted on sign-out; this is an append-only log kept to
+    -- answer "how many people visited", including repeat visits by the same account.
+    CREATE TABLE IF NOT EXISTS visits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, created_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id);
+    CREATE INDEX IF NOT EXISTS idx_visits_created ON visits(created_at);
+
+    -- The one-time exit survey. See lib/feedback/store.ts.
+    CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, rating INTEGER,
+      liked_feature TEXT, missing_text TEXT, feature_request_text TEXT,
+      skipped INTEGER DEFAULT 0, created_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
   `);
 
   // Additive column migrations for databases created before a field existed.

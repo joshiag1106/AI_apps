@@ -81,6 +81,15 @@ export async function Nav() {
               <span className="mono-num text-[color:var(--color-accent)]">{quota.remaining}</span>/{quota.limit} free
             </Link>
           )}
+          {/* `!!adminEmail &&` matters: with ADMIN_EMAIL unset, `user?.email ===
+              process.env.ADMIN_EMAIL` would compare undefined to undefined and show this
+              to every signed-out visitor. */}
+          {(() => {
+            const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+            return Boolean(adminEmail) && user?.email === adminEmail;
+          })() && (
+            <Link href="/admin" className="hidden text-[14px] text-muted hover:text-text sm:inline">Admin</Link>
+          )}
           {user ? (
             <Link href="/account" className="text-[14px] text-muted hover:text-text">Account</Link>
           ) : (

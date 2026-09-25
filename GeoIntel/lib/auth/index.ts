@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { randomUUID, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
+import { recordVisit } from '@/lib/visits/store';
 
 export interface User { id: string; email: string; plan: 'free' | 'pro'; createdAt: string }
 
@@ -40,6 +41,8 @@ export async function startSession(userId: string) {
     httpOnly: true, sameSite: 'lax', path: '/', expires,
     secure: process.env.NODE_ENV === 'production',
   });
+  // Every session start — sign-up or sign-in — is one visit. See lib/visits/store.ts.
+  recordVisit(userId);
 }
 
 export async function endSession() {
