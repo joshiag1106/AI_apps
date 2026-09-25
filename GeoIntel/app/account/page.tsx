@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Panel, SectionTitle, Stat, Badge } from '@/components/ui';
 import { CountUp } from '@/components/CountUp';
 import { currentUser, endSession, setPlan } from '@/lib/auth';
+import { needsSurvey } from '@/lib/feedback/store';
 import { billing } from '@/lib/billing';
 import { alertsEnabled, setAlertsEnabled } from '@/lib/alerts/state';
 import { listWatch } from '@/lib/watchlist/store';
@@ -23,6 +24,11 @@ export default async function AccountPage() {
 
   async function signOut() {
     'use server';
+    const u = await currentUser();
+    // The one-time exit survey lives at /logout, which ends the session itself once the
+    // reader answers or skips. An account that has already been through it once signs out
+    // immediately, same as before this feature existed.
+    if (u && needsSurvey(u.id)) redirect('/logout');
     await endSession();
     redirect('/');
   }

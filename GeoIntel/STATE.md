@@ -1,8 +1,61 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (new logo, deployed and live). Before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female
-narrator — see the first section below). Everything below was verified, not assumed. Where something
-is unverified it says so.
+**Last worked: 2026-09-25** (mandatory accounts + exit survey, committed, NOT yet deployed). Before
+that, same day, the new logo (deployed and live), and before that, **2026-09-24** (the demo tour's
+Lens chapter, its step to an official, and a female narrator — see the first section below).
+Everything below was verified, not assumed. Where something is unverified it says so.
+
+## Mandatory accounts, visit counting, and a one-time exit survey (2026-09-25) — COMMITTED, NOT DEPLOYED
+
+Josh: "whenever new user comes to visit kautilya, i want them to login... revisitor will have to
+login" — then, asked to confirm scope, "same treatment will be given to all buttons and clicks where
+user want to visit kautilya." So every route now requires a signed-in account **except** `/`, `/login`,
+`/privacy` and `/terms` — the splash, the sign-in form itself, and the two legal documents a visitor
+must be able to read before creating one (my call; flagged to Josh, not yet pushed back on).
+`app/layout.tsx` is the single choke point: it reads `currentUser()` and redirects to
+`/login?next=<path>` for anything not in that public set — the same place that already decided
+`chromeless` (Nav/footer on or off), so there is one path check, not fifteen.
+
+**This is a real product change, not a cosmetic one.** The device-cookie free-preview path
+(`lib/quota`, `currentSubject()`'s `kind: 'device'` branch) is now unreachable in practice — nobody
+gets past the gate without an account — but the code was left as-is rather than ripped out, since
+`currentSubject()` still falls back to it for any request that somehow reaches a metered route
+without a session. Existing behaviour under an account (5 free analyses, then Pro) is unchanged.
+
+**Visit counting** (`lib/visits/store.ts`, new `visits` table in `lib/db`): one row per session
+start — every sign-up and every sign-in — via `recordVisit()` called from `startSession()`.
+`visitStats()` gives `totalUsers` (distinct accounts), `totalVisits` (all session starts, so a
+returning visitor moves this without moving the first), and `last30Days`.
+
+**The exit survey** (`lib/feedback/store.ts`, new `feedback` table + guarded `users.survey_done`
+column): Josh's calls were **skippable**, asked **once ever per account**. Clicking "Sign out" on
+`/account` now redirects to `/logout` instead of ending the session directly, but only when
+`needsSurvey()` is true; `/logout` shows a rating (1–5), a "which feature did you like most" select,
+two free-text boxes, and both a Submit and a Skip button — either one calls `endSession()` and marks
+`survey_done`, so it is asked exactly once, answered or not. An account that has already been through
+it signs out immediately, same as before this feature existed.
+
+**Josh's own view**: `/admin`, gated by a new `ADMIN_EMAIL` env var compared against
+`currentUser().email` (not a roles table — there is exactly one operator). Shows `visitStats()` and
+`feedbackSummary()`: accounts, total visits, last-30-days, survey responses vs. skips, average rating,
+most-liked feature, and the free-text answers. 404s for anyone else, including a signed-in non-admin,
+so the route's existence is not advertised. `components/Nav.tsx` shows an "Admin" link only when
+`ADMIN_EMAIL` is set AND matches the signed-in account — an early version compared `undefined ===
+undefined` when both were unset and leaked the link to every signed-out visitor; caught by hand in a
+browser before shipping, now pinned by `tests/nav-admin.test.ts`.
+
+**Verified**: 1,153 tests pass (1,141 + 12 new), `tsc --noEmit` clean, production build clean. Walked
+the whole flow against a real production build: anonymous `/board` and `/about` both redirect to
+`/login`; sign-up lands on `/account`; sign-out shows the survey; Skip ends the session and lands on
+`/`; signing back in with the same account and signing out again skips the survey entirely (once-ever
+confirmed); `/admin` with `ADMIN_EMAIL` set showed 1 account, 3 visits, 1 skipped survey, matching the
+walkthrough exactly.
+
+**NOT deployed.** This changes how every visitor experiences the live site — nobody currently on
+the production domain can browse anonymously any more — so it is waiting on Josh's go-ahead before
+the redeploy, not on a technical blocker. Whenever it ships: `ADMIN_EMAIL` needs to be set in
+`/etc/kautilya.env` on the VPS (see `.env.example`) for `/admin` to be reachable at all; without it,
+the runbook's own promise holds — nobody can reach that page, not everybody.
 
 ## Pick up in 30 seconds
 

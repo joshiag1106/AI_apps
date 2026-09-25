@@ -8,6 +8,16 @@ import { EmptyCorpus } from '@/components/EmptyCorpus';
 import { timeAgo } from '@/lib/format';
 import { PaletteSelect } from '@/components/PaletteSelect';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { currentUser } from '@/lib/auth';
+
+/**
+ * Every page requires an account, except the splash, the sign-in/sign-up form itself, and
+ * the two legal documents a visitor must be able to read before creating one. Josh's own
+ * words: "same treatment will be given to all buttons and clicks where user want to visit
+ * kautilya" — so this is deliberately not scoped to a few premium routes, it is everything.
+ */
+const PUBLIC_PATHS = new Set(['/', '/login', '/privacy', '/terms']);
 
 /**
  * Chinese face, self-hosted.
@@ -54,6 +64,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // see middleware.ts's matcher for the one request shape that took real testing to get right.
   const path = (await headers()).get('x-pathname');
   const chromeless = path === '/' || path === '/demo';
+
+  // The gate. `path` is only ever null for a request the middleware matcher did not cover
+  // (static assets, which have no layout anyway), so treating null as "requires login" is
+  // the safe default rather than an accidental open door.
+  if (!path || !PUBLIC_PATHS.has(path)) {
+    const user = await currentUser();
+    if (!user) redirect(`/login?next=${encodeURIComponent(path ?? '/board')}`);
+  }
+
   return (
     // suppressHydrationWarning is required, not cosmetic: the inline script below sets
     // data-palette on this element BEFORE React hydrates, so the client tree legitimately
