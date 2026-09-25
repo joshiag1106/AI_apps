@@ -1,6 +1,6 @@
 # Where this project stands
 
-**Last worked: 2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female
+**Last worked: 2026-09-25** (new logo, not yet deployed). Before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female
 narrator — see the first section below). Everything below was verified, not assumed. Where something
 is unverified it says so.
 
@@ -31,6 +31,16 @@ still renders every page and shows a first-run panel telling you to run the inge
 
 There is one real account in the local database (the one created while testing the
 signup flow). It is only in this local file.
+
+## New logo: the twelve kings (2026-09-25) — COMMITTED, NOT YET DEPLOYED
+
+Josh picked the rajamandala mark (a centre dot and eleven kings) over the four-bar ladder, which
+read as a phone's signal icon. `KautilyaMark` (exports `KINGS`), `app/icon.svg` and the splash
+(`.splash-dot`, clockwise from the top) all draw it; `tests/kautilya-mark.test.ts` pins the geometry.
+1,141 tests pass, production build passes, checked in a browser locally. RamanujTech got the
+partition staircase the same day (AI_apps PR #99, open). **Deploy was denied by the auto-mode
+classifier twice** — Josh will run the runbook's rsync + restart (and the homepage rsync) himself,
+or it is retried; then browser-check both live pages.
 
 ## The demo tour gains Lens, an official, and a female narrator (2026-09-24)
 
