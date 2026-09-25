@@ -3,7 +3,9 @@ import { Panel, SectionTitle, Stat } from '@/components/ui';
 import { currentUser } from '@/lib/auth';
 import { visitStats } from '@/lib/visits/store';
 import { feedbackSummary, FEATURE_LABELS } from '@/lib/feedback/store';
-import { fmtDate } from '@/lib/format';
+import { fmtDate, timeAgo } from '@/lib/format';
+import { corpus, corpusStats, languageMix, domainMix, lastIngest } from '@/lib/queries';
+import { LANGUAGE_LABEL } from '@/lib/lang/detect';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin' };
@@ -26,10 +28,53 @@ export default async function AdminPage() {
 
   const visits = visitStats();
   const feedback = feedbackSummary();
+  const events = corpus();
+  const stats = corpusStats(events);
+  const languages = languageMix(events);
+  const domains = domainMix(events);
+  const ingested = lastIngest();
 
   return (
     <div className="space-y-5 py-2">
       <SectionTitle level={1} kicker="Visible only to ADMIN_EMAIL">Visitors &amp; feedback</SectionTitle>
+
+      <Panel className="p-4">
+        <SectionTitle kicker={ingested ? `Last refreshed ${timeAgo(ingested)}` : 'The engine has not been run'}>
+          Corpus
+        </SectionTitle>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Stat label="Events" value={stats.events} />
+          <Stat label="Articles" value={stats.articles} />
+          <Stat label="Corroborated" value={stats.corroborated} sub="confidence ≥ 50" />
+          <Stat label="Countries" value={stats.countries} />
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <div className="mb-1.5 text-[12px] uppercase tracking-[0.16em] text-faint">
+              Events by language ({stats.languages})
+            </div>
+            <ul className="space-y-1 text-[14px]">
+              {languages.map((l) => (
+                <li key={l.language} className="flex justify-between gap-3">
+                  <span className="text-text">{LANGUAGE_LABEL[l.language] ?? l.language}</span>
+                  <span className="mono-num text-faint">{l.count}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="mb-1.5 text-[12px] uppercase tracking-[0.16em] text-faint">Events by domain</div>
+            <ul className="space-y-1 text-[14px]">
+              {domains.map((d) => (
+                <li key={d.domain} className="flex justify-between gap-3">
+                  <span className="text-text">{d.domain}</span>
+                  <span className="mono-num text-faint">{d.count}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </Panel>
 
       <Panel className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3">
         <Stat label="Accounts (people)" value={visits.totalUsers} />
