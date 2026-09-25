@@ -1,10 +1,34 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (World Focus + Ukrainian/Hebrew feed coverage, deployed and live). Before
-that, same day, mandatory accounts + exit survey (deployed and live) and the new logo (deployed and
-live), and before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a
-female narrator — see the first section below). Everything below was verified, not assumed. Where
-something is unverified it says so.
+**Last worked: 2026-09-25** (Farsi feed coverage, committed, not yet deployed). Before that, same
+day, World Focus + Ukrainian/Hebrew feed coverage (deployed and live), mandatory accounts + exit
+survey (deployed and live) and the new logo (deployed and live), and before that, **2026-09-24**
+(the demo tour's Lens chapter, its step to an official, and a female narrator — see the first
+section below). Everything below was verified, not assumed. Where something is unverified it says so.
+
+## Farsi feed coverage (2026-09-25) — COMMITTED, NOT DEPLOYED
+
+Josh, after the Ukrainian/Hebrew work: "build the Farsi locale next" — the same gap, one more time.
+Iran is a named actor in the Middle East beat, and `data/concepts.ts` and `data/countries.ts` had
+Farsi vocabulary and Farsi aliases for Iran and Israel from the start (whoever built them clearly
+planned for this eventually), but nothing had ever queried in Farsi. Added `fa-IR` to `LOCALES` and
+one query to the mideast beat, plus the same detection-robustness fix as before: `detectLanguage()`
+mapped all Arabic-script text to `'ar'`, with a پ/چ/ژ/گ letter tell added to distinguish Farsi (those
+four consonants exist only in Persian's extension of the Arabic script, never in standard Arabic) —
+same reasoning, same dead-code-in-production caveat, as the earlier Ukrainian/Russian fix.
+
+**A real mistake caught by verifying, not assumed to work:** the first query, four terms long
+("ایران اسرائیل لبنان تشدید" — Iran Israel Lebanon escalation), returned **zero** results within the
+7-day window on a live check. Google News treats space-separated terms as an AND, and Farsi's
+indexed volume is far smaller than English's — a query shape that works fine in English can return
+nothing in Farsi. Cut to two terms ("ایران اسرائیل"), it returned real results immediately. Confirmed
+end to end with a live `npm run ingest`: `fa:1` in the report, and the stored row spot-checked —
+Middle East Eye, actors `["IRN","ISR"]`, now correctly classified via a new SOURCES entry
+(GBR/independent — London-based, editorially independent of any Middle Eastern government). Its
+title is in English even though the query that found it was Farsi — the locale hint tags an article
+by the query, not by the script it happens to be written in, same as every other locale.
+
+1,155 tests pass (1,154 + 1 new), `tsc --noEmit` clean. **NOT deployed.**
 
 ## Ukrainian and Hebrew feed coverage (2026-09-25) — LIVE
 

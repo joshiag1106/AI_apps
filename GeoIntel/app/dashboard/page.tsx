@@ -20,7 +20,7 @@ export const metadata = { title: 'Dashboard' };
 
 const LANG_COLORS: Record<string, string> = {
   en: '#4c7fd4', zh: '#ff8f7a', hi: '#e8b339', ja: '#9d7ad4', ru: '#4fb477',
-  ar: '#3fb6a8', ko: '#d47aa8', ur: '#c9a227', uk: '#7986cb', he: '#4dd0e1',
+  ar: '#3fb6a8', ko: '#d47aa8', ur: '#c9a227', uk: '#7986cb', he: '#4dd0e1', fa: '#aed581',
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {

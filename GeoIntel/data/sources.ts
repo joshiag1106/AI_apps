@@ -236,6 +236,11 @@ export const SOURCES: SourceMeta[] = [
    * Tehran's own outlets on a count that exists to measure independence.
    */
   { match: ['iran international'], name: 'Iran International', country: 'GBR', language: 'fa', ownership: 'independent', tier: 3 },
+  // Seen in the first live fa-IR ingest, 2026-09-25: London-based, editorially
+  // independent of any Middle Eastern government, English-language despite the query
+  // being Farsi — the locale hint tags an article by the query that found it, not by
+  // the language it happens to be written in.
+  { match: ['middle east eye'], name: 'Middle East Eye', country: 'GBR', language: 'en', ownership: 'independent', tier: 2 },
 ];
 
 const UNKNOWN: SourceMeta = {

@@ -46,10 +46,12 @@ export const COUNTRIES: Country[] = [
   { iso: 'AFG', iso2: 'AF', name: 'Afghanistan', region: 'South Asia', lat: 33.9, lon: 67.7,
     aliases: ['afghanistan', 'kabul', 'taliban', '阿富汗', '塔利班', 'अफ़ग़ानिस्तान', 'Афганистан', 'أفغانستان', 'افغانستان'] },
   { iso: 'IRN', iso2: 'IR', name: 'Iran', region: 'Middle East', lat: 32.0, lon: 53.0,
-    // 'איראן' is Hebrew — needed for the he-IL beat query.
+    // 'איראן' is Hebrew; 'ایران' (no initial hamza) is the Farsi spelling, distinct from
+    // Arabic 'إيران' just before it — needed for the he-IL and fa-IR beat queries.
     aliases: ['iran', 'iranian', 'tehran', 'chabahar', '伊朗', '德黑兰', 'ईरान', 'Иран', 'إيران', 'ایران', 'איראן'] },
   { iso: 'ISR', iso2: 'IL', name: 'Israel', region: 'Middle East', lat: 31.5, lon: 34.9,
-    // 'ישראל' is Hebrew — Israel's own language of the two the mideast beat now queries.
+    // 'ישראל' is Hebrew; 'اسرائیل' (no initial hamza) is the Farsi spelling, distinct
+    // from Arabic 'إسرائيل' just before it.
     aliases: ['israel', 'israeli', 'jerusalem', 'tel aviv', 'idf', '以色列', 'इज़राइल', 'Израиль', 'إسرائيل', 'اسرائیل', 'ישראל'] },
   { iso: 'UKR', iso2: 'UA', name: 'Ukraine', region: 'Europe', lat: 49.0, lon: 32.0,
     // 'Україна' is the Ukrainian-language spelling — distinct from the Russian spelling

@@ -45,6 +45,14 @@ export function detectScript(text: string): Script {
  */
 const UKRAINIAN_TELL = /[іїєґІЇЄҐ]/;
 
+/**
+ * Same reasoning as UKRAINIAN_TELL: Persian is written in an extended form of the
+ * Arabic script, and پ/چ/ژ/گ (pe/che/zhe/gaf) exist only in that extension, never in
+ * standard Arabic. Farsi's own ی (U+06CC) and ک (U+06A9) also differ from Arabic ي/ك,
+ * but the four consonants alone are already unambiguous.
+ */
+const PERSIAN_TELL = /[پچژگ]/;
+
 /** Japanese uses Han too; kana presence is what separates it from Chinese. */
 export function detectLanguage(text: string): string {
   if ((text.match(/[぀-ヿ]/g) ?? []).length > 0) return 'ja';
@@ -53,7 +61,7 @@ export function detectLanguage(text: string): string {
     case 'Hangul': return 'ko';
     case 'Devanagari': return 'hi';
     case 'Cyrillic': return UKRAINIAN_TELL.test(text) ? 'uk' : 'ru';
-    case 'Arabic': return 'ar';
+    case 'Arabic': return PERSIAN_TELL.test(text) ? 'fa' : 'ar';
     case 'Hebrew': return 'he';
     case 'Latin': return 'en';
     default: return 'unknown';
@@ -62,7 +70,7 @@ export function detectLanguage(text: string): string {
 
 export const SCRIPT_LABEL: Record<Script, string> = {
   Han: 'Chinese', Kana: 'Japanese', Hangul: 'Korean', Devanagari: 'Hindi',
-  Cyrillic: 'Russian/Ukrainian', Arabic: 'Arabic/Urdu', Hebrew: 'Hebrew',
+  Cyrillic: 'Russian/Ukrainian', Arabic: 'Arabic/Urdu/Persian', Hebrew: 'Hebrew',
   Latin: 'Latin script', Unknown: 'Unknown',
 };
 
