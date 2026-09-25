@@ -2,6 +2,7 @@ import { WorldMap } from '@/components/WorldMap';
 import { corpus, corpusStats, countryRisks, hotspotActivity, countryName } from '@/lib/queries';
 import { worldShapes, project } from '@/lib/map';
 import { BASE_PATH } from '@/lib/site';
+import { KINGS, CENTRE_GOLD, RING_GOLD } from '@/components/KautilyaMark';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,14 +54,15 @@ export default function Splash() {
       </div>
 
       <div className="relative flex flex-col items-center">
-        {/* The mark's own four bars, drawn directly rather than through KautilyaMark — that
-            component is one atomic icon for nav/favicon use, and cannot stagger its rects
-            individually. Same geometry and colours, so it reads as the same mark rising in. */}
-        <svg width="56" height="56" viewBox="0 0 72 72" className="mb-6" aria-hidden>
-          <rect className="splash-bar" style={{ animationDelay: '0ms' }} x="14" y="52" width="8" height="10" rx="1.5" fill="#7a5f1d" />
-          <rect className="splash-bar" style={{ animationDelay: '70ms' }} x="26" y="42" width="8" height="20" rx="1.5" fill="#a67f28" />
-          <rect className="splash-bar" style={{ animationDelay: '140ms' }} x="38" y="30" width="8" height="32" rx="1.5" fill="#c99f31" />
-          <rect className="splash-bar" style={{ animationDelay: '210ms' }} x="50" y="14" width="8" height="48" rx="1.5" fill="#e8b339" />
+        {/* The mark's own twelve kings, drawn directly rather than through KautilyaMark so
+            each dot can be staggered: the centre first, then the eleven around it, clockwise
+            from the top. Same points (KINGS) and colours, so it reads as the same mark. */}
+        <svg width="56" height="56" viewBox="0 0 64 64" className="mb-6" aria-hidden>
+          <circle className="splash-dot" cx="32" cy="32" r="8" fill={CENTRE_GOLD} />
+          {KINGS.map((k, i) => (
+            <circle key={i} className="splash-dot" style={{ animationDelay: `${120 + i * 30}ms` }}
+              cx={k.cx} cy={k.cy} r="4.3" fill={RING_GOLD} />
+          ))}
         </svg>
 
         <div className="splash-fade-up mb-2 text-[12px] uppercase tracking-[0.28em] text-faint" style={{ animationDelay: '260ms' }}>

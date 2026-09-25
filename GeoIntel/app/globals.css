@@ -296,11 +296,11 @@ body {
 .dropdown-in { animation: dropdown-in 150ms ease-out; }
 
 /* The splash page (app/page.tsx), on its one-time entrance. */
-@keyframes bars-rise {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
+@keyframes dot-pop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
-.splash-bar { transform-origin: bottom; animation: bars-rise 420ms cubic-bezier(0.22,0.68,0,1.1) backwards; }
+.splash-dot { transform-box: fill-box; transform-origin: center; animation: dot-pop 380ms cubic-bezier(0.22,0.68,0,1.2) backwards; }
 
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
@@ -333,7 +333,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .sweep::after { animation: none; }
-  .splash-bar, .splash-fade-up, .splash-fade-in { animation: none; opacity: 1; transform: none; }
+  .splash-dot, .splash-fade-up, .splash-fade-in { animation: none; opacity: 1; transform: none; }
   /* Rests at the QUIETED level (0.5, matching @keyframes map-fade-in's end state), not
      full brightness — this element's resting opacity is never 1, animated or not, so it
      must not share the line above. */
