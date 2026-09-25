@@ -20,6 +20,12 @@ describe('script and language detection', () => {
     expect(detectLanguage('Україна фронт переговори')).toBe('uk');
     expect(detectLanguage('Суспільне мовлення')).toBe('uk');
   });
+  it('tells Persian from Arabic by the letters that only exist in Persian', () => {
+    // 'إسرائيل إيران' above (Arabic hamza forms) stays 'ar'. 'چالش' (challenge) carries
+    // چ, one of the four consonants (پ/چ/ژ/گ) that exist only in Persian's extension of
+    // the Arabic script — not every Farsi sentence contains one, but this one does.
+    expect(detectLanguage('چالش هسته‌ای ایران با اسرائیل')).toBe('fa');
+  });
   it('picks the dominant script in mixed text rather than the first character', () => {
     // Feed titles routinely append a Latin outlet name to a Chinese headline.
     expect(detectLanguage('中印边界问题特别代表第25次会晤达成8点成果共识 - thepaper.cn')).toBe('zh');

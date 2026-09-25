@@ -90,6 +90,10 @@ export const LOCALES = {
   // with real, current items.
   'uk-UA': { hl: 'uk', gl: 'UA', ceid: 'UA:uk', language: 'uk', label: 'Ukraine (Ukrainian)' },
   'he-IL': { hl: 'he', gl: 'IL', ceid: 'IL:he', language: 'he', label: 'Israel (Hebrew)' },
+  // Added the same day, the same gap: Iran is a named actor in the mideast beat and
+  // `data/concepts.ts` has always had Farsi vocabulary, but nothing ever queried in
+  // Iran's own language. Verified live before wiring in.
+  'fa-IR': { hl: 'fa', gl: 'IR', ceid: 'IR:fa', language: 'fa', label: 'Iran (Persian)' },
 } as const;
 
 export type LocaleKey = keyof typeof LOCALES;
@@ -249,6 +253,13 @@ export const BEATS: Beat[] = [
       // Israel's own language, not just the Arabic and Western wire framings — see the
       // note on LOCALES above.
       { locale: 'he-IL', q: 'ישראל איראן לבנון הסלמה', en: 'Israel Iran Lebanon escalation' },
+      // Iran's own language — the third side of this beat's triangle (Israel, Lebanon,
+      // Iran) that had none until now. Kept to two terms deliberately: the four-term
+      // version ('ایران اسرائیل لبنان تشدید') returned zero results within the 7-day
+      // window — Google News treats space-separated terms as an AND, and Farsi's
+      // indexed volume is much smaller than English's, so a query that works fine in
+      // English can return nothing at all in Farsi. Verified live before shipping.
+      { locale: 'fa-IR', q: 'ایران اسرائیل', en: 'Iran Israel' },
     ],
   },
   {
