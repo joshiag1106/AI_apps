@@ -24,7 +24,9 @@ export const COUNTRIES: Country[] = [
   { iso: 'USA', iso2: 'US', name: 'United States', region: 'North America', lat: 39.0, lon: -98.0,
     aliases: ['united states', 'u.s.', 'us ', 'usa', 'america', 'american', 'washington', 'pentagon', 'white house', '美国', '美方', '华盛顿', '五角大楼', 'अमेरिका', 'संयुक्त राज्य', 'США', 'أمريكا', 'الولايات المتحدة', 'امریکہ', 'アメリカ', '미국'] },
   { iso: 'RUS', iso2: 'RU', name: 'Russia', region: 'Eurasia', lat: 61.0, lon: 90.0,
-    aliases: ['russia', 'russian', 'moscow', 'kremlin', '俄罗斯', '俄方', '莫斯科', 'रूस', 'Россия', 'روسيا', 'روس', 'ロシア', '러시아'] },
+    // 'Росія' is the Ukrainian-language spelling, distinct from Russian 'Россия' above —
+    // needed for the uk-UA beat query to recognise Russia as an actor at all.
+    aliases: ['russia', 'russian', 'moscow', 'kremlin', '俄罗斯', '俄方', '莫斯科', 'रूस', 'Россия', 'Росія', 'روسيا', 'روس', 'ロシア', '러시아'] },
   { iso: 'TWN', iso2: 'TW', name: 'Taiwan', region: 'East Asia', lat: 23.7, lon: 121.0,
     aliases: ['taiwan', 'taipei', 'taiwanese', 'republic of china', '台湾', '臺灣', '台方', '台北', 'ताइवान', 'Тайвань', 'تايوان', '대만'] },
   { iso: 'JPN', iso2: 'JP', name: 'Japan', region: 'East Asia', lat: 36.0, lon: 138.0,
@@ -44,11 +46,15 @@ export const COUNTRIES: Country[] = [
   { iso: 'AFG', iso2: 'AF', name: 'Afghanistan', region: 'South Asia', lat: 33.9, lon: 67.7,
     aliases: ['afghanistan', 'kabul', 'taliban', '阿富汗', '塔利班', 'अफ़ग़ानिस्तान', 'Афганистан', 'أفغانستان', 'افغانستان'] },
   { iso: 'IRN', iso2: 'IR', name: 'Iran', region: 'Middle East', lat: 32.0, lon: 53.0,
-    aliases: ['iran', 'iranian', 'tehran', 'chabahar', '伊朗', '德黑兰', 'ईरान', 'Иран', 'إيران', 'ایران'] },
+    // 'איראן' is Hebrew — needed for the he-IL beat query.
+    aliases: ['iran', 'iranian', 'tehran', 'chabahar', '伊朗', '德黑兰', 'ईरान', 'Иран', 'إيران', 'ایران', 'איראן'] },
   { iso: 'ISR', iso2: 'IL', name: 'Israel', region: 'Middle East', lat: 31.5, lon: 34.9,
-    aliases: ['israel', 'israeli', 'jerusalem', 'tel aviv', 'idf', '以色列', 'इज़राइल', 'Израиль', 'إسرائيل', 'اسرائیل'] },
+    // 'ישראל' is Hebrew — Israel's own language of the two the mideast beat now queries.
+    aliases: ['israel', 'israeli', 'jerusalem', 'tel aviv', 'idf', '以色列', 'इज़राइल', 'Израиль', 'إسرائيل', 'اسرائیل', 'ישראל'] },
   { iso: 'UKR', iso2: 'UA', name: 'Ukraine', region: 'Europe', lat: 49.0, lon: 32.0,
-    aliases: ['ukraine', 'ukrainian', 'kyiv', 'kiev', '乌克兰', '基辅', 'यूक्रेन', 'Украина', 'أوكرانيا'] },
+    // 'Україна' is the Ukrainian-language spelling — distinct from the Russian spelling
+    // 'Украина' above it, and needed for the uk-UA beat query to work at all.
+    aliases: ['ukraine', 'ukrainian', 'kyiv', 'kiev', '乌克兰', '基辅', 'यूक्रेन', 'Украина', 'Україна', 'أوكرانيا'] },
   { iso: 'PRK', iso2: 'KP', name: 'North Korea', region: 'East Asia', lat: 40.0, lon: 127.0,
     aliases: ['north korea', 'dprk', 'pyongyang', '朝鲜', '北韩', '平壤', 'उत्तर कोरिया', 'КНДР', 'كوريا الشمالية', '북한'] },
   { iso: 'KOR', iso2: 'KR', name: 'South Korea', region: 'East Asia', lat: 36.5, lon: 127.8,
@@ -134,7 +140,8 @@ export const COUNTRIES: Country[] = [
   { iso: 'YEM', iso2: 'YE', name: 'Yemen', region: 'Middle East', lat: 15.6, lon: 48.0,
     aliases: ['yemen', 'houthi', 'sanaa', 'bab el-mandeb', '也门', '胡塞', 'यमन', 'Йемен', 'اليمن'] },
   { iso: 'LBN', iso2: 'LB', name: 'Lebanon', region: 'Middle East', lat: 33.9, lon: 35.9,
-    aliases: ['lebanon', 'beirut', 'hezbollah', '黎巴嫩', '真主党', 'लेबनान', 'Ливан', 'لبنان'] },
+    // 'לבנון' is Hebrew, the third state named in the mideast beat's new he-IL query.
+    aliases: ['lebanon', 'beirut', 'hezbollah', '黎巴嫩', '真主党', 'लेबनान', 'Ливан', 'لبنان', 'לבנון'] },
   { iso: 'LBY', iso2: 'LY', name: 'Libya', region: 'Africa', lat: 26.3, lon: 17.2,
     aliases: ['libya', 'tripoli', '利比亚', 'लीबिया', 'Ливия', 'ليبيا'] },
   { iso: 'SDN', iso2: 'SD', name: 'Sudan', region: 'Africa', lat: 12.9, lon: 30.2,

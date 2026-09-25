@@ -7,11 +7,18 @@ describe('script and language detection', () => {
     expect(detectScript('中印边境局势')).toBe('Han');
     expect(detectLanguage('中印边境局势')).toBe('zh');
   });
-  it('identifies Devanagari, Cyrillic, Arabic, Latin', () => {
+  it('identifies Devanagari, Cyrillic, Arabic, Hebrew, Latin', () => {
     expect(detectLanguage('भारत चीन सीमा')).toBe('hi');
     expect(detectLanguage('Украина фронт')).toBe('ru');
     expect(detectLanguage('إسرائيل إيران')).toBe('ar');
+    expect(detectLanguage('ישראל איראן')).toBe('he');
     expect(detectLanguage('India China border')).toBe('en');
+  });
+  it('tells Ukrainian from Russian by the letters that only exist in Ukrainian', () => {
+    // 'Украина' (no і/ї/є/ґ) is the RUSSIAN spelling of Ukraine, correctly Russian even
+    // though the topic is Ukraine — the case the test above already pinned.
+    expect(detectLanguage('Україна фронт переговори')).toBe('uk');
+    expect(detectLanguage('Суспільне мовлення')).toBe('uk');
   });
   it('picks the dominant script in mixed text rather than the first character', () => {
     // Feed titles routinely append a Latin outlet name to a Chinese headline.

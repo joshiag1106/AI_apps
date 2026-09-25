@@ -11,6 +11,7 @@ import { getMeta } from '@/lib/db';
 const LINKS = [
   { href: '/board', label: 'Threat Board' },
   { href: '/ask', label: 'Ask' },
+  { href: '/world', label: 'World Focus' },
   { href: '/india', label: 'India Focus' },
   { href: '/china', label: 'China Watch' },
   { href: '/lens', label: 'Language Lens' },

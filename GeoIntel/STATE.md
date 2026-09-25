@@ -1,9 +1,91 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (mandatory accounts + exit survey, deployed and live). Before that, same
-day, the new logo (deployed and live), and before that, **2026-09-24** (the demo tour's Lens chapter,
-its step to an official, and a female narrator — see the first section below). Everything below was
-verified, not assumed. Where something is unverified it says so.
+**Last worked: 2026-09-25** (Ukrainian + Hebrew feed coverage, committed, not yet deployed). Before
+that, same day, the World Focus page (committed, not yet deployed), mandatory accounts + exit survey
+(deployed and live) and the new logo (deployed and live), and before that, **2026-09-24** (the demo
+tour's Lens chapter, its step to an official, and a female narrator — see the first section below).
+Everything below was verified, not assumed. Where something is unverified it says so.
+
+## Ukrainian and Hebrew feed coverage (2026-09-25) — COMMITTED, NOT DEPLOYED
+
+Josh sent a 1,073-line directory of ~700 world news outlets (`news_resources.txt`, not in this
+repo) and asked whether it could widen language coverage and improve corroboration, "without losing
+the intelligence we are building." Read in full first. **Almost none of it is directly usable**: it
+is a human-facing directory of homepages, not a verified RSS feed list, and this codebase's own rule
+is that a direct feed is only added after being checked for real `<item>` content — see
+`data/feeds.ts`'s header comment. Rather than bulk-adding unverified URLs, the actual gap it
+surfaced was structural: **two of the site's existing beats read only one side's own language.**
+Russia–Ukraine queried `ru-RU` and `en-GB` but no Ukrainian; Middle East queried `ar-EG` and `en-GB`
+but no Hebrew — the same asymmetry the 2026-09-11 Chinese-language work fixed for the China beats.
+
+**Two new locales** (`data/feeds.ts`): `uk-UA` and `he-IL`, each with one new beat query
+(Russia–Ukraine, Middle East). Verified against live Google News RSS before wiring in: Hebrew's old
+ISO code `iw` 302-redirects and returns nothing; `he` returns 200 with real, current items.
+
+**A latent bug found and fixed before it could bite**: `lib/lang/detect.ts`'s `detectLanguage()`
+mapped all Cyrillic to `'ru'` and had no Hebrew script range at all — adding Ukrainian coverage
+without this would have silently relabelled Ukrainian-language reporting as Russian, corrupting
+Language Lens's whole premise for exactly the beat that most needs the distinction. Fixed with a
+letter-based tell (і/ї/є/ґ exist only in Ukrainian, never standard Russian) and a Hebrew Unicode
+range. In practice this function turned out to be dead code in the live pipeline — every ingest task
+already supplies an explicit language from the feed or the query locale — but it is kept correct
+regardless, pinned by new cases in `tests/chinese.test.ts`.
+
+**The actual reason nothing appeared on the first ingest**: not the new locales — actor detection.
+`lib/analyze/entities.ts` recognises a state only via `data/countries.ts`'s native-script aliases,
+and Ukraine, Russia, Israel, Iran and Lebanon had zero Ukrainian- or Hebrew-script aliases (Russia's
+only Cyrillic alias was the *Russian* spelling `Россия`, not Ukraine's own `Росія`). Without an alias
+match, an article names no recognised actor and the relevance gate drops it — regardless of language
+support anywhere else. Added: `Україна`/`Росія` (uk), `ישראל`/`איראן`/`לבנון` (he). This was the real
+fix; confirmed by a live `npm run ingest` before vs. after — zero `uk`/`he` articles, then 4 and 2.
+
+**New SOURCES entries** (`data/sources.ts`), all outlets actually observed in that live ingest, not
+guessed at: Suspilne (Ukraine's public broadcaster, like the BBC), Ukrayinska Pravda, LIGA.net, 24
+Kanal, 112.ua for Ukrainian; mako, Globes, Makor Rishon, Kikar HaShabbat for Hebrew — five newsrooms,
+not one outlet counted five times. `mako` is kept as a bare 4-letter match key deliberately: Google
+News' redirect links are excluded from host-matching entirely (`AGGREGATOR_HOSTS`), so the outlet
+name string is the only thing this can ever match against — same precedent as bare `ani` already in
+the file.
+
+**Deliberately NOT done, and why:** domain classification (Military/Diplomatic/etc.) has no
+Ukrainian or Hebrew vocabulary at all — `data/concepts.ts`'s 43 concepts cover en/zh/hi/ja/ar/ru only.
+A `uk`/`he` article now gets stored, actor-tagged and counted toward corroboration correctly, but
+`topDomain()` returns `null` for it until that vocabulary exists — the same honest "stated gap"
+already used for the one Russian concept with no safe word (`gaps`, this file). Translating 43
+concepts into two more languages accurately is real linguistic work, not something to rush under a
+single session's time pressure; it is follow-up, not silently skipped.
+
+**Verified**: 1,154 tests pass (1,153 + 1 new), `tsc --noEmit` clean, production build clean. A real
+`npm run ingest` twice — before and after the alias fix — showing `uk`/`he` going from absent to 4
+and 2 articles, and the stored rows spot-checked directly: correct actors (`["RUS","UKR"]`,
+`["IRN","ISR"]`), correct outlet names, and one already correctly classified via the new SOURCES
+entries (Makor Rishon → ISR/independent).
+
+**NOT deployed.**
+
+## World Focus (2026-09-25) — COMMITTED, NOT DEPLOYED
+
+Josh: India Focus and China Watch exist; "now the world focus includes china and india as well" — a
+new nav item above them, not a duplicate of the Threat Board's world map. Confirmed with him: a
+ranked leaderboard of every state in the corpus by the same composite score (`lib/risk`'s
+`countryRisk`), not a restyle of `/board`.
+
+`app/world/page.tsx`: every state with events, ranked by `countryRisks()` (already sorted
+descending), each row a risk band Badge, composite score, trend and event count, linking to
+`/india`/`/china` for those two (their own hand-built pages) and the generic paywalled
+`/country/[iso]` for everyone else. A region panel (`BY_ISO`'s `region` field, averaged per group)
+is the one thing genuinely new versus every other page — nothing else on the site shows risk
+by region rather than by state. Nav gets "World Focus" right before "India Focus"; footer's Focus
+column gets the same.
+
+No dedicated test file — India Focus and China Watch have none either; this repo verifies flagship
+pages by hand in a browser rather than unit-testing hand-tuned content pages. 1,153 existing tests
+still pass (the footer-link-completeness test in `tests/layout.test.ts` catches a bad `/world` href
+for free), `tsc --noEmit` clean. Walked in a real browser against a fresh dev-server account: 67
+states ranked, badges colour correctly by band, region panel sums to sane per-region counts, and the
+China row links to `/china`, not the generic profile.
+
+**NOT deployed.**
 
 ## Mandatory accounts, visit counting, and a one-time exit survey (2026-09-25) — LIVE
 

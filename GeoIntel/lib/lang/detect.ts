@@ -1,5 +1,5 @@
 export type Script =
-  | 'Han' | 'Devanagari' | 'Cyrillic' | 'Arabic' | 'Hangul' | 'Kana' | 'Latin' | 'Unknown';
+  | 'Han' | 'Devanagari' | 'Cyrillic' | 'Arabic' | 'Hebrew' | 'Hangul' | 'Kana' | 'Latin' | 'Unknown';
 
 // Ranges use \u escapes so this file carries no literal control characters.
 const RANGES: { script: Script; re: RegExp }[] = [
@@ -9,6 +9,10 @@ const RANGES: { script: Script; re: RegExp }[] = [
   { script: 'Devanagari', re: /[ऀ-ॿ]/g },
   { script: 'Cyrillic',   re: /[Ѐ-ӿ]/g },
   { script: 'Arabic',     re: /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/g },
+  // Added 2026-09-25, alongside the Russia–Ukraine and Middle East beats' new
+  // Ukrainian and Hebrew queries. Hebrew (֐-׿) does not overlap the Arabic
+  // range above, so this is additive, not a reclassification of anything Arabic.
+  { script: 'Hebrew',     re: /[֐-׿]/g },
   { script: 'Latin',      re: /[a-zA-Z]/g },
 ];
 
@@ -29,6 +33,18 @@ export function detectScript(text: string): Script {
   return best === 0 ? 'Unknown' : winner;
 }
 
+/**
+ * Ukrainian and Russian share the Cyrillic alphabet, but not every letter in it:
+ * і/ї/є/ґ exist only in Ukrainian orthography, never in standard Russian. Their
+ * presence is a reliable tell in either direction, which plain script detection is not.
+ *
+ * In practice this branch is dead code today — every ingest task supplies an explicit
+ * languageHint (the feed's declared language, or the query locale's), so
+ * detectLanguage() never actually runs against real ingested text; see
+ * lib/ingest/pipeline.ts. It is kept correct anyway, as the fallback it is meant to be.
+ */
+const UKRAINIAN_TELL = /[іїєґІЇЄҐ]/;
+
 /** Japanese uses Han too; kana presence is what separates it from Chinese. */
 export function detectLanguage(text: string): string {
   if ((text.match(/[぀-ヿ]/g) ?? []).length > 0) return 'ja';
@@ -36,8 +52,9 @@ export function detectLanguage(text: string): string {
     case 'Han': return 'zh';
     case 'Hangul': return 'ko';
     case 'Devanagari': return 'hi';
-    case 'Cyrillic': return 'ru';
+    case 'Cyrillic': return UKRAINIAN_TELL.test(text) ? 'uk' : 'ru';
     case 'Arabic': return 'ar';
+    case 'Hebrew': return 'he';
     case 'Latin': return 'en';
     default: return 'unknown';
   }
@@ -45,10 +62,11 @@ export function detectLanguage(text: string): string {
 
 export const SCRIPT_LABEL: Record<Script, string> = {
   Han: 'Chinese', Kana: 'Japanese', Hangul: 'Korean', Devanagari: 'Hindi',
-  Cyrillic: 'Russian', Arabic: 'Arabic/Urdu', Latin: 'Latin script', Unknown: 'Unknown',
+  Cyrillic: 'Russian/Ukrainian', Arabic: 'Arabic/Urdu', Hebrew: 'Hebrew',
+  Latin: 'Latin script', Unknown: 'Unknown',
 };
 
 export const LANGUAGE_LABEL: Record<string, string> = {
-  zh: 'Chinese', hi: 'Hindi', ru: 'Russian', ar: 'Arabic', ur: 'Urdu',
-  ja: 'Japanese', ko: 'Korean', fa: 'Persian', en: 'English', unknown: 'Unknown',
+  zh: 'Chinese', hi: 'Hindi', ru: 'Russian', uk: 'Ukrainian', ar: 'Arabic', ur: 'Urdu',
+  he: 'Hebrew', ja: 'Japanese', ko: 'Korean', fa: 'Persian', en: 'English', unknown: 'Unknown',
 };
