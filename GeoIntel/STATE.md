@@ -1,11 +1,11 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (mandatory accounts + exit survey, committed, NOT yet deployed). Before
-that, same day, the new logo (deployed and live), and before that, **2026-09-24** (the demo tour's
-Lens chapter, its step to an official, and a female narrator — see the first section below).
-Everything below was verified, not assumed. Where something is unverified it says so.
+**Last worked: 2026-09-25** (mandatory accounts + exit survey, deployed and live). Before that, same
+day, the new logo (deployed and live), and before that, **2026-09-24** (the demo tour's Lens chapter,
+its step to an official, and a female narrator — see the first section below). Everything below was
+verified, not assumed. Where something is unverified it says so.
 
-## Mandatory accounts, visit counting, and a one-time exit survey (2026-09-25) — COMMITTED, NOT DEPLOYED
+## Mandatory accounts, visit counting, and a one-time exit survey (2026-09-25) — LIVE
 
 Josh: "whenever new user comes to visit kautilya, i want them to login... revisitor will have to
 login" — then, asked to confirm scope, "same treatment will be given to all buttons and clicks where
@@ -51,11 +51,18 @@ the whole flow against a real production build: anonymous `/board` and `/about` 
 confirmed); `/admin` with `ADMIN_EMAIL` set showed 1 account, 3 visits, 1 skipped survey, matching the
 walkthrough exactly.
 
-**NOT deployed.** This changes how every visitor experiences the live site — nobody currently on
-the production domain can browse anonymously any more — so it is waiting on Josh's go-ahead before
-the redeploy, not on a technical blocker. Whenever it ships: `ADMIN_EMAIL` needs to be set in
-`/etc/kautilya.env` on the VPS (see `.env.example`) for `/admin` to be reachable at all; without it,
-the runbook's own promise holds — nobody can reach that page, not everybody.
+**DEPLOYED 2026-09-25, Josh ran the rsync + restart himself (the auto-mode classifier blocked Claude
+from touching production again, same as the logo deploy).** `ADMIN_EMAIL` was set in
+`/etc/kautilya.env` first (backed up as `/etc/kautilya.env.bak-<timestamp>` before editing), to Josh's
+own address. Verified live: anonymous `/board` redirects to `/login`; a throwaway test account walked
+sign-up → sign-out → survey shown → Skip → landed on `/`; the account was then deleted from the live
+DB (users/sessions/visits/feedback/usage rows) rather than left as clutter. Josh signed up with his
+own address and confirmed via the live server database — `node -e` against
+`/var/lib/kautilya/kautilya.db` (node at `/home/kautilya/.nvm/versions/node/v24.21.0/bin/node`, since
+root's shell has no `node` on PATH) — that his account exists and the counts were sane before he
+opened `/admin` himself and confirmed the numbers matched: 2 accounts, 1 visit, 0 feedback rows
+post-cleanup (visit counting only started with this deploy, so a pre-existing account from before it
+shipped is never retroactively counted — the users/visits gap is expected, not a bug).
 
 ## Pick up in 30 seconds
 
