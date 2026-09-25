@@ -75,6 +75,15 @@ export const LOCALES = {
   'ko-KR': { hl: 'ko', gl: 'KR', ceid: 'KR:ko', language: 'ko', label: 'Korea (Korean)' },
   'en-US': { hl: 'en-US', gl: 'US', ceid: 'US:en', language: 'en', label: 'United States (English)' },
   'en-GB': { hl: 'en-GB', gl: 'GB', ceid: 'GB:en', language: 'en', label: 'United Kingdom (English)' },
+  // Added 2026-09-25, the same principle that added bbc-zh/dw-zh/rfi-zh to DIRECT_FEEDS:
+  // a beat that only ever reads one side's own language cannot corroborate across the
+  // divide that makes it interesting. Russia–Ukraine had ru-RU and en-GB but no
+  // Ukrainian-language source at all; Middle East had ar-EG and en-GB but no
+  // Hebrew-language source. Both verified live against Google News RSS before being
+  // added: 'iw' (the old ISO code) 302-redirects and returns nothing; 'he' returns 200
+  // with real, current items.
+  'uk-UA': { hl: 'uk', gl: 'UA', ceid: 'UA:uk', language: 'uk', label: 'Ukraine (Ukrainian)' },
+  'he-IL': { hl: 'he', gl: 'IL', ceid: 'IL:he', language: 'he', label: 'Israel (Hebrew)' },
 } as const;
 
 export type LocaleKey = keyof typeof LOCALES;
@@ -220,6 +229,9 @@ export const BEATS: Beat[] = [
     queries: [
       { locale: 'en-GB', q: 'Ukraine Russia front line' },
       { locale: 'ru-RU', q: 'Украина фронт переговоры', en: 'Ukraine front, negotiations' },
+      // Kyiv's own language on its own war, not just Moscow's or the West's — see the
+      // note on LOCALES above.
+      { locale: 'uk-UA', q: 'Україна Росія фронт переговори', en: 'Ukraine Russia front, negotiations' },
     ],
   },
   {
@@ -228,6 +240,9 @@ export const BEATS: Beat[] = [
       { locale: 'en-GB', q: 'Israel Iran Lebanon escalation' },
       { locale: 'ar-EG', q: 'إسرائيل إيران تصعيد', en: 'Israel Iran escalation' },
       { locale: 'en-GB', q: 'Red Sea Houthi shipping' },
+      // Israel's own language, not just the Arabic and Western wire framings — see the
+      // note on LOCALES above.
+      { locale: 'he-IL', q: 'ישראל איראן לבנון הסלמה', en: 'Israel Iran Lebanon escalation' },
     ],
   },
   {

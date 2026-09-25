@@ -172,6 +172,19 @@ export const SOURCES: SourceMeta[] = [
 
   { match: ['ynet'], name: 'Ynet', country: 'ISR', language: 'en', ownership: 'independent', tier: 2 },
   { match: ['times of israel'], name: 'The Times of Israel', country: 'ISR', language: 'en', ownership: 'independent', tier: 2 },
+  // Added 2026-09-25, the outlets the new he-IL beat query actually surfaced (verified
+  // live). mako is Keshet Media Group's commercial news site; Globes is Israel's
+  // business daily; Makor Rishon is a religious-nationalist paper — three genuinely
+  // separate Hebrew-language newsrooms, not one outlet republished three ways.
+  // Bare 'mako', not 'mako.co.il' — Google News' aggregator link is excluded from
+  // host-matching entirely (AGGREGATOR_HOSTS), so the only string this can ever match
+  // against is the outlet name the feed prints, which is the bare word. Same precedent
+  // as bare 'ani' above: a short key, accepted because the alternative is unreachable.
+  { match: ['mako'], name: 'mako', country: 'ISR', language: 'he', ownership: 'independent', tier: 2 },
+  { match: ['globes'], name: 'Globes', country: 'ISR', language: 'he', ownership: 'independent', tier: 1 },
+  { match: ['מקור ראשון', 'makor rishon'], name: 'Makor Rishon', country: 'ISR', language: 'he', ownership: 'independent', tier: 3 },
+  // Kikar HaShabbat — Haredi/religious-affairs news site, seen in the same live ingest.
+  { match: ['כיכר השבת', 'kikar hashabat'], name: 'Kikar HaShabbat', country: 'ISR', language: 'he', ownership: 'independent', tier: 3 },
 
   // 'the kyiv independent' must be matched by a LONGER key than 'the independent', or the
   // longest-match rule would place a Ukrainian outlet in Britain and let the two corroborate
@@ -180,6 +193,17 @@ export const SOURCES: SourceMeta[] = [
   { match: ['ua.news'], name: 'UA.NEWS', country: 'UKR', language: 'uk', ownership: 'independent', tier: 3 },
   // United24 is an official Ukrainian government platform, not a newsroom.
   { match: ['united24'], name: 'United24 Media', country: 'UKR', language: 'en', ownership: 'state_affiliated', tier: 3 },
+  // Added 2026-09-25, for the new uk-UA beat query — Ukraine's own language, not just
+  // Moscow's or the West's. Suspilne is the public broadcaster (like the BBC: publicly
+  // funded, editorially independent by charter), Ukrayinska Pravda a long-running
+  // independent investigative outlet — two genuinely different kinds of newsroom.
+  { match: ['суспільне', 'suspilne'], name: 'Suspilne', country: 'UKR', language: 'uk', ownership: 'public', tier: 1 },
+  { match: ['українська правда', 'ukrayinska pravda', 'ukrainska pravda'], name: 'Ukrayinska Pravda', country: 'UKR', language: 'uk', ownership: 'independent', tier: 1 },
+  // Added 2026-09-25, from the first real ingest against the new uk-UA query — outlets
+  // that actually appeared, not guessed at.
+  { match: ['liga.net'], name: 'LIGA.net', country: 'UKR', language: 'uk', ownership: 'independent', tier: 2 },
+  { match: ['24 канал', '24tv.ua'], name: '24 Kanal', country: 'UKR', language: 'uk', ownership: 'independent', tier: 3 },
+  { match: ['112.ua'], name: '112.ua', country: 'UKR', language: 'uk', ownership: 'independent', tier: 3 },
 
   { match: ['taipei times'], name: 'Taipei Times', country: 'TWN', language: 'en', ownership: 'independent', tier: 2 },
   { match: ['三立'], name: 'SET News', country: 'TWN', language: 'zh', ownership: 'independent', tier: 3 },
