@@ -1,12 +1,12 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (Ukrainian + Hebrew feed coverage, committed, not yet deployed). Before
-that, same day, the World Focus page (committed, not yet deployed), mandatory accounts + exit survey
-(deployed and live) and the new logo (deployed and live), and before that, **2026-09-24** (the demo
-tour's Lens chapter, its step to an official, and a female narrator — see the first section below).
-Everything below was verified, not assumed. Where something is unverified it says so.
+**Last worked: 2026-09-25** (World Focus + Ukrainian/Hebrew feed coverage, deployed and live). Before
+that, same day, mandatory accounts + exit survey (deployed and live) and the new logo (deployed and
+live), and before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a
+female narrator — see the first section below). Everything below was verified, not assumed. Where
+something is unverified it says so.
 
-## Ukrainian and Hebrew feed coverage (2026-09-25) — COMMITTED, NOT DEPLOYED
+## Ukrainian and Hebrew feed coverage (2026-09-25) — LIVE
 
 Josh sent a 1,073-line directory of ~700 world news outlets (`news_resources.txt`, not in this
 repo) and asked whether it could widen language coverage and improve corroboration, "without losing
@@ -61,9 +61,13 @@ and 2 articles, and the stored rows spot-checked directly: correct actors (`["RU
 `["IRN","ISR"]`), correct outlet names, and one already correctly classified via the new SOURCES
 entries (Makor Rishon → ISR/independent).
 
-**NOT deployed.**
+**DEPLOYED 2026-09-25, same day.** Josh ran the rsync + restart himself (the classifier blocked
+Claude, same as every deploy this session). A `/kautilya/api/cron` call right after (Bearer auth,
+`CRON_SECRET` from `/etc/kautilya.env`) confirmed it live on the real corpus:
+`"he":2,"uk":1"` in the report's `byLanguage`. Two unrelated feeds failed that run (`indianexpress.com`,
+`dawn.com`, both HTTP 403) — pre-existing feeds, not part of this change; worth checking separately.
 
-## World Focus (2026-09-25) — COMMITTED, NOT DEPLOYED
+## World Focus (2026-09-25) — LIVE
 
 Josh: India Focus and China Watch exist; "now the world focus includes china and india as well" — a
 new nav item above them, not a duplicate of the Threat Board's world map. Confirmed with him: a
@@ -85,7 +89,9 @@ for free), `tsc --noEmit` clean. Walked in a real browser against a fresh dev-se
 states ranked, badges colour correctly by band, region panel sums to sane per-region counts, and the
 China row links to `/china`, not the generic profile.
 
-**NOT deployed.**
+**DEPLOYED 2026-09-25, same day.** Josh ran the deploy; verified live in a browser (signed up with a
+throwaway account, deleted from the live DB afterward): 68 states ranked, region panel rendering,
+badges colouring correctly by band.
 
 ## Mandatory accounts, visit counting, and a one-time exit survey (2026-09-25) — LIVE
 
