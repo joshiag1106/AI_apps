@@ -1,12 +1,75 @@
 # Where this project stands
 
-**Last worked: 2026-09-27** (a new Caucasus beat — built, verified locally, NOT yet deployed). Before
-that, **2026-09-25** (corpus stats added to /admin, deployed and live), same day Farsi feed coverage
-(deployed and live), World Focus + Ukrainian/Hebrew feed coverage (deployed and live), mandatory
-accounts + exit survey (deployed and live) and the new logo (deployed and live), and before that,
-**2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator — see the
-first section below). Everything below was verified, not assumed. Where something is unverified it
-says so.
+**Last worked: 2026-09-27** (an Africa beat, built right after the Caucasus one — both built and
+verified locally, NOT yet deployed). Before that, **2026-09-25** (corpus stats added to /admin, deployed
+and live), same day Farsi feed coverage (deployed and live), World Focus + Ukrainian/Hebrew feed
+coverage (deployed and live), mandatory accounts + exit survey (deployed and live) and the new logo
+(deployed and live), and before that, **2026-09-24** (the demo tour's Lens chapter, its step to an
+official, and a female narrator — see the first section below). Everything below was verified, not
+assumed. Where something is unverified it says so.
+
+## Africa beat (2026-09-27) — BUILT, verified locally, awaiting deploy
+
+Josh, after seeing the Caucasus work: "check Africa or South America next." Both were researched
+first — Africa was picked ("take the call, do Africa first") because it covers more of the tracked
+countries (7 versus South America's 3) and higher-stakes active conflicts (Sudan's civil war, the
+DRC/M23 fighting). Full survey of both regions, including South America's verified candidates for
+later, is in the prior session's chat log, not repeated here.
+
+**Seven new `DIRECT_FEEDS`** (`data/feeds.ts`), one per tracked country with the same zero-beat,
+zero-local-source gap as the Caucasus: Radio Dabanga (SDN), Fana Broadcasting (ETH), Libya Herald
+(LBY), Somali Update (SOM), Premium Times (NGA), Actualite.cd (COD, the first French-language direct
+feed in the codebase), IOL (ZAF). All seven verified live for real `<item>` content before adding.
+**South Africa's IOL is the weak link, on purpose flagged rather than hidden**: its sample was mostly
+cricket and lifestyle content, and its owner (Iqbal Survé, Independent Media) has a documented editorial
+interference record — Daily Maverick reported an article deleted after a minister's team complained.
+Kept in at tier 3, not removed, since a weak source with a low tier is still honestly represented; a
+live ingest confirmed the risk is real, not hypothetical (see below).
+
+**Seven new `SOURCES` entries**, researched rather than guessed: Radio Dabanga is `independent` tier 1
+(an NGO/journalist-coalition foundation exiled to the Netherlands since 2020). Fana is `state` tier 2 —
+confirmed state-owned, board chaired by the PM's own political adviser, a stronger claim than Trend's
+formally-private `state_affiliated` status in the Caucasus work. Libya Herald is `independent` tier 2
+(founded 2012 by journalists who left Gaddafi-era state media over censorship). Somali Update is
+`independent` tier 3 — no ownership record could be verified, so it's kept conservative rather than
+assumed. Premium Times is `independent` tier 1 (well-documented investigative record). Actualite.cd is
+`independent` tier 2. IOL is `independent` tier 3 for the reason above.
+
+**Two new `BEAT`s**, both English-only and both explicitly without a `dyad`: `sudan-conflict` (RSF is
+an armed group, not a state, so it can't be actor-tagged as a pair the way rus-ukr can) and
+`drc-conflict`. **A real, stated limitation on `drc-conflict`**: Rwanda is not a tracked country (no
+entry in `data/countries.ts`, and no French locale exists either), so the beat can tag `COD` but not
+Rwanda's side of the M23 story even when a headline names it directly. Adding Rwanda properly (map,
+country page, the works) is bigger than this bounded task — left as a known gap, the same way Bangladesh
+sits deliberately unlisted elsewhere in this codebase, rather than silently worked around.
+
+**Two real bugs found and fixed by verifying with a live ingest, before either shipped anywhere**
+(2026-09-27, `data/countries.ts`): `resolveActors` doesn't just match country names, it also infers
+actors from HOTSPOT matches — and the `lac` hotspot (Line of Actual Control) carried a bare `'lac '`
+alias for terse headlines. French for "lake" is also "lac", and word-boundary matching can't tell "the
+LAC" from "le lac Kivu" apart. It fired on Actualite.cd's very first stored article — a Lake Kivu
+shipwreck story tagged `["IND","CHN"]`, an event with nothing to do with either country. Fixed by
+removing the bare alias; the full phrase and the named locations (Galwan, Pangong, etc.) still catch
+every real LAC story. Separately, DR Congo's alias list had no `'rdc'` — Francophone press calls it
+that, not "DR Congo" — so a headline saying "la RDC" tagged zero actors; fixed by adding it. Both
+pinned as regressions in `tests/analyze.test.ts`. **Neither bug could have been found without adding a
+French-language source for the first time** — no French content had ever passed through this pipeline
+before Actualite.cd. The stale pre-fix row is still sitting in the local dev database with the wrong
+actors — expected, not a problem: Actualite.cd's feed only carries its ~10 latest items, that article
+had already rotated out by the second ingest, and an ingest only re-analyses rows it re-fetches (the
+same behaviour `ladderPatches` exists to work around elsewhere). The fix itself was verified directly
+against the function, not inferred from the stale row.
+
+**Verified**: 1,157 tests pass (1,155 + 2 new), `tsc --noEmit` clean. A real `npm run ingest`: 93/94
+feeds ok (Fana failed to fetch this cycle — worth a re-check, not necessarily a real problem, feeds
+fail transiently). Real stored content with correct tags: Radio Dabanga (5 articles — "US-Egypt-Sudan
+meeting in New York discusses peace efforts", "El-Sisi and CIA chief discuss Sudan war"), Libya Herald
+(14 articles), Premium Times (2), Actualite.cd (2, `fr` in the language breakdown for the first time),
+IOL (3, including the cricket false-positive above). Fana and Somali Update stored zero this cycle —
+not necessarily a problem, same relevance-gate behaviour already seen with Trend in the Caucasus work.
+
+**NOT yet committed, pushed, mirrored to AI_apps, or deployed** — pending Josh's go on each step, same
+as the Caucasus work.
 
 ## Caucasus beat (2026-09-27) — BUILT, verified locally, awaiting deploy
 
@@ -62,7 +125,21 @@ on a future cycle rather than assumed permanently silent. 1,155 tests pass (no n
 existing `BEATS`-iterating tests in `tests/freshness.test.ts` and `tests/lens.test.ts` cover any new
 beat automatically), `tsc --noEmit` clean.
 
-**NOT yet committed or deployed** — pending Josh's go, same as every other change to this codebase.
+**Committed to GeoIntel main** (`6730154` + `1ce785a`) and pushed to the private repo. **The public
+mirror is AI_apps PR #110, MERGED 2026-09-27** at Josh's own `gh pr merge` (the push and the merge both
+got refused by the auto-mode classifier — "Merge Without Review" on the merge step — so Josh ran both
+himself; 11 checks passed, 1 skipped). Verified byte-identical afterward, all three changed files
+diffed directly between the two working copies. **DEPLOYED 2026-09-27.** Built from scratch (`rm -rf .next`, tests, build), and the build traced
+`kautilya.db` into `.next/standalone/` again exactly as this runbook warns — the three `--exclude`
+flags kept it off the wire, confirmed with a dry run first (0 `.db`/`darwin` matches in 2,606 files),
+then the real rsync, then `find /srv/kautilya` for stray db/duplicate files came back empty. Restarted
+as root (the `kautilya` user still has no sudo). All five of the runbook's step-11 probes passed against
+the live host: `/kautilya` 200, the image proxy 400, `/api/cron` 401 without the secret, `/board`
+307-redirects signed-out visitors to `/login`, zero `stripe` leakage on `/pricing`. **Not yet directly
+observed**: a live ingest actually storing a Trend/Hetq/Civil Georgia article in production — the
+Bearer-authed `/api/cron` check needs the server's `CRON_SECRET`, and reading it off `/etc/kautilya.env`
+was refused by the auto-mode classifier as a production read. The scheduled hourly ingest will pick the
+new feeds up on its own; re-run this check by hand next session rather than assuming it's proven.
 
 ## Corpus stats on /admin (2026-09-25) — LIVE
 
