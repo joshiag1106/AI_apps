@@ -151,7 +151,9 @@ export const COUNTRIES: Country[] = [
   { iso: 'SOM', iso2: 'SO', name: 'Somalia', region: 'Africa', lat: 5.2, lon: 46.2,
     aliases: ['somalia', 'mogadishu', 'al-shabaab', '索马里', 'सोमालिया', 'Сомали', 'الصومال'] },
   { iso: 'COD', iso2: 'CD', name: 'DR Congo', region: 'Africa', lat: -4.0, lon: 21.8,
-    aliases: ['dr congo', 'democratic republic of the congo', 'kinshasa', '刚果金', 'कांगो', 'ДР Конго'] },
+    // 'rdc' added 2026-09-27: Francophone press (Actualite.cd) calls it that, not "DR
+    // Congo" — a headline saying "la RDC" was tagging zero actors without this.
+    aliases: ['dr congo', 'democratic republic of the congo', 'rdc', 'kinshasa', '刚果金', 'कांगो', 'ДР Конго'] },
   { iso: 'VEN', iso2: 'VE', name: 'Venezuela', region: 'South America', lat: 6.4, lon: -66.6,
     aliases: ['venezuela', 'caracas', '委内瑞拉', 'वेनेज़ुएला', 'Венесуэла', 'فنزويلا'] },
   { iso: 'ARG', iso2: 'AR', name: 'Argentina', region: 'South America', lat: -38.4, lon: -63.6,
@@ -177,7 +179,11 @@ export interface Hotspot {
 }
 
 export const HOTSPOTS: Hotspot[] = [
-  { id: 'lac', name: 'Line of Actual Control', aliases: ['line of actual control', 'lac ', 'galwan', 'pangong', 'depsang', 'demchok', 'yangtse', '实际控制线', '加勒万', '班公湖', '德普桑', 'वास्तविक नियंत्रण रेखा'], parties: ['IND', 'CHN'], lat: 34.0, lon: 78.5, domain: 'Military' },
+  // 'lac ' (bare acronym) was removed 2026-09-27: it's also the ordinary French word for
+  // "lake", and word-boundary matching can't tell "the LAC" from "le lac Kivu" apart —
+  // found because it tagged a DR Congo shipwreck story IND/CHN. The full phrase and the
+  // named locations below still catch every real LAC story in the corpus.
+  { id: 'lac', name: 'Line of Actual Control', aliases: ['line of actual control', 'galwan', 'pangong', 'depsang', 'demchok', 'yangtse', '实际控制线', '加勒万', '班公湖', '德普桑', 'वास्तविक नियंत्रण रेखा'], parties: ['IND', 'CHN'], lat: 34.0, lon: 78.5, domain: 'Military' },
   { id: 'ladakh', name: 'Eastern Ladakh', aliases: ['ladakh', 'aksai chin', '拉达克', '阿克赛钦', 'लद्दाख'], parties: ['IND', 'CHN'], lat: 34.2, lon: 77.6, domain: 'Military' },
   { id: 'arunachal', name: 'Arunachal Pradesh', aliases: ['arunachal', 'tawang', '藏南', '达旺', 'अरुणाचल'], parties: ['IND', 'CHN'], lat: 28.2, lon: 94.7, domain: 'Military' },
   { id: 'doklam', name: 'Doklam Plateau', aliases: ['doklam', 'dolam', '洞朗', 'डोकलाम'], parties: ['IND', 'CHN', 'BTN'], lat: 27.3, lon: 88.9, domain: 'Military' },

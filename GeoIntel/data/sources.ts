@@ -102,6 +102,23 @@ export const SOURCES: SourceMeta[] = [
   // if Georgia's new foreign-agents law forces a funding change (verified 2026-09-27).
   { match: ['hetq'], name: 'Hetq', country: 'ARM', language: 'en', ownership: 'independent', tier: 1 },
   { match: ['civil georgia', 'civil.ge'], name: 'Civil Georgia', country: 'GEO', language: 'en', ownership: 'independent', tier: 1 },
+  // Radio Dabanga: an NGO/journalist-coalition foundation, exiled to the Netherlands since
+  // 2020, funded by grants and donations (verified 2026-09-27). Fana: confirmed state-owned,
+  // board chaired by the PM's own political adviser — state, not state_affiliated, unlike
+  // Trend's formally-private structure. Libya Herald: founded 2012 by journalists who left
+  // Gaddafi-era state media over censorship. Somali Update: no ownership record found to
+  // verify against, kept at tier 3 rather than assumed. Premium Times: well-documented
+  // investigative record (Panama/Pandora Papers partner via its sister NGO). IOL: NOT a
+  // clean independent pick — Daily Maverick documented owner Iqbal Survé's Independent
+  // Media deleting an article after a minister's team complained; kept at tier 3 for that
+  // reason, not because of scale.
+  { match: ['radio dabanga', 'dabanga'], name: 'Radio Dabanga', country: 'SDN', language: 'en', ownership: 'independent', tier: 1 },
+  { match: ['fana broadcasting', 'fana bc', 'fanabc'], name: 'Fana Broadcasting', country: 'ETH', language: 'en', ownership: 'state', tier: 2 },
+  { match: ['libya herald'], name: 'Libya Herald', country: 'LBY', language: 'en', ownership: 'independent', tier: 2 },
+  { match: ['somali update'], name: 'Somali Update', country: 'SOM', language: 'en', ownership: 'independent', tier: 3 },
+  { match: ['premium times'], name: 'Premium Times', country: 'NGA', language: 'en', ownership: 'independent', tier: 1 },
+  { match: ['actualite.cd', 'actualite'], name: 'Actualite.cd', country: 'COD', language: 'fr', ownership: 'independent', tier: 2 },
+  { match: ['iol'], name: 'IOL', country: 'ZAF', language: 'en', ownership: 'independent', tier: 3 },
   { match: ['abc.net.au', 'sydney morning herald', 'the australian'], name: 'Australian press', country: 'AUS', language: 'en', ownership: 'independent', tier: 1 },
   { match: ['cnn', 'nbc news', 'cbs news', 'abc news', 'politico', 'axios', 'the hill'], name: 'US press', country: 'USA', language: 'en', ownership: 'independent', tier: 2 },
   { match: ['fox news', 'newsweek', 'daily mail', 'the sun', 'express.co.uk'], name: 'Tabloid / partisan', country: 'USA', language: 'en', ownership: 'tabloid', tier: 3 },

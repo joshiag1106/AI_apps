@@ -29,6 +29,19 @@ describe('actor extraction', () => {
     expect(extractHotspots('解放军在加勒万地区')).toContain('lac');
     expect(extractHotspots('南海 仁爱礁 对峙')).toContain('scs');
   });
+
+  it('does not mistake the French word for "lake" for the LAC hotspot', () => {
+    // Found 2026-09-27: a bare 'lac' alias fired on "le lac Kivu" and tagged a DR Congo
+    // shipwreck story IND/CHN. The full phrase and named locations still catch real hits.
+    const r = resolveActors('Idjwi : au moins 12 morts dans un naufrage sur le lac Kivu');
+    expect(r.hotspots).not.toContain('lac');
+    expect(r.actors).not.toEqual(expect.arrayContaining(['IND', 'CHN']));
+    expect(resolveActors('Fresh face-off reported on the Line of Actual Control').hotspots).toContain('lac');
+  });
+
+  it('recognises the Francophone abbreviation for DR Congo', () => {
+    expect(extractActors('Washington et Doha : négociations sur la RDC')).toContain('COD');
+  });
 });
 
 describe('dyads', () => {

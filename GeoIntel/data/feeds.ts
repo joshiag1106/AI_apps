@@ -70,6 +70,18 @@ export const DIRECT_FEEDS: DirectFeed[] = [
   { id: 'hetq-am', url: 'https://hetq.am/en/rss', outlet: 'Hetq', language: 'en' },
   { id: 'civil-ge', url: 'https://civil.ge/archives/category/news/feed', outlet: 'Civil Georgia', language: 'en' },
 
+  // Ethiopia, Nigeria, South Africa, Libya, Sudan, Somalia and DR Congo were tracked with
+  // the same zero-beat, zero-local-source gap as the Caucasus. One direct feed per country,
+  // all verified live before adding (2026-09-27). South Africa's is the weak link — see the
+  // ownership note on IOL in data/sources.ts.
+  { id: 'dabanga-sd', url: 'https://www.dabangasudan.org/en/all-news/feed', outlet: 'Radio Dabanga', language: 'en' },
+  { id: 'fana-et', url: 'https://www.fanabc.com/english/feed/', outlet: 'Fana Broadcasting', language: 'en' },
+  { id: 'libyaherald-ly', url: 'https://libyaherald.com/feed/', outlet: 'Libya Herald', language: 'en' },
+  { id: 'somaliupdate-so', url: 'https://www.somaliupdate.com/feed', outlet: 'Somali Update', language: 'en' },
+  { id: 'premiumtimes-ng', url: 'https://www.premiumtimesng.com/feed', outlet: 'Premium Times', language: 'en' },
+  { id: 'actualite-cd', url: 'https://actualite.cd/feed', outlet: 'Actualite.cd', language: 'fr' },
+  { id: 'iol-za', url: 'https://iol.co.za/rss', outlet: 'IOL', language: 'en' },
+
   // Defence and policy analysis. Classed 'analysis' in the registry, so these inform
   // the reader but never count as corroboration.
   { id: 'usni', url: 'https://news.usni.org/feed', outlet: 'USNI News', language: 'en' },
@@ -265,6 +277,29 @@ export const BEATS: Beat[] = [
       { locale: 'ru-RU', q: 'Армения Азербайджан граница', en: 'Armenia Azerbaijan border' },
       { locale: 'en-GB', q: 'Georgia Russia EU tension' },
       { locale: 'ru-RU', q: 'Грузия Россия отношения', en: 'Georgia Russia relations' },
+    ],
+  },
+  {
+    // No dyad: RSF is an armed group, not a state, so this can't be actor-tagged as a pair
+    // the way ind-pak or rus-ukr are. English only — no Arabic query yet, unlike mideast,
+    // since Sudan's own coverage (Radio Dabanga, DIRECT_FEEDS) is already English-language.
+    // Verified live before shipping (2026-09-27).
+    id: 'sudan-conflict', label: 'Sudan Conflict', priority: 2,
+    queries: [
+      { locale: 'en-US', q: 'Sudan RSF army conflict' },
+      { locale: 'en-GB', q: 'Sudan Darfur famine displacement' },
+    ],
+  },
+  {
+    // No dyad, and a real limitation worth stating rather than hiding: Rwanda is not a
+    // tracked country (no entry in data/countries.ts), so this beat can tag COD but cannot
+    // tag Rwanda's side of the M23 story even when a headline names it. Fixing that means
+    // adding a country, a bigger change than this beat — left as a known gap, not silently
+    // worked around. Verified live before shipping (2026-09-27).
+    id: 'drc-conflict', label: 'DR Congo Conflict', priority: 2,
+    queries: [
+      { locale: 'en-US', q: 'DR Congo M23 Rwanda conflict' },
+      { locale: 'en-GB', q: 'eastern Congo Goma fighting' },
     ],
   },
   {
