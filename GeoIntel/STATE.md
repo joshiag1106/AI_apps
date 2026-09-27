@@ -1,11 +1,68 @@
 # Where this project stands
 
-**Last worked: 2026-09-25** (corpus stats added to /admin, deployed and live). Before that, same day,
-Farsi feed coverage (deployed and live), World Focus + Ukrainian/Hebrew feed coverage (deployed and
-live), mandatory accounts + exit survey (deployed and live) and the new logo (deployed and live), and
-before that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female
-narrator — see the first section below). Everything below was verified, not assumed. Where something
-is unverified it says so.
+**Last worked: 2026-09-27** (a new Caucasus beat — built, verified locally, NOT yet deployed). Before
+that, **2026-09-25** (corpus stats added to /admin, deployed and live), same day Farsi feed coverage
+(deployed and live), World Focus + Ukrainian/Hebrew feed coverage (deployed and live), mandatory
+accounts + exit survey (deployed and live) and the new logo (deployed and live), and before that,
+**2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator — see the
+first section below). Everything below was verified, not assumed. Where something is unverified it
+says so.
+
+## Caucasus beat (2026-09-27) — BUILT, verified locally, awaiting deploy
+
+Josh asked whether `news_resources.txt` (the 1,073-line directory he'd sent on 2026-09-24) had more
+to give beyond the Ukrainian/Hebrew/Farsi work — it hadn't been read past Section 13. Read in full this
+time. Section 4 alone is ~480 lines of country-by-country press, almost none of it mined. Cross-checked
+against `data/countries.ts`'s 68 tracked states: three regions have countries tracked but **zero beat,
+zero local source, zero non-English query** — Africa (Ethiopia, Nigeria, South Africa, Libya, Sudan,
+Somalia, DR Congo), the Caucasus (Armenia, Azerbaijan, Georgia), and South America (Brazil, Venezuela,
+Argentina). Coverage for all three regions has depended entirely on incidental mentions in global-wire
+stories. Josh picked the Caucasus first.
+
+**Three new `DIRECT_FEEDS`** (`data/feeds.ts`): Trend (`en.trend.az/rss/`, AZE), Hetq (`hetq.am/en/rss`,
+ARM), Civil Georgia (`civil.ge/archives/category/news/feed`, GEO) — same shape as the Guardian/DW/
+France24 entries, full-firehose national outlets filtered by the existing relevance gate. All three
+verified live before adding: real, current `<item>` content, not just HTTP 200 (Sudan Tribune, Addis
+Standard, Hiiraan and Garowe were also tried for the Africa gap and all 403/404/500'd from here — either
+genuinely broken or IP-blocked the way Indian Express/Dawn are; unresolved, left for later).
+
+**Three new `SOURCES` entries** (`data/sources.ts`), researched rather than guessed: Trend is formally
+private but pro-government editorially — `state_affiliated`, same shape as Global Times, not as bald as
+TASS/RT which are flatly `state`. Hetq is published by Armenia's Investigative Journalists NGO (a
+Panama/Pandora Papers partner) — `independent`, tier 1. Civil Georgia is independent, UNAG-owned, partly
+NED-funded — `independent`, tier 1, with a comment flagging Georgia's new foreign-agents law as a reason
+to re-check that funding picture later rather than assume tier 1 holds forever.
+
+**One new `BEAT`**, `id: 'caucasus'`, no `dyad` (like `ior`/`scs` — Armenia–Azerbaijan tension and
+Georgia's own Russia/EU friction are related but not one bilateral relationship), English + Russian only
+to start (Russia is the historical mediator/lingua franca here), the same incremental shape as rus-ukr
+and mideast before their third-language follow-ups: `Armenia Azerbaijan border talks` (en-US), `Армения
+Азербайджан граница` (ru-RU), `Georgia Russia EU tension` (en-GB), `Грузия Россия отношения` (ru-RU).
+Native Armenian/Azerbaijani/Georgian locales are a follow-up, not done here — same gap deliberately left
+open for Ukrainian/Hebrew's domain vocabulary.
+
+**No changes needed to `lib/analyze/entities.ts` or `data/countries.ts`.** Checked before writing any
+code: Armenia, Azerbaijan and Georgia already carry correctly-capitalized Cyrillic aliases (Армения,
+Азербайджан, Грузия), so `extractActors` already tags them right. This is the exact bug class that bit
+the Ukrainian rollout (aliases tested against raw text, case-sensitive) — checked for here first instead
+of found after shipping.
+
+**Verified with a real `npm run ingest`, not just tests**: 83/83 feeds fetched clean. Hetq stored 18
+articles, Civil Georgia 5, correctly actor-tagged (`["ARM","AZE"]`, `["GEO","AZE"]`, `["RUS","GEO"]`,
+etc.) — real, current stories: "Armenian, Azerbaijani Foreign Ministers Meet, Tout Peace Benefits",
+"Pashinyan Labels Baku's 'Western Azerbaijan' Rhetoric a Threat to Security", "Baku Accuses Georgian
+Patriarchate of 'Territorial Claims' Approach". The `caucasus` beat's `ru-RU` queries independently
+pulled in Armenian outlets (Armenpress, newsarmenia.am, 1Lurer) covering the Armenia–Turkey border
+reopening, AND a Georgian outlet (Minval Politika) covering the *same* Azerbaijan–Georgian-Patriarchate
+story Civil Georgia ran in English — the cross-language corroboration/divergent-framing effect this
+product is built around, working on day one. Trend itself stored **zero** articles this cycle — its feed
+is a broad domestic/economic wire (harvests, debit-card statistics) and nothing in the sample tripped the
+relevance gate; not a bug, the same gate behaviour as Guardian/DW/France24's firehoses, worth re-checking
+on a future cycle rather than assumed permanently silent. 1,155 tests pass (no new tests needed — the
+existing `BEATS`-iterating tests in `tests/freshness.test.ts` and `tests/lens.test.ts` cover any new
+beat automatically), `tsc --noEmit` clean.
+
+**NOT yet committed or deployed** — pending Josh's go, same as every other change to this codebase.
 
 ## Corpus stats on /admin (2026-09-25) — LIVE
 
