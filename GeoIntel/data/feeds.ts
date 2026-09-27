@@ -61,6 +61,15 @@ export const DIRECT_FEEDS: DirectFeed[] = [
   { id: 'indian-express', url: 'https://indianexpress.com/section/india/feed/', outlet: 'The Indian Express', language: 'en' },
   { id: 'dawn', url: 'https://www.dawn.com/feeds/home', outlet: 'Dawn', language: 'en' },
 
+  // Armenia, Azerbaijan and Georgia are tracked in data/countries.ts but had no beat and
+  // no local source at all — coverage depended entirely on incidental mentions in global
+  // wires. All three verified live before adding (2026-09-27): Trend carries the wider
+  // Caucasus/Central Asia wire, Hetq is Armenia's own investigative outlet, Civil Georgia
+  // is Georgia's. See data/sources.ts for ownership.
+  { id: 'trend-az', url: 'https://en.trend.az/rss/', outlet: 'Trend', language: 'en' },
+  { id: 'hetq-am', url: 'https://hetq.am/en/rss', outlet: 'Hetq', language: 'en' },
+  { id: 'civil-ge', url: 'https://civil.ge/archives/category/news/feed', outlet: 'Civil Georgia', language: 'en' },
+
   // Defence and policy analysis. Classed 'analysis' in the registry, so these inform
   // the reader but never count as corroboration.
   { id: 'usni', url: 'https://news.usni.org/feed', outlet: 'USNI News', language: 'en' },
@@ -242,6 +251,20 @@ export const BEATS: Beat[] = [
       // Kyiv's own language on its own war, not just Moscow's or the West's — see the
       // note on LOCALES above.
       { locale: 'uk-UA', q: 'Україна Росія фронт переговори', en: 'Ukraine Russia front, negotiations' },
+    ],
+  },
+  {
+    // No dyad, like ior/scs: Armenia–Azerbaijan and Georgia's own Russia/EU friction are
+    // related but not one bilateral relationship. Started English + Russian only (Russia
+    // is the historical mediator/lingua franca here) — native Armenian, Azerbaijani and
+    // Georgian locales are a follow-up, same shape as Ukrainian/Hebrew after rus-ukr and
+    // mideast started EN/RU and EN/AR only. Verified live before shipping (2026-09-27).
+    id: 'caucasus', label: 'Caucasus', priority: 2,
+    queries: [
+      { locale: 'en-US', q: 'Armenia Azerbaijan border talks' },
+      { locale: 'ru-RU', q: 'Армения Азербайджан граница', en: 'Armenia Azerbaijan border' },
+      { locale: 'en-GB', q: 'Georgia Russia EU tension' },
+      { locale: 'ru-RU', q: 'Грузия Россия отношения', en: 'Georgia Russia relations' },
     ],
   },
   {

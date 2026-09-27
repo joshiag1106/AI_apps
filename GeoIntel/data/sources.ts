@@ -94,6 +94,14 @@ export const SOURCES: SourceMeta[] = [
   { match: ['the moscow times', 'meduza'], name: 'Russian independent', country: 'RUS', language: 'ru', ownership: 'independent', tier: 2 },
   { match: ['press tv', 'irna', 'tasnim', 'mehr news'], name: 'Iranian state media', country: 'IRN', language: 'fa', ownership: 'state', tier: 3 },
   { match: ['anadolu', 'trt', 'daily sabah'], name: 'Turkish state media', country: 'TUR', language: 'en', ownership: 'state_affiliated', tier: 3 },
+  // Trend is formally private but pro-government editorially (verified 2026-09-27) — same
+  // shape as Global Times, not as bald as TASS/RT, hence state_affiliated not state.
+  { match: ['trend'], name: 'Trend', country: 'AZE', language: 'en', ownership: 'state_affiliated', tier: 3 },
+  // Hetq: published by Armenia's Investigative Journalists NGO (Panama/Pandora Papers
+  // partner). Civil Georgia: independent, UNAG-owned, partly NED-funded — worth re-checking
+  // if Georgia's new foreign-agents law forces a funding change (verified 2026-09-27).
+  { match: ['hetq'], name: 'Hetq', country: 'ARM', language: 'en', ownership: 'independent', tier: 1 },
+  { match: ['civil georgia', 'civil.ge'], name: 'Civil Georgia', country: 'GEO', language: 'en', ownership: 'independent', tier: 1 },
   { match: ['abc.net.au', 'sydney morning herald', 'the australian'], name: 'Australian press', country: 'AUS', language: 'en', ownership: 'independent', tier: 1 },
   { match: ['cnn', 'nbc news', 'cbs news', 'abc news', 'politico', 'axios', 'the hill'], name: 'US press', country: 'USA', language: 'en', ownership: 'independent', tier: 2 },
   { match: ['fox news', 'newsweek', 'daily mail', 'the sun', 'express.co.uk'], name: 'Tabloid / partisan', country: 'USA', language: 'en', ownership: 'tabloid', tier: 3 },
