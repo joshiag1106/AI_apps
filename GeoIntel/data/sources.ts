@@ -119,6 +119,14 @@ export const SOURCES: SourceMeta[] = [
   { match: ['premium times'], name: 'Premium Times', country: 'NGA', language: 'en', ownership: 'independent', tier: 1 },
   { match: ['actualite.cd', 'actualite'], name: 'Actualite.cd', country: 'COD', language: 'fr', ownership: 'independent', tier: 2 },
   { match: ['iol'], name: 'IOL', country: 'ZAF', language: 'en', ownership: 'independent', tier: 3 },
+  // Poder360: privately held, founded 2017 by a journalist who left Folha de S.Paulo, no
+  // state ties. Clarin: Argentina's largest private outlet, explicitly not dependent on
+  // government advertising subsidies. El Nacional: Venezuela's last major independent
+  // outlet — the government cut off its paper supply in 2018 and its owner has run it
+  // from Madrid exile since 2015 rather than sell or fold (all verified 2026-09-27).
+  { match: ['poder360'], name: 'Poder360', country: 'BRA', language: 'pt', ownership: 'independent', tier: 1 },
+  { match: ['clarin'], name: 'Clarin', country: 'ARG', language: 'es', ownership: 'independent', tier: 1 },
+  { match: ['el nacional'], name: 'El Nacional', country: 'VEN', language: 'es', ownership: 'independent', tier: 1 },
   { match: ['abc.net.au', 'sydney morning herald', 'the australian'], name: 'Australian press', country: 'AUS', language: 'en', ownership: 'independent', tier: 1 },
   { match: ['cnn', 'nbc news', 'cbs news', 'abc news', 'politico', 'axios', 'the hill'], name: 'US press', country: 'USA', language: 'en', ownership: 'independent', tier: 2 },
   { match: ['fox news', 'newsweek', 'daily mail', 'the sun', 'express.co.uk'], name: 'Tabloid / partisan', country: 'USA', language: 'en', ownership: 'tabloid', tier: 3 },

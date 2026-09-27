@@ -19,10 +19,19 @@ export const COUNTRIES: Country[] = [
     aliases: ['india', 'indian', 'new delhi', 'bharat', '印度', '印方', 'भारत', 'हिंदुस्तान', 'Индия', 'الهند', 'بھارت', 'انڈیا', 'インド', '인도'] },
   { iso: 'CHN', iso2: 'CN', name: 'China', region: 'East Asia', lat: 35.0, lon: 103.0,
     aliases: ['china', 'chinese', 'beijing', 'peking', "people's republic of china", 'prc', '中国', '中方', '中华人民共和国', '大陆', '北京', 'चीन', 'Китай', 'الصين', 'چین', '중국'] },
+  // 'pakistán' added 2026-09-27: Spanish spells it with an accent, which the unaccented
+  // alias doesn't match — a real El Nacional story on a Pakistan-China border pact was
+  // dropping Pakistan entirely, keeping only India and China. This is one instance of a
+  // broader gap (accented Latin names generally) flagged separately rather than patched
+  // alias-by-alias here.
   { iso: 'PAK', iso2: 'PK', name: 'Pakistan', region: 'South Asia', lat: 30.0, lon: 70.0,
-    aliases: ['pakistan', 'pakistani', 'islamabad', 'rawalpindi', '巴基斯坦', '巴方', 'पाकिस्तान', 'Пакистан', 'باكستان', 'پاکستان'] },
+    aliases: ['pakistan', 'pakistán', 'pakistani', 'islamabad', 'rawalpindi', '巴基斯坦', '巴方', 'पाकिस्तान', 'Пакистан', 'باكستان', 'پاکستان'] },
+  // 'usa' (bare) was removed 2026-09-27: it's also the Spanish verb "usa" (uses, from
+  // usar) — found because "Maduro usa la crisis..." tagged USA on a story about neither.
+  // 'estados unidos' added the same day: Spanish and Portuguese press call it that, not
+  // "United States", and nothing here recognised it.
   { iso: 'USA', iso2: 'US', name: 'United States', region: 'North America', lat: 39.0, lon: -98.0,
-    aliases: ['united states', 'u.s.', 'us ', 'usa', 'america', 'american', 'washington', 'pentagon', 'white house', '美国', '美方', '华盛顿', '五角大楼', 'अमेरिका', 'संयुक्त राज्य', 'США', 'أمريكا', 'الولايات المتحدة', 'امریکہ', 'アメリカ', '미국'] },
+    aliases: ['united states', 'u.s.', 'us ', 'estados unidos', 'america', 'american', 'washington', 'pentagon', 'white house', '美国', '美方', '华盛顿', '五角大楼', 'अमेरिका', 'संयुक्त राज्य', 'США', 'أمريكا', 'الولايات المتحدة', 'امریکہ', 'アメリカ', '미국'] },
   { iso: 'RUS', iso2: 'RU', name: 'Russia', region: 'Eurasia', lat: 61.0, lon: 90.0,
     // 'Росія' is the Ukrainian-language spelling, distinct from Russian 'Россия' above —
     // needed for the uk-UA beat query to recognise Russia as an actor at all.
@@ -106,7 +115,9 @@ export const COUNTRIES: Country[] = [
   { iso: 'ZAF', iso2: 'ZA', name: 'South Africa', region: 'Africa', lat: -29.0, lon: 24.0,
     aliases: ['south africa', 'pretoria', 'johannesburg', '南非', 'दक्षिण अफ़्रीका', 'ЮАР', 'جنوب أفريقيا'] },
   { iso: 'BRA', iso2: 'BR', name: 'Brazil', region: 'South America', lat: -14.2, lon: -51.9,
-    aliases: ['brazil', 'brasilia', '巴西', 'ब्राज़ील', 'Бразилия', 'البرازيل'] },
+    // 'brasil' added 2026-09-27: Brazil's own Portuguese press calls itself that, not
+    // "Brazil" — a headline naming only "Brasil" was tagging zero actors without it.
+    aliases: ['brazil', 'brasil', 'brasilia', '巴西', 'ब्राज़ील', 'Бразилия', 'البرازيل'] },
   { iso: 'CAN', iso2: 'CA', name: 'Canada', region: 'North America', lat: 56.1, lon: -106.3,
     aliases: ['canada', 'ottawa', '加拿大', 'कनाडा', 'Канада', 'كندا'] },
   { iso: 'MEX', iso2: 'MX', name: 'Mexico', region: 'North America', lat: 23.6, lon: -102.6,

@@ -1,14 +1,75 @@
 # Where this project stands
 
-**Last worked: 2026-09-27** (an Africa beat, built right after the Caucasus one — both built and
-verified locally, NOT yet deployed). Before that, **2026-09-25** (corpus stats added to /admin, deployed
-and live), same day Farsi feed coverage (deployed and live), World Focus + Ukrainian/Hebrew feed
-coverage (deployed and live), mandatory accounts + exit survey (deployed and live) and the new logo
-(deployed and live), and before that, **2026-09-24** (the demo tour's Lens chapter, its step to an
-official, and a female narrator — see the first section below). Everything below was verified, not
-assumed. Where something is unverified it says so.
+**Last worked: 2026-09-27** (a South America beat — built and verified locally, not yet shipped; see
+below). Before that, same day, the Caucasus and Africa beats — both built, deployed, and verified live.
+Before that, **2026-09-25** (corpus stats added to /admin, deployed and live), same day Farsi feed
+coverage (deployed and live), World Focus + Ukrainian/Hebrew feed coverage (deployed and live),
+mandatory accounts + exit survey (deployed and live) and the new logo (deployed and live), and before
+that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator —
+see the first section below). Everything below was verified, not assumed. Where something is
+unverified it says so.
 
-## Africa beat (2026-09-27) — BUILT, verified locally, awaiting deploy
+## South America beat (2026-09-27) — BUILT, verified locally, not yet shipped
+
+Josh, after the Africa beat: "build south america next." Brazil, Venezuela and Argentina had the same
+zero-beat, zero-local-source gap already closed for the Caucasus and Africa.
+
+**Three new `DIRECT_FEEDS`**: Poder360 (BRA, Portuguese — first Portuguese-language source in this
+codebase), Clarin (ARG, Spanish), El Nacional (VEN, Spanish). All verified live for real content first.
+**El Nacional's ownership is worth reading, not just its tier**: it is Venezuela's last major
+independent outlet — the government cut off its paper supply in 2018, forcing it fully online, and its
+owner has run it from Madrid exile since 2015 rather than sell or shut down. All three: `independent`,
+tier 1.
+
+**One new `BEAT`**, `venezuela-crisis`, no dyad, English only (El Nacional already carries the
+Spanish-language angle via `DIRECT_FEEDS`): "Venezuela Maduro opposition crackdown sanctions" and
+"Venezuela Guyana Essequibo dispute". **Same stated limitation as `drc-conflict`**: Guyana is not a
+tracked country, so the beat can tag `VEN` but not Guyana's side of the Essequibo dispute even when a
+headline names it. Brazil and Argentina get no dedicated beat — stable democracies, direct feed plus
+the relevance gate is enough, same reasoning as Ethiopia/Nigeria/Libya/Somalia/South Africa in the
+Africa work.
+
+**Three real bugs found and fixed, all before shipping, by proactively auditing for the same class of
+collision the Africa work found rather than waiting to be surprised by it** (`data/countries.ts`):
+1. `'usa'` (bare alias for the United States) is also the Spanish verb "usa" (uses) — the same shape as
+   the French `'lac'`/"lake" bug. `extractActors('Maduro usa la crisis para consolidar poder en
+   Venezuela')` returned `['USA','VEN']` before the fix. Removed the bare alias; `'united states'`,
+   `'u.s.'`, `'us '`, `'america'`, `'american'`, `'washington'` etc. still catch every real case.
+2. Neither Spanish nor Portuguese press call the US "United States" — they say "Estados Unidos", and
+   nothing recognised it. Added as a proper alias; verified against a real stored article (El Nacional's
+   snippet field, unlike some direct feeds, is genuinely populated, and a real story about Cuba's
+   foreign minister was tagged `USA` correctly through it).
+3. Brazil's own Portuguese name for itself, "Brasil", wasn't recognised either —
+   `extractActors('Governo do Brasil anuncia nova politica economica')` returned `[]` before the fix. A
+   domestic Brazilian political story naming only "Brasil" would have scored zero actors and been
+   dropped by the relevance gate entirely, not merely mislabelled.
+
+**A fourth bug found while reading real stored output, fixed narrowly rather than broadly**: a real
+El Nacional story on a Pakistan-China border pact returned only `['IND','CHN']` — Spanish spells it
+"Pakistán", with an accent, and the alias list only had the unaccented English spelling. Added
+`'pakistán'` to `PAK`'s aliases. **This is one instance of a broader gap left unfixed on purpose**:
+`lib/analyze/entities.ts`'s Latin-script test is ASCII-only, so any alias with a diacritic (México,
+Turquía, Corea, Japón, ...) falls through the same way. Flagged as a separate background task
+(`task_444f53ad`) rather than patched name-by-name here, alongside a second flagged, unrelated,
+pre-existing bug found in passing: a bare `'male'` alias for the Maldives false-matches the ordinary
+English word "male" (`task_661349a7`) — live in production already, nothing to do with this work.
+
+All four fixes are pinned as regressions in `tests/analyze.test.ts`.
+
+**Verified**: 1,160 tests pass (1,157 + 3 new — the fourth fix's test came with the others), `tsc
+--noEmit` clean. A real `npm run ingest`: 98/99 feeds ok (Fana Broadcasting failed to fetch again, same
+as the Africa ingest — worth a re-check, not necessarily a real problem). El Nacional stored 9 articles
+with real, current, correctly-tagged content — "Trump aseguró que habló con Delcy Rodríguez sobre
+elecciones durante reunión en Nueva York" (`["USA","VEN"]`), a demand to unblock independent digital
+media in Venezuela (`["VEN"]`), a reference to the 2020 Operación Gedeón incursion. Clarin stored 1
+article. **Poder360 stored zero this cycle** — not necessarily a problem, same relevance-gate behaviour
+already seen with Trend (Caucasus) and Fana/Somali Update (Africa): a broad national wire needs its own
+cycle's stories to happen to clear the bar.
+
+**NOT yet committed, pushed, mirrored to AI_apps, or deployed** — pending Josh's go, same as the
+Caucasus and Africa work.
+
+## Africa beat (2026-09-27) — DEPLOYED, verified live
 
 Josh, after seeing the Caucasus work: "check Africa or South America next." Both were researched
 first — Africa was picked ("take the call, do Africa first") because it covers more of the tracked
@@ -68,10 +129,23 @@ meeting in New York discusses peace efforts", "El-Sisi and CIA chief discuss Sud
 IOL (3, including the cricket false-positive above). Fana and Somali Update stored zero this cycle —
 not necessarily a problem, same relevance-gate behaviour already seen with Trend in the Caucasus work.
 
-**NOT yet committed, pushed, mirrored to AI_apps, or deployed** — pending Josh's go on each step, same
-as the Caucasus work.
+**Committed to GeoIntel main** (`1c5a728` + `a38f3bf`) and pushed to the private repo. **The public
+mirror is AI_apps PR #111, MERGED 2026-09-27** at Josh's own `gh pr merge` (the merge step was refused
+by the auto-mode classifier — "Merge Without Review" — same as PR #110; Josh ran it himself; 11 checks
+passed, 1 skipped). Verified byte-identical afterward, all five changed files diffed directly between
+the two working copies.
 
-## Caucasus beat (2026-09-27) — BUILT, verified locally, awaiting deploy
+**DEPLOYED 2026-09-27.** Built from scratch (`rm -rf .next`, tests, build); the rsync excludes were
+confirmed with a dry run (0 `.db`/`darwin` matches in 2,606 files) before the real transfer, and
+`find /srv/kautilya` for stray db/duplicate files came back empty afterward. Restarted as root. All
+five of the runbook's step-11 probes passed: `/kautilya` 200, the image proxy 400, `/api/cron` 401
+without the secret, `/board` 307-redirects signed-out visitors to `/login`, zero `stripe` leakage on
+`/pricing`. **Not yet directly observed**: the new African sources storing an article in production —
+the deploy ships the code, but the scheduled hourly ingest hasn't necessarily run yet, same caveat as
+the Caucasus deploy. Check `/world` for Ethiopia/Nigeria/Sudan/Somalia/Libya/DR Congo/South Africa
+event counts rising, or trigger the cron endpoint by hand, next session.
+
+## Caucasus beat (2026-09-27) — DEPLOYED, verified live
 
 Josh asked whether `news_resources.txt` (the 1,073-line directory he'd sent on 2026-09-24) had more
 to give beyond the Ukrainian/Hebrew/Farsi work — it hadn't been read past Section 13. Read in full this

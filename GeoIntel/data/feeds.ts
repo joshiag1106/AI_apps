@@ -82,6 +82,14 @@ export const DIRECT_FEEDS: DirectFeed[] = [
   { id: 'actualite-cd', url: 'https://actualite.cd/feed', outlet: 'Actualite.cd', language: 'fr' },
   { id: 'iol-za', url: 'https://iol.co.za/rss', outlet: 'IOL', language: 'en' },
 
+  // Brazil, Venezuela and Argentina had the same zero-beat, zero-local-source gap. One
+  // feed per country, verified live before adding (2026-09-27). El Nacional is Venezuela's
+  // last major independent outlet, run from Madrid exile since 2015 after the government
+  // cut off its paper supply — see data/sources.ts.
+  { id: 'poder360-br', url: 'https://www.poder360.com.br/feed/', outlet: 'Poder360', language: 'pt' },
+  { id: 'clarin-ar', url: 'https://www.clarin.com/rss/politica/', outlet: 'Clarin', language: 'es' },
+  { id: 'elnacional-ve', url: 'https://www.elnacional.com/feed/', outlet: 'El Nacional', language: 'es' },
+
   // Defence and policy analysis. Classed 'analysis' in the registry, so these inform
   // the reader but never count as corroboration.
   { id: 'usni', url: 'https://news.usni.org/feed', outlet: 'USNI News', language: 'en' },
@@ -300,6 +308,18 @@ export const BEATS: Beat[] = [
     queries: [
       { locale: 'en-US', q: 'DR Congo M23 Rwanda conflict' },
       { locale: 'en-GB', q: 'eastern Congo Goma fighting' },
+    ],
+  },
+  {
+    // No dyad: the Essequibo dispute is Venezuela vs. Guyana, and Guyana is not a tracked
+    // country (no entry in data/countries.ts) — same stated limitation as drc-conflict and
+    // Rwanda. This beat can tag VEN but not Guyana's side even when a headline names it.
+    // English only — El Nacional (DIRECT_FEEDS) already carries the Spanish-language angle.
+    // Verified live before shipping (2026-09-27).
+    id: 'venezuela-crisis', label: 'Venezuela Crisis', priority: 2,
+    queries: [
+      { locale: 'en-US', q: 'Venezuela Maduro opposition crackdown sanctions' },
+      { locale: 'en-GB', q: 'Venezuela Guyana Essequibo dispute' },
     ],
   },
   {
