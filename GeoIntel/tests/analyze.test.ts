@@ -60,6 +60,35 @@ describe('actor extraction', () => {
     // entirely because the alias list only had the unaccented English spelling.
     expect(extractActors('Un pacto fronterizo entre Pakistán y China enfurece a India')).toContain('PAK');
   });
+
+  it('reads "Chinese Taipei", the name Taiwan competes under, as Taiwan alone', () => {
+    // Found 2026-09-28 in production: every Asian Games report on "Chinese Taipei", and a
+    // Spanish "China Taipei" youth baseball story, were tagged CHN as well as TWN — the
+    // phrase carries China's alias inside Taiwan's name — and so counted as China–Taiwan
+    // co-mentions for events, the dyad and the network.
+    const asiad = extractActors('(Asiad) S. Korea shuts out Chinese Taipei to begin baseball title defense');
+    expect(asiad).toContain('TWN');
+    expect(asiad).not.toContain('CHN');
+    expect(extractActors('太太喊「Chinese Taipei」被出征')).toEqual(['TWN']);
+    expect(extractActors('antes de enfrentar a China Taipei el sábado')).toEqual(['TWN']);
+    expect(extractActors('antes de enfrentar a China Taipéi el sábado')).toEqual(['TWN']);
+  });
+
+  it('still tags China when a text names it besides Chinese Taipei', () => {
+    expect(extractActors('China objects to the Chinese Taipei flag at the Games')).toEqual(expect.arrayContaining(['CHN', 'TWN']));
+  });
+
+  it("does not read the PRC's full name as Taiwan's, or Taiwan's as China's", () => {
+    // Found 2026-09-28 in production, the mirror image of "Chinese Taipei": 'republic of
+    // china', Taiwan's official name, sits inside "People's Republic of China", so three
+    // National Day stories — one a Chinese embassy reception in India — were tagged TWN.
+    // All three wrote the apostrophe curly, which CHN's own alias did not match either.
+    // And "Republic of China" alone carries China's bare alias, so it was tagged CHN too.
+    expect(extractActors('Chinese Embassy in India celebrates the 77th anniversary of the People’s Republic of China')).not.toContain('TWN');
+    expect(extractActors("The People's Republic of China marks National Day")).toEqual(['CHN']);
+    expect(extractActors('The People’s Republic of China marks National Day')).toEqual(['CHN']);
+    expect(extractActors('The Republic of China marks its National Day')).toEqual(['TWN']);
+  });
 });
 
 describe('dyads', () => {

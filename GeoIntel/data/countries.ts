@@ -232,3 +232,22 @@ export const CN_COMPOUNDS: Record<string, string[]> = {
   '俄乌': ['RUS', 'UKR'], '以伊': ['ISR', 'IRN'],
   '台美': ['TWN', 'USA'], '美台': ['USA', 'TWN'], '两岸': ['CHN', 'TWN'],
 };
+
+/**
+ * Names that belong to ONE state but carry another state's alias inside them. "Chinese
+ * Taipei" — the name Taiwan competes under in sport — contains 'chinese', so every Asian
+ * Games report on it read as a China–Taiwan item; "People's Republic of China" contains
+ * 'republic of china', Taiwan's official name, and so read as Taiwan. Each is credited to
+ * its own state and then blanked out before aliases are matched (lib/analyze/entities.ts),
+ * so a text that ALSO names the other state elsewhere still tags it. Found 2026-09-28, on
+ * eight stored production articles. The curly apostrophe is listed because all three
+ * real PRC mentions used it; Chinese 中华台北 needs no entry, it matches no China alias.
+ */
+export const OWN_NAMES: Record<string, string> = {
+  'chinese taipei': 'TWN',
+  'china taipei': 'TWN',
+  'china taipéi': 'TWN',
+  "people's republic of china": 'CHN',
+  'people’s republic of china': 'CHN',
+  'republic of china': 'TWN',
+};
