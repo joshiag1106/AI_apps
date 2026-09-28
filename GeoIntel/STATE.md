@@ -1,7 +1,8 @@
 # Where this project stands
 
-**Last worked: 2026-09-27** (a South America beat — built and verified locally, not yet shipped; see
-below). Before that, same day, the Caucasus and Africa beats — both built, deployed, and verified live.
+**Last worked: 2026-09-28** (the South America beat deployed and verified live, and the first
+production evidence that the Caucasus and Africa sources store articles; see below). Before that,
+**2026-09-27**, the South America beat was built, and the Caucasus and Africa beats built, deployed, and verified live.
 Before that, **2026-09-25** (corpus stats added to /admin, deployed and live), same day Farsi feed
 coverage (deployed and live), World Focus + Ukrainian/Hebrew feed coverage (deployed and live),
 mandatory accounts + exit survey (deployed and live) and the new logo (deployed and live), and before
@@ -9,7 +10,7 @@ that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and
 see the first section below). Everything below was verified, not assumed. Where something is
 unverified it says so.
 
-## South America beat (2026-09-27) — BUILT, verified locally, not yet shipped
+## South America beat (2026-09-27) — DEPLOYED 2026-09-28, verified live
 
 Josh, after the Africa beat: "build south america next." Brazil, Venezuela and Argentina had the same
 zero-beat, zero-local-source gap already closed for the Caucasus and Africa.
@@ -66,8 +67,40 @@ article. **Poder360 stored zero this cycle** — not necessarily a problem, same
 already seen with Trend (Caucasus) and Fana/Somali Update (Africa): a broad national wire needs its own
 cycle's stories to happen to clear the bar.
 
-**NOT yet committed, pushed, mirrored to AI_apps, or deployed** — pending Josh's go, same as the
-Caucasus and Africa work.
+**DEPLOYED 2026-09-28**, from a from-scratch build (`rm -rf .next`, 1,160 tests, `tsc` clean). The
+bundle check found the two expected intruders, `kautilya.db` and `@img/sharp-darwin-x64`, both covered
+by the excludes; the dry run showed 0 `.db`/`darwin`/duplicate entries in 2,606 lines, and after the
+transfer `find /srv/kautilya` for stray db/duplicate files came back empty. Restarted as root; all five
+step-11 probes passed (`/kautilya` 200, image proxy 400, `/api/cron` 401, `/board` 307, 0 `stripe` on
+`/pricing`), and the live HTML carries the new `BUILD_ID`. **Claude ran this deploy itself** — the
+classifier allowed the rsync, the restart, the Bearer-authed cron call and read-only `sqlite3` queries
+this time, but still refused the AI_apps merge ("Merge Without Review"). Inconsistent session to session,
+as before.
+
+**Verified in production, not just locally.** One `/kautilya/api/cron` call right after the deploy: 99
+tasks, 97 ok (only the long-standing Indian Express/Dawn 403s — Fana fetched fine this time), and
+`"pt":1, "es":5` in `byLanguage`, the first Portuguese and Spanish articles the live site has stored. A
+read-only per-outlet count on the live DB then **closed the caveat the Caucasus and Africa deploys left
+open**: 11 of the 13 new regional outlets have stored articles live — Hetq 18, Libya Herald 15, Trend 12,
+IOL 11, Premium Times 9, Radio Dabanga 5, Fana 5, El Nacional 5, Civil Georgia 5, Poder360 1,
+Actualite.cd 1. Trend and Fana, both silent in local ingests, do store given enough cycles, so the
+relevance-gate reading was right. Still zero live: Clarin (1 locally) and Somali Update (zero everywhere
+so far — the one worth watching).
+
+**Read, not just counted — half the live South American sample is noise.** Of the six stored El
+Nacional/Poder360 rows, every fix visibly works (Pakistán → PAK, Brasil → BRA, "EE UU" and Portuguese
+"EUA" → USA), but three rows are not geopolitics: two sports stories (the South American Games; a U-15
+baseball World Cup) and a Madrid housing protest. El Nacional is a general-news firehose and the
+relevance gate passes anything naming two tracked states — the same shape as IOL's cricket. **One of
+those is a real tagging bug, not just noise**: the U-15 story is tagged `["CHN","TWN","AUS","VEN"]`
+because its snippet says "China Taipei", the name Taiwan competes under in sport, which matches both CHN
+and TWN. Escalation 0.0, so risk scores barely move, but it counts as a China–Taiwan co-mention for
+events, the dyad and the network. Flagged as a separate task (`task_4f00ea5e`), not fixed here.
+
+**The public mirror is AI_apps PR #112**: 11 checks passed, 1 skipped; all five changed files
+byte-identical to GeoIntel main; the leak scan adds zero hits (the four pre-existing hits sit in older
+STATE.md text — the open domain-in-history question). **Merge pending**: the classifier refused it, so
+it is Josh's `gh pr merge 112 --merge`.
 
 ## Africa beat (2026-09-27) — DEPLOYED, verified live
 
@@ -140,10 +173,8 @@ confirmed with a dry run (0 `.db`/`darwin` matches in 2,606 files) before the re
 `find /srv/kautilya` for stray db/duplicate files came back empty afterward. Restarted as root. All
 five of the runbook's step-11 probes passed: `/kautilya` 200, the image proxy 400, `/api/cron` 401
 without the secret, `/board` 307-redirects signed-out visitors to `/login`, zero `stripe` leakage on
-`/pricing`. **Not yet directly observed**: the new African sources storing an article in production —
-the deploy ships the code, but the scheduled hourly ingest hasn't necessarily run yet, same caveat as
-the Caucasus deploy. Check `/world` for Ethiopia/Nigeria/Sudan/Somalia/Libya/DR Congo/South Africa
-event counts rising, or trigger the cron endpoint by hand, next session.
+`/pricing`. **Observed storing in production on 2026-09-28** (see the South America section): Libya
+Herald 15, IOL 11, Premium Times 9, Radio Dabanga 5, Fana 5, Actualite.cd 1; Somali Update still zero.
 
 ## Caucasus beat (2026-09-27) — DEPLOYED, verified live
 
@@ -212,8 +243,8 @@ the live host: `/kautilya` 200, the image proxy 400, `/api/cron` 401 without the
 307-redirects signed-out visitors to `/login`, zero `stripe` leakage on `/pricing`. **Not yet directly
 observed**: a live ingest actually storing a Trend/Hetq/Civil Georgia article in production — the
 Bearer-authed `/api/cron` check needs the server's `CRON_SECRET`, and reading it off `/etc/kautilya.env`
-was refused by the auto-mode classifier as a production read. The scheduled hourly ingest will pick the
-new feeds up on its own; re-run this check by hand next session rather than assuming it's proven.
+was refused by the auto-mode classifier as a production read. **Observed storing in production on
+2026-09-28** (see the South America section): Hetq 18, Trend 12, Civil Georgia 5.
 
 ## Corpus stats on /admin (2026-09-25) — LIVE
 
