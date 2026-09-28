@@ -122,6 +122,19 @@ describe('actor extraction', () => {
     expect(extractHotspots('Trump rechaza la oferta de Irán para reabrir el estrecho de Ormuz en 7 días')).toContain('hormuz');
   });
 
+  it('does not read the "US$" currency sign as the United States', () => {
+    // Found 2026-09-28 reading live Portuguese rows: "déficit de US$ 5,1 bilhões" was tagged
+    // USA, and so was every English "US$2.4 billion" — the sign names a currency, not a
+    // state, and is usually written straight onto the figure.
+    expect(extractActors('Contas externas do Brasil têm déficit de US$ 5,1 bilhões em agosto')).toEqual(['BRA']);
+    expect(extractActors('Singapore to auction luxury goods, properties from US$2.4 billion money laundering case')).toEqual(['SGP']);
+    expect(extractActors('Israel and Greece sign US$3.5 billion defence deal')).not.toContain('USA');
+  });
+
+  it('still tags the United States when a text names it besides quoting US$', () => {
+    expect(extractActors('S. Korean individual investors purchase net US$7 bln worth of U.S. stocks')).toContain('USA');
+  });
+
   it('does not read "América", the continent, as the United States', () => {
     // Spanish and Portuguese "América" is the continent (the US is EE.UU./EUA), and
     // English "Latin America" names a region, not a state — both carry 'america'.

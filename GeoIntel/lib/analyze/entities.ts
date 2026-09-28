@@ -55,7 +55,8 @@ function matches(alias: string, lower: string, folded: string): boolean {
 
 /**
  * Longest first, so "people's republic of china" is claimed before "republic of china".
- * NO_STATE_NAMES ride along with a null state: blanked out, credited to nobody.
+ * NO_STATE_NAMES ride along with a null state: blanked out, credited to nobody. A name
+ * ending in a symbol needs no boundary after it — "US$" sits straight on its figure.
  */
 const OWN_NAME_PATTERNS = [
   ...Object.entries(OWN_NAMES),
@@ -64,7 +65,10 @@ const OWN_NAME_PATTERNS = [
   .sort(([a], [b]) => b.length - a.length)
   .map(([name, iso]) => ({
     iso,
-    re: new RegExp(`(?<![a-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9])`, 'g'),
+    re: new RegExp(
+      `(?<![a-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${/[a-z0-9]$/.test(name) ? '(?![a-z0-9])' : ''}`,
+      'g',
+    ),
   }));
 
 /**

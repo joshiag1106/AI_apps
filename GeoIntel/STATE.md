@@ -1,7 +1,8 @@
 # Where this project stands
 
-**Last worked: 2026-09-28** (accent-insensitive matching and Spanish/Portuguese/French country names —
-deployed, the 5 affected stored rows corrected, verified live; before that the same day, a China/Taiwan name-collision
+**Last worked: 2026-09-28** ("US$" no longer tags the United States — built and verified locally, not yet
+deployed; before that the same day, accent-insensitive matching and Spanish/Portuguese/French country
+names — deployed, the 5 affected stored rows corrected, verified live; before that, a China/Taiwan name-collision
 fix — deployed, its 9 wrongly-tagged stored rows corrected, verified live; earlier still, the South America beat deployed and verified live, and the first
 production evidence that the Caucasus and Africa sources store articles; see below). Before that,
 **2026-09-27**, the South America beat was built, and the Caucasus and Africa beats built, deployed, and verified live.
@@ -11,6 +12,28 @@ mandatory accounts + exit survey (deployed and live) and the new logo (deployed 
 that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator —
 see the first section below). Everything below was verified, not assumed. Where something is
 unverified it says so.
+
+## "US$" no longer tags the United States (2026-09-28) — BUILT, verified locally, not yet deployed
+
+Found reading the live es/pt rows after the accent work (below): "déficit de US$ 5,1 bilhões" was tagged
+USA — the `us` alias matched the currency sign. **Far bigger than one Portuguese row**: the South China
+Morning Post converts every HK$/€/peso figure into "(US$…)", so its money stories all carried a false
+USA — 65 local and 50 live articles contain the sign. Many small items (a Bardot auction, a Singapore
+gym, a cherry-tree beetle) had cleared the relevance gate only because of that false second state.
+
+**Fix**: `us$` joins `NO_STATE_NAMES` (blanked, credited to nobody). One real subtlety: the blanking
+pattern required a word boundary AFTER every name, and "US$2.4 billion" has a digit straight after the
+sign, so it never matched — a name ending in a symbol now needs no trailing boundary.
+
+**Verified**: 2 new tests (the real Poder360 and SCMP headlines, failing first with `['USA','BRA']`; plus
+a guard that "net US$7 bln worth of U.S. stocks" keeps USA), 1,170 tests, `tsc` clean. Mutation-tested:
+dropping `us$`, or restoring the unconditional trailing boundary, each turn a test red. Old vs new over
+all 10,393 local articles: 46 change, gate passes 10,346 → 10,313; over all 7,104 live articles: 34
+change, 7,067 → 7,042. **Every change is a removal of USA, correct by construction** — the other USA
+aliases are still checked on the blanked text, so USA goes only where "US$" was its sole source;
+spot-checked the two most policy-sounding ("War without battle" — "€4 billion (US$4.7 billion)"; "Is the
+Philippine military underfunded?" — "(US$30 billion)"). One row only reorders (Saudi pipeline: USA now
+arrives via the Hormuz hotspot instead of the text). No hotspot or people tags changed.
 
 ## Accents folded, and Spanish/Portuguese/French country names (2026-09-28) — DEPLOYED, stored rows corrected, verified live
 
@@ -69,12 +92,12 @@ Trend TUR/GEO/AZE). **That ingest stored 15 Spanish articles** (5 in the morning
 stored es/pt rows were read: ~12 real (Irán–EE UU talks, Russian strikes on Ukraine, Switzerland's
 neutrality, the Pakistán–China pact, US–China tariffs, Cuba), ~6 noise, mostly football.
 
-**New bug found reading them, NOT caused by this change and not yet fixed**: "Contas externas do Brasil
-têm déficit de **US$** 5,1 bilhões" is tagged USA — the currency sign "US$" matches the `us` alias (the
-old matcher did the same). Common in Latin American and English press alike. The obvious fix is a
-`NO_STATE_NAMES` entry for `us$`, test-first — Josh's call.
+**New bug found reading them, NOT caused by this change**: "Contas externas do Brasil têm déficit de
+**US$** 5,1 bilhões" is tagged USA — the currency sign "US$" matches the `us` alias (the old matcher did
+the same). Fixed the same day, see the section above.
 
-**The public mirror is AI_apps PR #114** — not yet merged at the time of writing.
+**The public mirror is AI_apps PR #114, MERGED 2026-09-28 @ c66944d** at Josh's own `gh pr merge`,
+after all checks finished (11 passed, 1 skipped). Verified byte-identical afterward, all four changed files.
 
 ## "Chinese Taipei" and the PRC's full name no longer cross-tag China and Taiwan (2026-09-28) — DEPLOYED, stored rows corrected, verified live
 
