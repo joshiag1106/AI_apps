@@ -1,6 +1,7 @@
 # Where this project stands
 
-**Last worked: 2026-09-28** (the South America beat deployed and verified live, and the first
+**Last worked: 2026-09-28** (a China/Taiwan name-collision fix — built and verified locally, not yet
+deployed; then, earlier the same day, the South America beat deployed and verified live, and the first
 production evidence that the Caucasus and Africa sources store articles; see below). Before that,
 **2026-09-27**, the South America beat was built, and the Caucasus and Africa beats built, deployed, and verified live.
 Before that, **2026-09-25** (corpus stats added to /admin, deployed and live), same day Farsi feed
@@ -9,6 +10,38 @@ mandatory accounts + exit survey (deployed and live) and the new logo (deployed 
 that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator —
 see the first section below). Everything below was verified, not assumed. Where something is
 unverified it says so.
+
+## "Chinese Taipei" and the PRC's full name no longer cross-tag China and Taiwan (2026-09-28) — BUILT, verified locally, not yet deployed
+
+Found reading the live South America sample (below): a Spanish youth-baseball story naming "China
+Taipei" was tagged `["CHN","TWN",…]`. The cause is general, not Spanish: `extractActors` matches every
+state's aliases independently, so **a name that belongs to one state but contains another's alias
+fires both**. Three such names, all on the one dyad the site cares most about: "Chinese Taipei" (Taiwan's
+name in sport) contains 'chinese'; "People's Republic of China" contains 'republic of china', Taiwan's
+official name; and "Republic of China" itself contains 'china'. Production held 9 wrong rows: every
+Asian Games "Chinese Taipei" report (the Games are running, so more arrive hourly), the El Nacional
+story, 三立新聞 on a 「Chinese Taipei」 row, two SCMP Hong Kong National Day pieces and a Chinese embassy
+reception in India tagged TWN, and Taiwan's own defence ministry news page tagged CHN. All three PRC
+mentions wrote the apostrophe curly (’), which CHN's own alias didn't match either.
+
+**Fix**: `OWN_NAMES` in `data/countries.ts` (phrase → the one state it names); `extractActors` claims
+each, longest first, and blanks it out before matching aliases, so a text that ALSO names the other
+state elsewhere still tags it (pinned by its own test — a post-filter that drops CHN whenever Taiwan's
+name appears would fail it). Output order still follows `COUNTRIES`. Chinese 中华台北 needs no entry — it
+matches no China alias. **Not covered, deliberately**: other scripts' adjective forms (Russian
+Китайский Тайбэй, Arabic تايبيه الصينية, Hindi चीनी ताइपे) would misfire the same way through
+substring matching, but none appears in either corpus; add them when one does, from the corpus.
+
+**Verified**: 3 new tests in `tests/analyze.test.ts` failed first with the exact production tags, then
+passed; 1,163 tests, `tsc` clean. Mutation-tested — deleting each of the six `OWN_NAMES` entries, or
+crediting a name without blanking it, turns a test red (7 of 7 killed). Re-ran old vs new matcher over
+all 10,393 local articles: 7 change, every one read and correct — including three Taiwan defence pieces
+(USNI ×2, Military Watch) that lose CHN because their only "China" was inside "Republic of China Army /
+Military Police / Air Force"; none names the PRC in its stored text. The same diff over the live
+corpus's 17 candidate rows: the 9 above change, all correct.
+
+**Stored rows keep the old tags** until re-fetched or aged out (90 days) — an ingest only re-analyses
+rows it re-fetches. Not backfilled; that would be a write to the production DB and is Josh's call.
 
 ## South America beat (2026-09-27) — DEPLOYED 2026-09-28, verified live
 
@@ -99,8 +132,10 @@ events, the dyad and the network. Flagged as a separate task (`task_4f00ea5e`), 
 
 **The public mirror is AI_apps PR #112**: 11 checks passed, 1 skipped; all five changed files
 byte-identical to GeoIntel main; the leak scan adds zero hits (the four pre-existing hits sit in older
-STATE.md text — the open domain-in-history question). **Merge pending**: the classifier refused it, so
-it is Josh's `gh pr merge 112 --merge`.
+STATE.md text — the open domain-in-history question). **MERGED 2026-09-28 @ 8a62793** at Josh's own
+`gh pr merge 112 --merge` (the classifier refused Claude's). Verified byte-identical afterward, all five
+changed files. Josh merged while 6 of 12 checks were still running on the last commit — a STATE.md-only
+commit; the code commit before it had passed 11, 1 skipped.
 
 ## Africa beat (2026-09-27) — DEPLOYED, verified live
 

@@ -1,4 +1,4 @@
-import { COUNTRIES, HOTSPOTS, CN_COMPOUNDS } from '@/data/countries';
+import { COUNTRIES, HOTSPOTS, CN_COMPOUNDS, OWN_NAMES } from '@/data/countries';
 import { PEOPLE } from '@/data/people';
 
 const LATIN = /^[\x20-\x7F]+$/;
@@ -30,12 +30,37 @@ function matches(alias: string, haystackLower: string): boolean {
   return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(haystackLower);
 }
 
+/** Longest first, so "people's republic of china" is claimed before "republic of china". */
+const OWN_NAME_PATTERNS = Object.entries(OWN_NAMES)
+  .sort(([a], [b]) => b.length - a.length)
+  .map(([name, iso]) => ({
+    iso,
+    re: new RegExp(`(?<![a-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9])`, 'g'),
+  }));
+
+/**
+ * Credits each state named by one of its OWN_NAMES and blanks the name out, so the other
+ * state's alias inside it ("chinese" in "Chinese Taipei") is never seen by the matcher.
+ */
+function claimOwnNames(lower: string, claimed: Set<string>): string {
+  let out = lower;
+  for (const { iso, re } of OWN_NAME_PATTERNS) {
+    const next = out.replace(re, ' ');
+    if (next !== out) {
+      claimed.add(iso);
+      out = next;
+    }
+  }
+  return out;
+}
+
 export function extractActors(text: string): string[] {
-  const lower = ` ${text.toLowerCase()} `;
+  const claimed = new Set<string>();
+  const lower = claimOwnNames(` ${text.toLowerCase()} `, claimed);
   const raw = text;
   const hits: string[] = [];
   for (const c of COUNTRIES) {
-    if (c.aliases.some((a) => matches(a, lower))) hits.push(c.iso);
+    if (claimed.has(c.iso) || c.aliases.some((a) => matches(a, lower))) hits.push(c.iso);
   }
   for (const [compound, isos] of Object.entries(CN_COMPOUNDS)) {
     if (raw.includes(compound)) hits.push(...isos);
