@@ -1,8 +1,8 @@
 // Multilingual country gazetteer.
 // `aliases` carries the forms an outlet actually prints in its own language —
 // this is what lets a Xinhua piece and a PIB release resolve to the same actor.
-// Latin-script aliases are matched case-insensitively; CJK/Devanagari/Cyrillic/Arabic
-// are matched as-is.
+// Latin-script aliases are matched case-insensitively, and plain ones accent-insensitively
+// (see ROMANCE_NAMES); CJK/Devanagari/Cyrillic/Arabic are matched as-is.
 
 export interface Country {
   iso: string;
@@ -14,18 +14,101 @@ export interface Country {
   aliases: string[];
 }
 
-export const COUNTRIES: Country[] = [
+/**
+ * Spanish, Portuguese and French names for tracked states, where they differ from the
+ * English ones by more than accents — the only Latin-script, non-English press the ingest
+ * reads (El Nacional, Clarín, Poder360, Actualite.cd). Added 2026-09-28: before this the
+ * gazetteer knew four such forms in total, and since the relevance gate has no vocabulary
+ * in these languages, naming two states is the only way their reports get in at all.
+ *
+ * Written WITHOUT accents on purpose: the matcher folds accents out of the text (see
+ * lib/analyze/entities.ts), so 'turquia' matches Turquía and Turquia alike. An alias is
+ * written WITH its accent only where the plain spelling is a common word, and then it
+ * matches that exact spelling only: 'irã' (plain 'ira' is Portuguese "irá", will go),
+ * 'frança' ("zona franca"), 'suède' (English "suede"), 'suíça' (Japan's Suica card),
+ * 'géorgie' (the English name Georgie). Left out as too ambiguous to match on at all:
+ * bare Corea/Coreia (which Korea?), Seúl (French "seul", alone), EAU (French "eau",
+ * water), Roma, Damas ("damas", ladies), Ginebra (gin), Hollande (François Hollande).
+ */
+const ROMANCE_NAMES: Record<string, string[]> = {
+  IND: ['inde', 'nueva delhi', 'nova delhi'],
+  CHN: ['chine', 'pekin', 'pequim'],
+  PAK: ['paquistao'],
+  USA: ['ee.uu.', 'ee. uu.', 'ee uu', 'eeuu', 'eua', 'estadounidense', 'estadounidenses', 'etats-unis', 'etats unis'],
+  RUS: ['rusia', 'russie', 'moscu', 'moscou'],
+  JPN: ['japon', 'japao', 'tokio', 'toquio'],
+  BGD: ['banglades'],
+  MMR: ['birmania', 'birmanie'],
+  BTN: ['butan', 'butao', 'bhoutan'],
+  MDV: ['maldivas'],
+  AFG: ['afganistan', 'afeganistao'],
+  IRN: ['irã', 'irao', 'teheran', 'teera'],
+  ISR: ['jerusalen'],
+  UKR: ['ucrania'],
+  PRK: ['corea del norte', 'coreia do norte', 'coree du nord'],
+  KOR: ['corea del sur', 'coreia do sul', 'coree du sud'],
+  VNM: ['vietna', 'viet nam'],
+  PHL: ['filipinas'],
+  AUS: ['australie'],
+  GBR: ['reino unido', 'royaume-uni', 'royaume uni', 'gran bretana', 'gra-bretanha', 'grande-bretagne', 'londres'],
+  FRA: ['francia', 'frança'],
+  DEU: ['alemania', 'alemanha', 'allemagne'],
+  TUR: ['turquia', 'turquie'],
+  SAU: ['arabia saudita', 'arabie saoudite'],
+  ARE: ['emiratos arabes unidos', 'emirados arabes unidos', 'emirats arabes unis'],
+  QAT: ['catar'],
+  IDN: ['indonesie'],
+  MYS: ['malasia', 'malaisie'],
+  SGP: ['singapur', 'singapura', 'singapour'],
+  THA: ['tailandia', 'thailande'],
+  KAZ: ['kazajistan', 'cazaquistao'],
+  UZB: ['uzbequistao', 'ouzbekistan'],
+  TJK: ['tayikistan', 'tajiquistao', 'tadjikistan'],
+  MNG: ['mongolie'],
+  EGY: ['egipto', 'egito', 'egypte'],
+  ETH: ['etiopia', 'ethiopie'],
+  ZAF: ['sudafrica', 'africa do sul', 'afrique du sud'],
+  BRA: ['bresil'],
+  MEX: ['mexique'],
+  POL: ['polonia', 'pologne', 'varsovia', 'varsovie'],
+  ITA: ['italia', 'italie'],
+  ESP: ['espana', 'espanha', 'espagne'],
+  NLD: ['paises bajos', 'paises baixos', 'pays-bas', 'holanda'],
+  SWE: ['suecia', 'suède'],
+  FIN: ['finlandia', 'finlande'],
+  NOR: ['noruega', 'norvege'],
+  GRC: ['grecia', 'grece'],
+  BLR: ['bielorrusia', 'bielorrussia', 'bielorussie'],
+  GEO: ['géorgie'],
+  ARM: ['armenie'],
+  AZE: ['azerbaiyan', 'azerbaijao', 'azerbaidjan'],
+  SYR: ['siria', 'syrie'],
+  IRQ: ['irak', 'iraque'],
+  YEM: ['iemen'],
+  LBN: ['libano', 'liban'],
+  LBY: ['libia', 'libye'],
+  SDN: ['sudao', 'soudan'],
+  SOM: ['somalie'],
+  COD: ['republica democratica del congo', 'republica democratica do congo', 'republique democratique du congo'],
+  NZL: ['nueva zelanda', 'nova zelandia', 'nouvelle-zelande'],
+  CHE: ['suiza', 'suíça', 'suisse'],
+  ARG: ['argentine'],
+};
+
+function withRomanceNames(countries: Country[]): Country[] {
+  return countries.map((c) => ({ ...c, aliases: [...c.aliases, ...(ROMANCE_NAMES[c.iso] ?? [])] }));
+}
+
+export const COUNTRIES: Country[] = withRomanceNames([
   { iso: 'IND', iso2: 'IN', name: 'India', region: 'South Asia', lat: 22.0, lon: 79.0,
     aliases: ['india', 'indian', 'new delhi', 'bharat', '印度', '印方', 'भारत', 'हिंदुस्तान', 'Индия', 'الهند', 'بھارت', 'انڈیا', 'インド', '인도'] },
   { iso: 'CHN', iso2: 'CN', name: 'China', region: 'East Asia', lat: 35.0, lon: 103.0,
     aliases: ['china', 'chinese', 'beijing', 'peking', "people's republic of china", 'prc', '中国', '中方', '中华人民共和国', '大陆', '北京', 'चीन', 'Китай', 'الصين', 'چین', '중국'] },
-  // 'pakistán' added 2026-09-27: Spanish spells it with an accent, which the unaccented
-  // alias doesn't match — a real El Nacional story on a Pakistan-China border pact was
-  // dropping Pakistan entirely, keeping only India and China. This is one instance of a
-  // broader gap (accented Latin names generally) flagged separately rather than patched
-  // alias-by-alias here.
+  // Spanish "Pakistán" once dropped Pakistan from a real El Nacional story (2026-09-27);
+  // a 'pakistán' alias patched that one name until the matcher learned to fold accents
+  // (2026-09-28), which covers it and every other accented spelling.
   { iso: 'PAK', iso2: 'PK', name: 'Pakistan', region: 'South Asia', lat: 30.0, lon: 70.0,
-    aliases: ['pakistan', 'pakistán', 'pakistani', 'islamabad', 'rawalpindi', '巴基斯坦', '巴方', 'पाकिस्तान', 'Пакистан', 'باكستان', 'پاکستان'] },
+    aliases: ['pakistan', 'pakistani', 'islamabad', 'rawalpindi', '巴基斯坦', '巴方', 'पाकिस्तान', 'Пакистан', 'باكستان', 'پاکستان'] },
   // 'usa' (bare) was removed 2026-09-27: it's also the Spanish verb "usa" (uses, from
   // usar) — found because "Maduro usa la crisis..." tagged USA on a story about neither.
   // 'estados unidos' added the same day: Spanish and Portuguese press call it that, not
@@ -173,7 +256,7 @@ export const COUNTRIES: Country[] = [
     aliases: ['new zealand', 'wellington', '新西兰', 'न्यूज़ीलैंड', 'Новая Зеландия'] },
   { iso: 'CHE', iso2: 'CH', name: 'Switzerland', region: 'Europe', lat: 46.8, lon: 8.2,
     aliases: ['switzerland', 'bern', 'geneva', '瑞士', 'स्विट्ज़रलैंड', 'Швейцария'] },
-];
+]);
 
 export const BY_ISO = new Map(COUNTRIES.map((c) => [c.iso, c]));
 export const BY_ISO2 = new Map(COUNTRIES.map((c) => [c.iso2, c]));
@@ -204,7 +287,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'ecs', name: 'East China Sea', aliases: ['east china sea', 'senkaku', 'diaoyu', '东海', '钓鱼岛', '尖閣'], parties: ['CHN', 'JPN'], lat: 28.5, lon: 125.0, domain: 'Maritime' },
   { id: 'ior', name: 'Indian Ocean Region', aliases: ['indian ocean', 'ior ', 'string of pearls', 'malacca', 'gwadar', 'hambantota', 'djibouti base', '印度洋', '马六甲', '瓜达尔', 'हिंद महासागर'], parties: ['IND', 'CHN', 'PAK', 'LKA'], lat: -5.0, lon: 75.0, domain: 'Maritime' },
   { id: 'red-sea', name: 'Red Sea / Bab el-Mandeb', aliases: ['red sea', 'bab el-mandeb', 'gulf of aden', '红海', '曼德海峡'], parties: ['YEM', 'EGY', 'USA'], lat: 13.5, lon: 43.3, domain: 'Maritime' },
-  { id: 'hormuz', name: 'Strait of Hormuz', aliases: ['strait of hormuz', 'hormuz', '霍尔木兹'], parties: ['IRN', 'ARE', 'USA'], lat: 26.6, lon: 56.3, domain: 'Energy' },
+  { id: 'hormuz', name: 'Strait of Hormuz', aliases: ['strait of hormuz', 'hormuz', 'ormuz', '霍尔木兹'], parties: ['IRN', 'ARE', 'USA'], lat: 26.6, lon: 56.3, domain: 'Energy' },
   { id: 'korea-dmz', name: 'Korean Peninsula', aliases: ['dmz', 'demilitarized zone', '38th parallel', '朝鲜半岛', '三八线'], parties: ['PRK', 'KOR', 'USA'], lat: 38.3, lon: 127.0, domain: 'Nuclear' },
   { id: 'donbas', name: 'Ukraine Front', aliases: ['donbas', 'donetsk', 'zaporizhzhia', 'kherson', 'crimea', '顿巴斯', '克里米亚'], parties: ['UKR', 'RUS'], lat: 47.9, lon: 37.8, domain: 'Military' },
   { id: 'gaza', name: 'Gaza / Levant', aliases: ['gaza', 'west bank', 'rafah', 'hamas', '加沙', 'غزة'], parties: ['ISR', 'LBN', 'EGY'], lat: 31.5, lon: 34.5, domain: 'Military' },
@@ -251,3 +334,12 @@ export const OWN_NAMES: Record<string, string> = {
   'people’s republic of china': 'CHN',
   'republic of china': 'TWN',
 };
+
+/**
+ * Region names that carry a state's alias but name no state, blanked out before matching
+ * and credited to nobody. Spanish and Portuguese "América" is the continent — the US is
+ * EE.UU. or EUA — so once the matcher folds accents, "América Latina" would read as the
+ * United States; English "Latin America" already did (2026-09-28). Kept accented, so
+ * English "America" still names the US.
+ */
+export const NO_STATE_NAMES: string[] = ['américa', 'latin america', 'south america', 'central america'];

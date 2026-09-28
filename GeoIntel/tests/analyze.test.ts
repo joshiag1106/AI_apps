@@ -89,6 +89,46 @@ describe('actor extraction', () => {
     expect(extractActors('The People’s Republic of China marks National Day')).toEqual(['CHN']);
     expect(extractActors('The Republic of China marks its National Day')).toEqual(['TWN']);
   });
+
+  it('matches a plain alias against the same name written with accents', () => {
+    // Spanish, Portuguese and French accent names English spells plain. Before 2026-09-28
+    // the Latin matcher compared raw letters, so "México" never met 'mexico'.
+    expect(extractActors('México y Canadá discuten aranceles')).toEqual(expect.arrayContaining(['MEX', 'CAN']));
+    expect(extractActors('Irán amenaza con cerrar el estrecho de Ormuz')).toContain('IRN');
+    expect(extractActors('Israël frappe des positions au sud')).toContain('ISR');
+  });
+
+  it('recognises Spanish, Portuguese and French names for tracked states', () => {
+    expect(extractActors('Japón y Corea del Sur refuerzan su alianza')).toEqual(expect.arrayContaining(['JPN', 'KOR']));
+    expect(extractActors('Turquía y Rusia negocian un alto el fuego')).toEqual(expect.arrayContaining(['TUR', 'RUS']));
+    expect(extractActors('Sanciones de EE.UU. contra funcionarios venezolanos')).toContain('USA');
+    expect(extractActors('Alemanha, França e Reino Unido pedem cessar-fogo')).toEqual(expect.arrayContaining(['DEU', 'FRA', 'GBR']));
+    expect(extractActors('Irã e Japão assinam acordo')).toEqual(expect.arrayContaining(['IRN', 'JPN']));
+    expect(extractActors('EUA e China divulgam listas de produtos para corte de tarifas')).toContain('USA');
+    expect(extractActors('La Chine et les États-Unis relancent le dialogue')).toEqual(expect.arrayContaining(['CHN', 'USA']));
+    expect(extractActors('Le Liban accuse Israël')).toEqual(expect.arrayContaining(['LBN', 'ISR']));
+  });
+
+  it('matches an accented alias only with its accent', () => {
+    // Folding 'irã' to 'ira' would fire on "irá" (Portuguese "will go") in every other
+    // sentence, and 'frança' to 'franca' on "zona franca" (a free-trade zone).
+    expect(extractActors('O presidente irá a Brasília amanhã')).not.toContain('IRN');
+    expect(extractActors('Ampliação da zona franca de Manaus')).not.toContain('FRA');
+  });
+
+  it('recognises the Strait of Hormuz by its Spanish, Portuguese and French name', () => {
+    // A real El Nacional headline (2026-09-28) named Iran and "Ormuz" and was dropped:
+    // one actor, and no hotspot knew the name.
+    expect(extractHotspots('Trump rechaza la oferta de Irán para reabrir el estrecho de Ormuz en 7 días')).toContain('hormuz');
+  });
+
+  it('does not read "América", the continent, as the United States', () => {
+    // Spanish and Portuguese "América" is the continent (the US is EE.UU./EUA), and
+    // English "Latin America" names a region, not a state — both carry 'america'.
+    expect(extractActors('La economía de América Latina crece por tercer año')).not.toContain('USA');
+    expect(extractActors("Mexico's Caribbean beaches overwhelmed by record sargassum | Inside Latin America")).toEqual(['MEX']);
+    expect(extractActors('America imposes new tariffs on steel')).toContain('USA');
+  });
 });
 
 describe('dyads', () => {
