@@ -42,6 +42,24 @@ describe('actor extraction', () => {
   it('recognises the Francophone abbreviation for DR Congo', () => {
     expect(extractActors('Washington et Doha : négociations sur la RDC')).toContain('COD');
   });
+
+  it('does not mistake the Spanish verb "usa" for the USA', () => {
+    // Found 2026-09-27, same shape as the French 'lac' bug: 'usa' the bare alias is also
+    // the third-person present of "usar" (to use), and fired on Venezuelan political copy
+    // with nothing to do with the United States.
+    expect(extractActors('Maduro usa la crisis para consolidar poder en Venezuela')).not.toContain('USA');
+    expect(extractActors('Estados Unidos impone sanciones a funcionarios de Venezuela')).toContain('USA');
+  });
+
+  it('recognises Brazil\'s own Portuguese name for itself', () => {
+    expect(extractActors('Governo do Brasil anuncia nova politica economica')).toContain('BRA');
+  });
+
+  it('recognises the Spanish accented spelling of Pakistan', () => {
+    // Found 2026-09-27: a real El Nacional story on Pakistan and China dropped Pakistan
+    // entirely because the alias list only had the unaccented English spelling.
+    expect(extractActors('Un pacto fronterizo entre Pakistán y China enfurece a India')).toContain('PAK');
+  });
 });
 
 describe('dyads', () => {
