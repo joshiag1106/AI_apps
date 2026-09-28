@@ -1,7 +1,8 @@
 # Where this project stands
 
-**Last worked: 2026-09-28** (a China/Taiwan name-collision fix — deployed, its 9 wrongly-tagged stored
-rows corrected, verified live; earlier the same day, the South America beat deployed and verified live, and the first
+**Last worked: 2026-09-28** (accent-insensitive matching and Spanish/Portuguese/French country names —
+deployed, the 5 affected stored rows corrected, verified live; before that the same day, a China/Taiwan name-collision
+fix — deployed, its 9 wrongly-tagged stored rows corrected, verified live; earlier still, the South America beat deployed and verified live, and the first
 production evidence that the Caucasus and Africa sources store articles; see below). Before that,
 **2026-09-27**, the South America beat was built, and the Caucasus and Africa beats built, deployed, and verified live.
 Before that, **2026-09-25** (corpus stats added to /admin, deployed and live), same day Farsi feed
@@ -10,6 +11,70 @@ mandatory accounts + exit survey (deployed and live) and the new logo (deployed 
 that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator —
 see the first section below). Everything below was verified, not assumed. Where something is
 unverified it says so.
+
+## Accents folded, and Spanish/Portuguese/French country names (2026-09-28) — DEPLOYED, stored rows corrected, verified live
+
+Closes `task_444f53ad`. Two gaps, one bigger than it looked. (1) The Latin matcher compared raw
+letters, so "México" never met 'mexico', "Irán" never met 'iran'. (2) Across 64 tracked states the
+gazetteer knew exactly four es/pt/fr forms (`pakistán`, `estados unidos`, `brasil`, `rdc`) — nothing
+for Japón, Turquía, Alemanha, Chine, Corea del Sur, EE.UU. And since the relevance gate has NO es/pt/fr
+security vocabulary, naming two states is the only way those four feeds' reports get in at all — which
+is why Clarín and Poder360 stored almost nothing.
+
+**Fix** (`lib/analyze/entities.ts`, `data/countries.ts`). A PLAIN Latin alias is matched against the
+text with accents folded out (NFD, strip U+0300–036F — applied only to the haystack plain Latin aliases
+see; NFD would split Hangul and strip Arabic hamza). An alias written WITH an accent matches only that
+exact spelling, and is written that way only where the plain form is a common word: `irã` (plain "ira"
+= Portuguese "irá", will go), `frança` ("zona franca"), `suède` (English "suede"), `suíça` (Suica card),
+`géorgie` (the name Georgie). `ROMANCE_NAMES` adds ~140 es/pt/fr names for all 64 states, merged into
+`COUNTRIES` at load; left out as too ambiguous: bare Corea/Coreia, Seúl ("seul"), EAU ("eau"), Roma,
+Damas, Ginebra, Hollande. `NO_STATE_NAMES` (blanked, credited to nobody, via the `OWN_NAMES` machinery):
+accented `américa` — Spanish/Portuguese for the continent, which folding would otherwise have turned into
+the US — plus English "latin/south/central america", which already did. Hotspot `hormuz` gains `ormuz`
+(a real El Nacional headline). The now-redundant `pakistán` alias is gone (folding covers it).
+
+**The old matcher also treated every accented letter as a word boundary** — found by reading the diff,
+not by any test. So "se **usó**" (used) matched 'us' and tagged the US, and "**Pokémon**" matched 'pok'
+(Pakistan-occupied Kashmir) and put India and Pakistan on a live Trump–Xi newsletter story. Folding
+fixes both, since the accented letter becomes an ordinary one.
+
+**Verified**: 5 new tests in `tests/analyze.test.ts`, each failing first; 1,168 tests, `tsc` clean.
+Mutation-tested: no fold (NFC instead of NFD), folding accented aliases too, ignoring `NO_STATE_NAMES`,
+and dropping each of 16 pinned names all turn a test red. One survived at first — 'rusia' — because its
+fixture also said "Moscú"; fixture tightened, then killed. Old vs new matcher (old DATA too, not just
+old code) over: **130 raw es/pt/fr feed items** — 22 changes read, gate passes **7 → 19** (e.g. "Irán
+niega… negociaciones con EE UU" USA+IRN, "ataques… de Rusia… Ucrania" RUS+UKR, previously dropped);
+**all 10,393 local articles** — 6 change, all correct (English "Argentine" now ARG; USA dropped where it
+came only from "Latin/South America"); **all 7,071 live articles** — 5 actor + 1 hotspot changes, all
+correct (Türkiye now TUR; the Pokémon row). No people tags changed anywhere. **Known consequence, not a
+matcher bug**: El Nacional football stories naming two countries now clear the gate too (Klopp's
+Germany, Venezuela v Japan) — the relevance gate's sports problem, already open.
+
+**Not done**: es/pt/fr demonyms beyond `estadounidense(s)` (chino, ruso, francés… inflect four ways);
+other hotspots' Romance names (only Ormuz had evidence).
+
+**DEPLOYED 2026-09-28, and the affected stored rows corrected at Josh's instruction** ("ship it and fix
+the 6 rows" — it was 5 rows: the Pokémon row carried two of the six tag changes, actors and hotspot).
+Same routine as the China/Taiwan fix: from-scratch build, 1,168 tests, `tsc` clean, dry run 0
+suspicious in 2,606 lines, 0 stray files on the server, all five step-11 probes pass, new `BUILD_ID`
+live, 9 of 9 static assets 200. Live DB backed up first (`/var/lib/kautilya/pre-accents-2026-09-28-1253.db`,
+`integrity_check` ok, 7,071 articles); the 5 rows' `actors` and `hotspots` rewritten in one transaction,
+each UPDATE guarded on both columns still holding the old matcher's output (5 changed) — generated with
+the OLD data as well as the old code (`git show b642ab2^:data/countries.ts`), since the new names live in
+the data. One cron call: 3 pruned, verified by id to be the three left naming one state with no security
+signal (Guardian's Brazil court story, Al Jazeera's Israel trade ban, DW's "From Latin America to the
+front in Ukraine" — the last a war story the gate can't read, a vocabulary gap, not a tagging one); the
+2 survivors and their rebuilt events carry the new tags (the Trump–Xi story CHN/USA/TWN, no Kashmir;
+Trend TUR/GEO/AZE). **That ingest stored 15 Spanish articles** (5 in the morning's run), and all 18
+stored es/pt rows were read: ~12 real (Irán–EE UU talks, Russian strikes on Ukraine, Switzerland's
+neutrality, the Pakistán–China pact, US–China tariffs, Cuba), ~6 noise, mostly football.
+
+**New bug found reading them, NOT caused by this change and not yet fixed**: "Contas externas do Brasil
+têm déficit de **US$** 5,1 bilhões" is tagged USA — the currency sign "US$" matches the `us` alias (the
+old matcher did the same). Common in Latin American and English press alike. The obvious fix is a
+`NO_STATE_NAMES` entry for `us$`, test-first — Josh's call.
+
+**The public mirror is AI_apps PR #114** — not yet merged at the time of writing.
 
 ## "Chinese Taipei" and the PRC's full name no longer cross-tag China and Taiwan (2026-09-28) — DEPLOYED, stored rows corrected, verified live
 
@@ -57,7 +122,8 @@ event no longer has TWN). Zero stored rows still carry the "Chinese Taipei" coll
 generated by running the old (`git show 7bbe7a8^:lib/analyze/entities.ts`) and new matcher over the live
 rows' own title + snippet — the method to reuse for any future alias fix.
 
-**The public mirror is AI_apps PR #113** — not yet merged at the time of writing.
+**The public mirror is AI_apps PR #113, MERGED 2026-09-28 @ 6f068a7** at Josh's own `gh pr merge`,
+after all checks finished (11 passed, 1 skipped). Verified byte-identical afterward, all four changed files.
 
 ## South America beat (2026-09-27) — DEPLOYED 2026-09-28, verified live
 
