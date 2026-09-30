@@ -340,6 +340,7 @@ export const OWN_NAMES: Record<string, string> = {
  * and credited to nobody. Spanish and Portuguese "América" is the continent — the US is
  * EE.UU. or EUA — so once the matcher folds accents, "América Latina" would read as the
  * United States; English "Latin America" already did (2026-09-28). Kept accented, so
- * English "America" still names the US.
+ * English "America" still names the US. And "US$" is a currency sign — "déficit de US$ 5,1
+ * bilhões", "US$2.4 billion" — which the 'us' alias read as the state in 65 local articles.
  */
-export const NO_STATE_NAMES: string[] = ['américa', 'latin america', 'south america', 'central america'];
+export const NO_STATE_NAMES: string[] = ['américa', 'latin america', 'south america', 'central america', 'us$'];

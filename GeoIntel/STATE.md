@@ -1,7 +1,102 @@
 # Where this project stands
 
-**Last worked: 2026-09-28** (accent-insensitive matching and Spanish/Portuguese/French country names —
-deployed, the 5 affected stored rows corrected, verified live; before that the same day, a China/Taiwan name-collision
+## Predictive intelligence, release 1 (2026-09-30 evening) — DEPLOYED and VERIFIED LIVE
+
+**Casino-SEO republications never stored — DEPLOYED 22:17 IST, pruned live at 22:30** (`e7b46cc`). Settles the
+open "junk-outlet denylist at ingest" question (delegated). Found while checking the pages for the
+presentation: China Watch's top "official statement" was `众赢国际手机版_体育_8·15日本政要又“拜鬼”…`, a 体坛 casino
+page republishing the 15 August Yasukuni story as 17 September. `lib/ingest/junk` `isSeoWrapper` (narrower than
+the tour's example rule: no 官方网站) keeps such pages out at ingest; the upkeep prunes stored ones. Live: exactly 2
+rows matched before (read-only), 0 after the 22:30 run; the evidence trail's Japan row, which rested only on
+that page, is gone; China Watch now leads with the MFA condemning an attack on a Pakistani police camp (rung 7).
+1,303 tests.
+
+**Demo tour chapter 11, "A forecast you can check" — DEPLOYED 22:09 IST** (BUILD_ID `IcU5Oc5lVA0ipbWrbAy-1`,
+with the admin "too few to score" fix). Josh approved the design: a real recorded question, the three steps
+(recorded, settled, scored), "shown to readers only once it beats both", and the record's live status —
+**never a probability**, since readers see forecasts only after go-live. 10 s, narration sized to 14 chars/s
+(the tour advances on a timer and cancels speech); the tour is now 13 chapters, 137 s, and its length test
+allows up to 140 s — the splash still says "2-minute demo" (flagged to Josh). Checked on the production
+build locally at 1280 px and 375 px (no horizontal overflow) and live in Josh's Chrome: status line
+"No forecasts recorded yet · the first recorded week begins Monday 5 October · record intact". 1,299 tests.
+
+Josh asked for forecasting, validated against real events, presentable at 08:30 on 1 October. Designed with
+him section by section: `docs/specs/2026-09-30-predictive-intelligence-design.md`; plan
+`docs/plans/2026-09-30-predictive-intelligence.md` (14 tasks, all done test-first; reader surfaces are a
+second release before the earliest go-live).
+
+- **What it forecasts, weekly:** a corroborated military incident between two states (pairs with ≥ 100
+  events), and a Beijing ladder statement aimed at a state (targets of the last 90 days, plus `any`).
+- **Record:** `forecasts` and `outcomes` tables, append-only by trigger and SHA-256 hash-chained; settled
+  72 h after each window with evidence kept; daily chain check; weekly sealed-envelope email to
+  `FORECAST_DIGEST_TO` — set 2026-09-30 in `/etc/kautilya.env` to the owner's usual address, as Josh asked
+  (file backed up first; the running service carries it).
+- **Forecasters:** `usual-rate@1`, `same-as-last-week@1`, `signal-model@1` (penalised logistic, refitted
+  Mondays). Readers see nothing until the live record beats both baselines (≥ 6 weeks, ≥ 150 forecasts,
+  calibrated); the admin page shows everything, plus an **unrecorded next-7-days preview** (Josh approved it
+  for the presentation; same code path as the weekly issue, writes nothing).
+- **First backtest (local corpus), honest:** coverage broadened only in September, so 67 incident
+  question-weeks exist. Fitted on 26 positives the model overfitted (Brier 0.322 vs 0.272 usual rate, 0.271
+  same-as-last-week). It now waits for 10 positives per signal (90); until then it is the usual rate:
+  incidents 0.2719 / 0.2719 / 0.2709, Beijing 0.2515 / 0.2515 / 0.2707 (model / usual / same). Skill is
+  unproven — the live record starts **Monday 5 October 2026**.
+
+**Deployed** three times on 2026-09-30 (18:3x–18:4x IST), each by the runbook: from-scratch build, the two
+known intruders excluded, dry run 0 suspicious, transfer as root + `chown`, 0 strays, probes all pass, static
+assets 200. Live DB backed up first (`/var/lib/kautilya/pre-forecasts-2026-09-30-1826.db`, integrity ok).
+Later builds added: history basis in explanations ("from 1 week of history, drawn toward the 39% average"),
+the preview computed by the hourly cycle (admin render was ~1.7 s locally, ~1 s of it the preview), and
+"too few to score" below 30 forecasts (the live backtest printed Brier 0.010 from one forecast).
+**First live cycle** (a manual run of the site's own cron endpoint at 18:54, so Josh could see it): tables and
+all four append-only triggers present; 9 past Mondays rebuilt in one pass (only 8 labelled question-weeks —
+production coverage broadened late too); 24 live snapshot rows; chain check `ok`; preview of 24 questions
+stored; week W40 recorded as skipped (deployed Wednesday). Josh saw the admin section in his own Chrome.
+The same run showed the long-standing Indian Express and Dawn 403s (they refuse the server's address; both
+answer 200 from the Mac) — known, left in place per Josh's earlier call.
+
+## Six defects fixed (2026-09-30) — DEPLOYED and VERIFIED LIVE
+
+Josh delegated the order ("you take the call"), then approved the deploy ("go ahead, fix the limit
+and deploy"). Each was fixed test-first (watched fail, then pass) and measured on real data.
+**1,219 tests pass (was 1,170), `tsc` clean.**
+
+| Commit | Fix | Measured |
+|---|---|---|
+| `9972557` | `/api/export` now needs an account (it sat outside the layout's login gate); a tripwire test makes every API route check the user or the cron secret, or be named public (only `/api/pulse`) | 4 route tests, guard mutation-tested |
+| `e252a1e` | Same-outlet dedupe key keeps letters/marks/digits of every script — Hindi, Russian, Arabic, Korean… headlines no longer collapse to one empty key | Live fetch of 99 feeds: **+43 relevant reports a cycle** (hi 24, ar 10, ru 6, uk 3), 0 lost |
+| `458f964` | Ingest upkeep reads every row (`everyArticle()`), not the newest 8,000; post-fetch steps moved unchanged into `maintainCorpus()` | Local: 89 overdue rows were never expired; clustering all 10,393 rows takes 1.1 s |
+| `9dcd3bc` | Lexicon uses the concept matcher's rules (now shared in `lib/analyze/terms.ts`): whole words + one inflection, overlaps dropped; `protester`/`protestor` added; upkeep now also saves corrected escalation on stored rows | Local old/new: 45 escalation changes, **0 domain changes**, 14 rows leave the gate — all false hits (couples, Coupang) |
+| `524cb6a` | Country trend = last 30 days vs the 30 before (was vs everything older); first direct risk-model tests | Full re-cluster: CHN old +1 → new +7, USA +3 → +12, JPN +10 → +30 |
+| `4956c9f` | Pages read every event (`everyEvent()`), not the newest 4,000 | Full local clustering: 5,773 events; read 50 → 73 ms, Board aggregations 270 → 363 ms |
+
+**No hand-run DB correction is needed this time**: the first hourly ingest after deploy prunes the
+false-hit rows and rewrites stale escalation itself (`9dcd3bc`), and re-clusters the whole corpus.
+**Expect trend numbers to drop sharply after deploy** (local stored events read ~+90–100 because the
+capped clustering left the prior window nearly empty). That is the correction, not a regression.
+
+**Deployed 2026-09-30 16:51 IST** (BUILD_ID `98tx4gerLMppbHHGzA-By`), as root + `chown`, per the runbook:
+from-scratch build; bundle held only the two known intruders (`kautilya.db`, `@img/sharp-darwin-x64`),
+both excluded; dry run 2,607 lines, **0 suspicious**, 4 deletions (the old build's); after transfer 0
+strays, 0 files not owned by `kautilya`. Live DB backed up first
+(`/var/lib/kautilya/pre-fixes-2026-09-30-1651.db`, `integrity_check` ok, 8,279 articles, 3,850 events).
+Probes: home 200, image proxy 400, cron 401, analyse 401 `signin`, pricing leaks 0, **`/api/export`
+signed out 401** (`{"error":"signin"}`), board 307 → login; BUILD_ID in the live HTML; browser check:
+7/7 static assets 200, styled.
+
+**Production had crossed the article cap**: 8,279 articles before the deploy, the oldest 279 in no event.
+**First ingest on the new code (17:30 IST), read-only checks:** 8,302 articles, **all 8,302 in an event**
+(was 8,000); **4,076 events — over the old 4,000 page cap on the first run**; 0 rows past 90 days; the
+"ceasefire violation" row's stored escalation rewritten 2 → 13 by the upkeep; couple/Coupang/Protestant
+rows 20 → 13 (the rest pass the gate on other grounds); pulse `{"events":4076,"reports":8302}`.
+**Expect trends on country pages to have dropped sharply** — the correction, not a regression.
+
+The sixth cap (`corpus()` = `allEvents(4000)`) was found while fixing the others; reading
+`lib/queries.ts` and a read-only live count were first refused by the auto-mode classifier
+("Production Reads") and went through once Josh said "go ahead".
+
+**Last worked: 2026-09-28** ("US$" no longer tags the United States — deployed, its 33 stored rows
+corrected, verified live; before that the same day, accent-insensitive matching and Spanish/Portuguese/French country
+names — deployed, the 5 affected stored rows corrected, verified live; before that, a China/Taiwan name-collision
 fix — deployed, its 9 wrongly-tagged stored rows corrected, verified live; earlier still, the South America beat deployed and verified live, and the first
 production evidence that the Caucasus and Africa sources store articles; see below). Before that,
 **2026-09-27**, the South America beat was built, and the Caucasus and Africa beats built, deployed, and verified live.
@@ -11,6 +106,64 @@ mandatory accounts + exit survey (deployed and live) and the new logo (deployed 
 that, **2026-09-24** (the demo tour's Lens chapter, its step to an official, and a female narrator —
 see the first section below). Everything below was verified, not assumed. Where something is
 unverified it says so.
+
+## "US$" no longer tags the United States (2026-09-28) — DEPLOYED, stored rows corrected, verified live
+
+Josh delegated the ship call ("take the call"); Claude decided to ship it AND correct the live rows,
+same routine as the two fixes below. The public mirror is **AI_apps PR #115** (open — Josh merges).
+
+**DEPLOYED 2026-09-28**, after a pause for a machine restart. From-scratch build, `tsc` clean, bundle
+check found only the two expected intruders (`kautilya.db`, `@img/sharp-darwin-x64`), both excluded.
+**The tests need a caveat, not a footnote**: the machine had just restarted into a macOS update's
+preparation (load average 726, then 100–250), and the first full run failed 24 of 1,170 — every one
+"Test timed out", none an assertion. Re-run with `--testTimeout/--hookTimeout 180000`: 1,169 pass; the
+last, `analyse-route.test.ts`, sets its own 20 s limit with `vi.setConfig` (overriding the flag) and
+passed 6/6 alone. So all 1,170 pass, but not in one run. Dry run 0 suspicious in 2,607 lines (4
+deletions, all the old build's); after the transfer, 0 stray files and 0 files not owned by `kautilya`;
+all five step-11 probes pass; the new `BUILD_ID` is in the live HTML; 9 of 9 static assets 200.
+
+**Deployed as root, not `kautilya`** — the server closed the connection on a `kautilya@` login (cause
+not investigated; the runbook now says so). rsync as root sets the owner to the Mac's numeric uid, so
+the transfer is followed by `chown -R kautilya:kautilya /srv/kautilya`, and every `sqlite3` call ran as
+`runuser -u kautilya --`, so no root-owned `-wal`/`-shm` or backup file was created.
+
+**Stored rows corrected.** Before anything was written: 947 events carried both CHN and USA; all 51
+"US$" articles carried USA. Live DB backed up (`/var/lib/kautilya/pre-usd-2026-09-28-2030.db`,
+`integrity_check` ok, 7,139 articles). The old/new diff (old code AND old data from `6b985b7^`) over
+all 7,139 live rows: **35 change** — 33 guarded UPDATEs, 2 already new (the server's hourly ingest,
+which fires at :30 IST because the box runs UTC, re-fetched them on the new code a minute after the
+deploy), 0 guard mismatches. Every change removes USA where "US$" was its only source; one row only
+reorders (the Saudi pipeline — USA via Hormuz). Applied in one transaction: 33 of 33 changed. One cron
+call: **25 pruned — verified by id to be exactly the 25 predicted** to fall to one state (SCMP's Najib,
+Bardot auction, Singapore gym, cherry-tree beetle, CATL, ByteDance's Anew Labs, Hetq's Yerevan tax
+case, Poder360's "déficit de US$", Libya Herald's CBL rate…); no multi-state row vanished; the 8
+survivors carry exactly the new matcher's tags (Thai satellite CHN/THA, Kwek clan CHN/JPN/SGP…).
+**CHN+USA events 947 → 940.** The 18 "US$" articles still tagged USA were each re-run through the new
+matcher: all match, each names the US another way ("US approves…", Trump, the Pentagon, "EUA").
+
+**Two hands, again.** With Josh's new allow rules for `ssh root@…` and the two rsync forms, Claude ran
+the dry run, transfer, restart, probes, backup and read-only queries itself; the classifier still
+refused the DB write ("Remote Shell Writes"), and Josh ran that step from a prepared script.
+
+Found reading the live es/pt rows after the accent work (below): "déficit de US$ 5,1 bilhões" was tagged
+USA — the `us` alias matched the currency sign. **Far bigger than one Portuguese row**: the South China
+Morning Post converts every HK$/€/peso figure into "(US$…)", so its money stories all carried a false
+USA — 65 local and 50 live articles contain the sign. Many small items (a Bardot auction, a Singapore
+gym, a cherry-tree beetle) had cleared the relevance gate only because of that false second state.
+
+**Fix**: `us$` joins `NO_STATE_NAMES` (blanked, credited to nobody). One real subtlety: the blanking
+pattern required a word boundary AFTER every name, and "US$2.4 billion" has a digit straight after the
+sign, so it never matched — a name ending in a symbol now needs no trailing boundary.
+
+**Verified**: 2 new tests (the real Poder360 and SCMP headlines, failing first with `['USA','BRA']`; plus
+a guard that "net US$7 bln worth of U.S. stocks" keeps USA), 1,170 tests, `tsc` clean. Mutation-tested:
+dropping `us$`, or restoring the unconditional trailing boundary, each turn a test red. Old vs new over
+all 10,393 local articles: 46 change, gate passes 10,346 → 10,313; over all 7,104 live articles: 34
+change, 7,067 → 7,042. **Every change is a removal of USA, correct by construction** — the other USA
+aliases are still checked on the blanked text, so USA goes only where "US$" was its sole source;
+spot-checked the two most policy-sounding ("War without battle" — "€4 billion (US$4.7 billion)"; "Is the
+Philippine military underfunded?" — "(US$30 billion)"). One row only reorders (Saudi pipeline: USA now
+arrives via the Hormuz hotspot instead of the text). No hotspot or people tags changed.
 
 ## Accents folded, and Spanish/Portuguese/French country names (2026-09-28) — DEPLOYED, stored rows corrected, verified live
 
@@ -69,12 +222,12 @@ Trend TUR/GEO/AZE). **That ingest stored 15 Spanish articles** (5 in the morning
 stored es/pt rows were read: ~12 real (Irán–EE UU talks, Russian strikes on Ukraine, Switzerland's
 neutrality, the Pakistán–China pact, US–China tariffs, Cuba), ~6 noise, mostly football.
 
-**New bug found reading them, NOT caused by this change and not yet fixed**: "Contas externas do Brasil
-têm déficit de **US$** 5,1 bilhões" is tagged USA — the currency sign "US$" matches the `us` alias (the
-old matcher did the same). Common in Latin American and English press alike. The obvious fix is a
-`NO_STATE_NAMES` entry for `us$`, test-first — Josh's call.
+**New bug found reading them, NOT caused by this change**: "Contas externas do Brasil têm déficit de
+**US$** 5,1 bilhões" is tagged USA — the currency sign "US$" matches the `us` alias (the old matcher did
+the same). Fixed the same day, see the section above.
 
-**The public mirror is AI_apps PR #114** — not yet merged at the time of writing.
+**The public mirror is AI_apps PR #114, MERGED 2026-09-28 @ c66944d** at Josh's own `gh pr merge`,
+after all checks finished (11 passed, 1 skipped). Verified byte-identical afterward, all four changed files.
 
 ## "Chinese Taipei" and the PRC's full name no longer cross-tag China and Taiwan (2026-09-28) — DEPLOYED, stored rows corrected, verified live
 

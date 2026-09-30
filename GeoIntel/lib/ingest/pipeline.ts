@@ -7,9 +7,10 @@ import { scoreText, glossHeadline } from '@/lib/analyze/score';
 import { clusterArticles } from '@/lib/verify/cluster';
 import { rescoreDomainsIfStale } from '@/lib/analyze/rescore';
 import { TREND_SERIES_DAYS } from '@/lib/risk';
-import { upsertArticles, replaceEvents, allArticles, deleteArticles, setMeta, updateLadders } from '@/lib/db';
+import { upsertArticles, replaceEvents, everyArticle, deleteArticles, setMeta, updateLadders, updateEscalations } from '@/lib/db';
 import type { LadderSpeaker } from '@/lib/lang/speaker';
-import type { Article, RawArticle } from '@/lib/types';
+import { isSeoWrapper } from '@/lib/ingest/junk';
+import type { Article, GeoEvent, RawArticle } from '@/lib/types';
 
 /** What an ingest changes on a stored article's ladder fields. */
 export interface LadderPatch {
@@ -101,8 +102,25 @@ export function isRelevant(
     || s.ladderRung !== null;
 }
 
+/**
+ * The same-outlet headline key: letters, combining marks and digits of every script, with
+ * punctuation and spacing collapsed. It used to keep only ASCII and Chinese, so every Hindi,
+ * Russian, Arabic or Korean headline reduced to an empty key and one outlet's first such
+ * report shadowed all the rest — 45 relevant reports lost per cycle (risk R10). Marks are
+ * kept because Devanagari and Bengali write vowels with them; without them a Hindi
+ * headline is mostly consonants.
+ */
 function normaliseTitle(t: string): string {
-  return t.toLowerCase().replace(/[^a-z0-9一-鿿]+/g, ' ').trim();
+  return t.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+}
+
+/**
+ * Whether an enriched report is kept: it names an actor, passes the relevance gate, and is not a casino-style
+ * SEO republication (lib/ingest/junk). Articles that name no actor cannot be placed on any map or dyad, and
+ * those with no security signal are general news that happens to mention a state.
+ */
+export function storable(a: Article): boolean {
+  return a.actors.length > 0 && a.relevant && !isSeoWrapper(a.title);
 }
 
 /** Drop exact URL repeats and same-outlet near-identical headlines. */
@@ -217,47 +235,12 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
   });
 
   const deduped = dedupe(collected);
-  // Articles that name no actor cannot be placed on any map or dyad, and those with no
-  // security signal at all are general news that happens to mention a state.
-  const usable = deduped.filter((a) => a.actors.length > 0 && a.relevant);
+  const usable = deduped.filter(storable);
   log(`parsed ${collected.length} -> ${deduped.length} unique -> ${usable.length} relevant`);
 
   upsertArticles(usable);
 
-  // Re-evaluate the whole stored corpus against the current rules, so a change to the
-  // lexicon or the relevance gate takes effect on old rows instead of only new ones.
-  const stored = allArticles(8000);
-  const stale = stored.filter((a) => {
-    const s2 = scoreText(a.title, a.snippet);
-    return a.actors.length === 0 || !isRelevant(a.actors, a.hotspots, s2);
-  });
-  if (stale.length) {
-    deleteArticles(stale.map((a) => a.id));
-    log(`pruned ${stale.length} stored articles that no longer pass the relevance gate`);
-  }
-
-  // Whose formula a rung is, on rows the feeds no longer serve — see ladderPatches.
-  const patched = updateLadders(ladderPatches(allArticles(8000)));
-  if (patched) log(`re-attributed the ladder on ${patched} stored articles`);
-
-  // Age is the other reason to drop a row. Without this the corpus only ever grows, and
-  // articles too old to corroborate anything keep competing for cluster membership.
-  const expired = expiredArticleIds(allArticles(8000));
-  if (expired.length) {
-    deleteArticles(expired);
-    log(`pruned ${expired.length} stored articles older than ${CORPUS_RETENTION_DAYS} days`);
-  }
-
-  // A vocabulary change re-scores every stored report's domain before clustering, which never joins
-  // reports across domains. A no-op unless data/concepts.ts or the matching rules changed.
-  const rescored = rescoreDomainsIfStale();
-  if (rescored.rescored) log(`re-scored stored domains for a new vocabulary: ${rescored.changed} changed`);
-
-  // Cluster over the whole stored corpus so today's reports can join an older event.
-  const events = clusterArticles(allArticles(8000));
-  replaceEvents(events);
-  setMeta('last_ingest', new Date().toISOString());
-  log(`clustered into ${events.length} events`);
+  const { pruned, expired, events } = maintainCorpus(log);
 
   // Ladder alerts run here because this is the moment new events exist. Failure is
   // contained: a mail provider being down must not fail the refresh that everything else
@@ -270,14 +253,83 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
     log(`alerts skipped: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  // Forecasts run here for the same reason alerts do: new events exist. A failure is logged and never fails
+  // the refresh. See docs/specs/2026-09-30-predictive-intelligence-design.md.
+  try {
+    const { runForecastCycle } = await import('@/lib/forecast/schedule');
+    const f = runForecastCycle();
+    if (f.snapshot) log(`forecasts: ${f.snapshot} signal snapshots`);
+    if (f.reconstructed.wrote) log(`forecasts: reconstructed ${f.reconstructed.wrote} past rows${f.reconstructed.done ? ' (done)' : ''}`);
+    if (f.skipped) log(`forecasts: week ${f.skipped} skipped — the first chance came more than 24 hours late`);
+    if (f.issued) {
+      const { sendEnvelope } = await import('@/lib/forecast/envelope');
+      const sent = await sendEnvelope(f.week);
+      log(`forecasts: issued ${f.issued} for ${f.week}; envelope ${sent.delivered ? 'sent' : `not sent (${sent.reason})`}`);
+    }
+    if (f.settled) log(`forecasts: settled ${f.settled}`);
+    if (f.ledgerOk === false) log('forecasts: RECORD CHAIN BROKEN — see /admin');
+  } catch (e) {
+    log(`forecasts skipped: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   const byLanguage: Record<string, number> = {};
   for (const a of usable) byLanguage[a.language] = (byLanguage[a.language] ?? 0) + 1;
 
   return {
-    pruned: stale.length,
-    expired: expired.length,
+    pruned,
+    expired,
     tasks: tasks.length, ok: tasks.length - failed.length, failed,
     rawArticles: collected.length, stored: usable.length, events: events.length,
     byLanguage, durationMs: Date.now() - started,
   };
+}
+
+/**
+ * Everything an ingest does to the stored corpus once the new reports are in: re-check old
+ * rows against the current rules, re-attribute ladders, expire rows past retention, re-score
+ * domains after a vocabulary change, and re-cluster. Needs no network, so it can be tested
+ * on a corpus built in place.
+ */
+export function maintainCorpus(log: (s: string) => void = () => {}): { pruned: number; expired: number; events: GeoEvent[] } {
+  // Re-evaluate the whole stored corpus against the current rules, so a change to the
+  // lexicon or the relevance gate takes effect on old rows instead of only new ones: a row
+  // that no longer passes is dropped, and one that does keeps the escalation the current
+  // rules give it rather than the one it was stored with.
+  const stale: Article[] = [];
+  const escalations: { id: string; escalation: number }[] = [];
+  for (const a of everyArticle()) {
+    const s2 = scoreText(a.title, a.snippet);
+    if (a.actors.length === 0 || !isRelevant(a.actors, a.hotspots, s2) || isSeoWrapper(a.title)) stale.push(a);
+    else if (s2.escalation !== a.escalation) escalations.push({ id: a.id, escalation: s2.escalation });
+  }
+  if (stale.length) {
+    deleteArticles(stale.map((a) => a.id));
+    log(`pruned ${stale.length} stored articles that no longer pass the relevance gate`);
+  }
+  if (updateEscalations(escalations)) log(`re-scored the escalation of ${escalations.length} stored articles`);
+
+  // Whose formula a rung is, on rows the feeds no longer serve — see ladderPatches.
+  const patched = updateLadders(ladderPatches(everyArticle()));
+  if (patched) log(`re-attributed the ladder on ${patched} stored articles`);
+
+  // Age is the other reason to drop a row. Without this the corpus only ever grows, and
+  // articles too old to corroborate anything keep competing for cluster membership.
+  const expired = expiredArticleIds(everyArticle());
+  if (expired.length) {
+    deleteArticles(expired);
+    log(`pruned ${expired.length} stored articles older than ${CORPUS_RETENTION_DAYS} days`);
+  }
+
+  // A vocabulary change re-scores every stored report's domain before clustering, which never joins
+  // reports across domains. A no-op unless data/concepts.ts or the matching rules changed.
+  const rescored = rescoreDomainsIfStale();
+  if (rescored.rescored) log(`re-scored stored domains for a new vocabulary: ${rescored.changed} changed`);
+
+  // Cluster over the whole stored corpus so today's reports can join an older event.
+  const events = clusterArticles(everyArticle());
+  replaceEvents(events);
+  setMeta('last_ingest', new Date().toISOString());
+  log(`clustered into ${events.length} events`);
+
+  return { pruned: stale.length, expired: expired.length, events };
 }

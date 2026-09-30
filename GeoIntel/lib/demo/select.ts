@@ -7,9 +7,10 @@ import { BY_PERSON } from '@/data/people';
 import { egoView } from '@/lib/graph/ego';
 import { answerQuestion } from '@/lib/ask/answer';
 import { VECTORS } from '@/lib/risk';
+import { incidentQuestion } from '@/lib/forecast/geo/questions';
 import { isJunkHeadline, rankedForExample } from './junk';
 import type {
-  AlertData, AskData, DemoInput, DyadData, EventData, LadderData, LanguageData, LensData, LensSide, NetworkData,
+  AlertData, AskData, DemoInput, DyadData, EventData, ForecastData, LadderData, LanguageData, LensData, LensSide, NetworkData,
   PersonStep, Report, RiskData, TrailData,
 } from './types';
 import { describeSharpest, type BeatLens, type LensColumn } from '@/lib/lens/compare';
@@ -241,4 +242,19 @@ export function selectAsk(input: DemoInput): AskData | null {
   const answer = answerQuestion(question, input.events);
   if (answer.empty) return null;
   return { question, readAs: answer.readAs, headline: answer.headline, figures: answer.figures };
+}
+
+const FIRST_WEEK = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+
+/**
+ * Chapter 11: a real recorded question and the record's live state. Deliberately no probability — readers
+ * see forecasts only once the record shows they beat the baselines (lib/forecast/score goLiveStatus).
+ */
+export function selectForecast(input: DemoInput): ForecastData {
+  const f = input.forecast;
+  const chain = f.intact === false ? 'record chain broken' : f.intact ? 'record intact' : 'record not yet checked';
+  const status = f.recorded === 0
+    ? `No forecasts recorded yet · the first recorded week begins ${FIRST_WEEK.format(new Date(f.firstWeekStart))} · ${chain}`
+    : `${f.recorded} questions forecast, ${f.settled} settled · ${chain}`;
+  return { question: incidentQuestion('CHN', 'IND').text, status };
 }

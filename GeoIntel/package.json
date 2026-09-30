@@ -20,7 +20,8 @@
     "reprints:shift": "tsx --tsconfig tsconfig.scripts.json scripts/reprint-shift.ts",
     "ladder:shift": "tsx --tsconfig tsconfig.scripts.json scripts/ladder-shift.ts",
     "roster:audit": "tsx --tsconfig tsconfig.scripts.json scripts/roster-audit.ts",
-    "demo:capture": "tsx --tsconfig tsconfig.scripts.json scripts/demo-capture.ts"
+    "demo:capture": "tsx --tsconfig tsconfig.scripts.json scripts/demo-capture.ts",
+    "forecast:backtest": "tsx --tsconfig tsconfig.scripts.json scripts/forecast-backtest.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

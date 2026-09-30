@@ -64,7 +64,8 @@ export function input(p: Partial<DemoInput> = {}): DemoInput {
     origin: 'https://kautilya.example',
     claims: { enforced: false, mode: 'closed', freeLimit: 5 },
     names: NAMES, board: BOARD, risks: [], dyads: [], trail: trailOf(),
-    beijingArticles: [], otherArticles: [], eventIdOf: {}, eventCandidates: [], lens: [], ...p,
+    beijingArticles: [], otherArticles: [], eventIdOf: {}, eventCandidates: [], lens: [],
+    forecast: { recorded: 0, settled: 0, intact: true, firstWeekStart: '2026-10-05T00:00:00.000Z' }, ...p,
   };
 }
 
