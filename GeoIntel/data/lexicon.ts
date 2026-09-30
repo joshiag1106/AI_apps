@@ -74,6 +74,10 @@ export const LEXICON: LexEntry[] = [
   { term: 'coup', lang: 'en', weight: 9 },
   { term: 'unrest', lang: 'en', weight: 5 },
   { term: 'protest', lang: 'en', weight: 3 },
+  // Terms match whole words with one inflection (s, es, d, ed, ing), so "protest" no longer
+  // reaches "protesters" — as it did while matching was by substring, along with "Protestant".
+  { term: 'protester', lang: 'en', weight: 3 },
+  { term: 'protestor', lang: 'en', weight: 3 },
   // English — de-escalatory
   { term: 'ceasefire', lang: 'en', weight: -7 },
   { term: 'peace talks', lang: 'en', weight: -7 },

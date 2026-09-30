@@ -383,6 +383,18 @@ rsync -az --delete \
 ssh root@SERVER_IP 'systemctl restart kautilya'
 ```
 
+**If the server refuses the `kautilya@` login** (on 2026-09-28 the live one closed the connection
+straight after the host key — cause not investigated), transfer as root instead and hand the files
+back: rsync as root stamps them with your Mac's numeric uid, which is no user on the server.
+
+```bash
+rsync -az --delete …same excludes… .next/standalone/ root@SERVER_IP:/srv/kautilya/
+ssh root@SERVER_IP 'chown -R kautilya:kautilya /srv/kautilya'   # then: find /srv/kautilya ! -user kautilya → nothing
+```
+
+Run any `sqlite3` against the live database as the service user, `runuser -u kautilya -- sqlite3 …`,
+never as bare root: a root connection can leave a root-owned `-wal`/`-shm` or backup file beside it.
+
 **Exclude `*.db` and `*.db-*`, not one filename, and build from an empty `.next`.** An earlier version
 excluded only `kautilya.db`. On a machine whose working folder is synced by iCloud (the Desktop, if
 "Desktop & Documents" is on), the sync leaves conflict copies — `kautilya 2.db`, `server 2.js` — and

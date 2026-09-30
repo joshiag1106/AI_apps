@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { allEvents, articlesByIds, eventById, getMeta, articleCountByLanguage, articlesByLanguage, ladderTrailArticles, corpusSince, eventIdsByArticle, beatArticles } from '@/lib/db';
+import { everyEvent, articlesByIds, eventById, getMeta, articleCountByLanguage, articlesByLanguage, ladderTrailArticles, corpusSince, eventIdsByArticle, beatArticles } from '@/lib/db';
 import { BEATS } from '@/data/feeds';
 import { lens, type BeatLens } from '@/lib/lens/compare';
 import { evidencedDomain } from '@/lib/analyze/score';
@@ -10,8 +10,11 @@ import { dyadKey } from '@/lib/analyze/entities';
 import { ladderTrail, type Trail } from '@/lib/verify/trail';
 import type { GeoEvent } from '@/lib/types';
 
-/** One corpus read per request; every aggregation below works off it. */
-export const corpus = cache((): GeoEvent[] => allEvents(4000));
+/**
+ * One corpus read per request; every aggregation below works off it. Uncapped: it used to read
+ * the newest 4,000 events, and past that the oldest dropped out of every index and trend.
+ */
+export const corpus = cache((): GeoEvent[] => everyEvent());
 
 export function lastIngest(): string | null {
   return getMeta('last_ingest');

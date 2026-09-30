@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,6 +22,37 @@ describe('image optimizer', () => {
     for (const url of ['https://evil.example/x.png', 'https://i.ytimg.com/vi/abc/hqdefault.jpg']) {
       expect(hasRemoteMatch(images.domains ?? [], images.remotePatterns ?? [], new URL(url))).toBe(false);
     }
+  });
+});
+
+describe('API routes and the login gate', () => {
+  // The "every page needs an account" gate is in app/layout.tsx, and a route handler renders
+  // no layout — which is how /api/export sat open to anyone (risk R2). Each route must
+  // therefore gate itself: on the signed-in user, or on the cron secret for the scheduler.
+  // A route that is public on purpose has to be named here, with its reason. This reads the
+  // source rather than calling each route, so it is a tripwire for the next route added,
+  // not proof; tests/export-route.test.ts and analyse-route.test.ts exercise the real gates.
+  const PUBLIC_ON_PURPOSE: Record<string, string> = {
+    // Polled by open pages for "has anything changed?"; returns three counters, no content.
+    'app/api/pulse/route.ts': 'corpus heartbeat',
+  };
+
+  function routes(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+      d.isDirectory() ? routes(`${dir}/${d.name}`) : d.name === 'route.ts' ? [`${dir}/${d.name}`] : []);
+  }
+
+  it('every API route checks who is calling, or is listed as public on purpose', () => {
+    const open = routes('app/api').filter((file) => {
+      if (file in PUBLIC_ON_PURPOSE) return false;
+      const src = readFileSync(file, 'utf8');
+      return !/currentUser\(\)/.test(src) && !/CRON_SECRET/.test(src);
+    });
+    expect(open).toEqual([]);
+  });
+
+  it('names no public route that no longer exists', () => {
+    expect(Object.keys(PUBLIC_ON_PURPOSE).filter((f) => !existsSync(f))).toEqual([]);
   });
 });
 

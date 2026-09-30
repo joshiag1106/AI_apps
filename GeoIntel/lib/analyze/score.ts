@@ -1,5 +1,6 @@
 import { LEXICON, type Domain } from '@/data/lexicon';
 import { matchConcepts, topDomain } from '@/lib/analyze/concepts';
+import { compileTerms } from '@/lib/analyze/terms';
 import { glossArticle, highestRung } from '@/lib/lang/chinese';
 import { formulaSpeaker, type LadderSpeaker } from '@/lib/lang/speaker';
 import { formulaTarget } from '@/lib/lang/target';
@@ -19,11 +20,8 @@ export interface ScoreResult {
   ladderTarget: string | null;
 }
 
-const LATIN = /^[\x20-\x7F]+$/;
-
-function hasTerm(term: string, lower: string, raw: string): boolean {
-  return LATIN.test(term) ? lower.includes(term.toLowerCase()) : raw.includes(term);
-}
+/** The lexicon, read under the same rules as the concept list — see lib/analyze/terms. */
+const LEXICON_TERMS = compileTerms(LEXICON.map((e) => ({ text: e.term, value: e })));
 
 /**
  * An article's domain ONLY when its own words show one; null otherwise. Read from the shared concept
@@ -53,12 +51,13 @@ export function domainOf(title: string, snippet = ''): Domain {
  */
 export function scoreText(title: string, snippet = ''): ScoreResult {
   const raw = `${title} ${snippet}`;
-  const lower = raw.toLowerCase();
 
   let score = 0;
   const matched: string[] = [];
+  // Reported in lexicon order, whatever order the matcher accepted them in.
+  const hits = new Set(LEXICON_TERMS.match(raw));
   for (const e of LEXICON) {
-    if (!hasTerm(e.term, lower, raw)) continue;
+    if (!hits.has(e)) continue;
     score += e.weight;
     matched.push(e.term);
   }

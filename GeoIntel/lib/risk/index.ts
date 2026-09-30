@@ -21,6 +21,9 @@ const HALF_LIFE_DAYS = 14;
  */
 export const TREND_SERIES_DAYS = 90;
 
+/** A country's trend compares the last this-many days with the same span before them. */
+const TREND_WINDOW_DAYS = 30;
+
 /** Recency decay. A three-week-old incident should not read as today's risk. */
 export function decay(iso: string, now = Date.now()): number {
   const days = (now - Date.parse(iso)) / 86_400_000;
@@ -47,7 +50,7 @@ export interface CountryRisk {
   composite: number;
   vectors: Record<Vector, number>;
   eventCount: number;
-  trend: number;       // change vs the previous equivalent window, in points
+  trend: number;       // last TREND_WINDOW_DAYS vs the same span before it, in points
   topDomain: Domain | null;
 }
 
@@ -63,11 +66,16 @@ export function countryRisk(iso: string, events: GeoEvent[], now = Date.now()): 
   }
 
   const raw = Object.values(vectors).reduce((s, x) => s + x, 0);
-  const HALF = now - 30 * 86_400_000;
-  const recent = mine.filter((e) => Date.parse(e.lastSeen) >= HALF)
-    .reduce((s, e) => s + Math.max(0, e.escalation) * (e.confidence / 100), 0);
-  const prior = mine.filter((e) => Date.parse(e.lastSeen) < HALF)
-    .reduce((s, e) => s + Math.max(0, e.escalation) * (e.confidence / 100), 0);
+  // The last 30 days against the 30 before them. "Prior" used to be everything older, up to 60
+  // days more, so a steady rate of reporting read as a falling trend (risk R12).
+  const HALF = now - TREND_WINDOW_DAYS * 86_400_000;
+  const START = now - 2 * TREND_WINDOW_DAYS * 86_400_000;
+  const weight = (s: number, e: GeoEvent) => s + Math.max(0, e.escalation) * (e.confidence / 100);
+  const recent = mine.filter((e) => Date.parse(e.lastSeen) >= HALF).reduce(weight, 0);
+  const prior = mine.filter((e) => {
+    const t = Date.parse(e.lastSeen);
+    return t >= START && t < HALF;
+  }).reduce(weight, 0);
 
   let topDomain: Domain | null = null;
   let topN = 0;
