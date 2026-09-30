@@ -2,6 +2,15 @@
 
 ## Predictive intelligence, release 1 (2026-09-30 evening) — DEPLOYED and VERIFIED LIVE
 
+**Casino-SEO republications never stored — DEPLOYED 22:17 IST, pruned live at 22:30** (`e7b46cc`). Settles the
+open "junk-outlet denylist at ingest" question (delegated). Found while checking the pages for the
+presentation: China Watch's top "official statement" was `众赢国际手机版_体育_8·15日本政要又“拜鬼”…`, a 体坛 casino
+page republishing the 15 August Yasukuni story as 17 September. `lib/ingest/junk` `isSeoWrapper` (narrower than
+the tour's example rule: no 官方网站) keeps such pages out at ingest; the upkeep prunes stored ones. Live: exactly 2
+rows matched before (read-only), 0 after the 22:30 run; the evidence trail's Japan row, which rested only on
+that page, is gone; China Watch now leads with the MFA condemning an attack on a Pakistani police camp (rung 7).
+1,303 tests.
+
 **Demo tour chapter 11, "A forecast you can check" — DEPLOYED 22:09 IST** (BUILD_ID `IcU5Oc5lVA0ipbWrbAy-1`,
 with the admin "too few to score" fix). Josh approved the design: a real recorded question, the three steps
 (recorded, settled, scored), "shown to readers only once it beats both", and the record's live status —

@@ -1,4 +1,5 @@
 import type { Article } from '@/lib/types';
+import { isSeoWrapper } from '@/lib/ingest/junk';
 
 /**
  * Headlines that are SEO wrapping rather than reporting.
@@ -12,10 +13,9 @@ import type { Article } from '@/lib/types';
  * A pattern on the headline rather than a list of outlets, because the outlet label ("体坛") is what
  * Google News called a page that could as easily be called something else tomorrow.
  */
-const JUNK = /手机版|_体育_|官方网站|娱乐城|投注|彩票|博彩/;
-
+// The storage rule (lib/ingest/junk) plus 官方网站: stricter for an example than for storage.
 export function isJunkHeadline(title: string): boolean {
-  return JUNK.test(title);
+  return isSeoWrapper(title) || /官方网站/.test(title);
 }
 
 /**

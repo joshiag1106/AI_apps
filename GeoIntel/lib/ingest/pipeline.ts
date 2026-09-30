@@ -9,6 +9,7 @@ import { rescoreDomainsIfStale } from '@/lib/analyze/rescore';
 import { TREND_SERIES_DAYS } from '@/lib/risk';
 import { upsertArticles, replaceEvents, everyArticle, deleteArticles, setMeta, updateLadders, updateEscalations } from '@/lib/db';
 import type { LadderSpeaker } from '@/lib/lang/speaker';
+import { isSeoWrapper } from '@/lib/ingest/junk';
 import type { Article, GeoEvent, RawArticle } from '@/lib/types';
 
 /** What an ingest changes on a stored article's ladder fields. */
@@ -111,6 +112,15 @@ export function isRelevant(
  */
 function normaliseTitle(t: string): string {
   return t.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+}
+
+/**
+ * Whether an enriched report is kept: it names an actor, passes the relevance gate, and is not a casino-style
+ * SEO republication (lib/ingest/junk). Articles that name no actor cannot be placed on any map or dyad, and
+ * those with no security signal are general news that happens to mention a state.
+ */
+export function storable(a: Article): boolean {
+  return a.actors.length > 0 && a.relevant && !isSeoWrapper(a.title);
 }
 
 /** Drop exact URL repeats and same-outlet near-identical headlines. */
@@ -225,9 +235,7 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
   });
 
   const deduped = dedupe(collected);
-  // Articles that name no actor cannot be placed on any map or dyad, and those with no
-  // security signal at all are general news that happens to mention a state.
-  const usable = deduped.filter((a) => a.actors.length > 0 && a.relevant);
+  const usable = deduped.filter(storable);
   log(`parsed ${collected.length} -> ${deduped.length} unique -> ${usable.length} relevant`);
 
   upsertArticles(usable);
@@ -291,7 +299,7 @@ export function maintainCorpus(log: (s: string) => void = () => {}): { pruned: n
   const escalations: { id: string; escalation: number }[] = [];
   for (const a of everyArticle()) {
     const s2 = scoreText(a.title, a.snippet);
-    if (a.actors.length === 0 || !isRelevant(a.actors, a.hotspots, s2)) stale.push(a);
+    if (a.actors.length === 0 || !isRelevant(a.actors, a.hotspots, s2) || isSeoWrapper(a.title)) stale.push(a);
     else if (s2.escalation !== a.escalation) escalations.push({ id: a.id, escalation: s2.escalation });
   }
   if (stale.length) {
