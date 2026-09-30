@@ -245,6 +245,25 @@ export async function runIngest(opts: { concurrency?: number; log?: (s: string) 
     log(`alerts skipped: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  // Forecasts run here for the same reason alerts do: new events exist. A failure is logged and never fails
+  // the refresh. See docs/specs/2026-09-30-predictive-intelligence-design.md.
+  try {
+    const { runForecastCycle } = await import('@/lib/forecast/schedule');
+    const f = runForecastCycle();
+    if (f.snapshot) log(`forecasts: ${f.snapshot} signal snapshots`);
+    if (f.reconstructed.wrote) log(`forecasts: reconstructed ${f.reconstructed.wrote} past rows${f.reconstructed.done ? ' (done)' : ''}`);
+    if (f.skipped) log(`forecasts: week ${f.skipped} skipped — the first chance came more than 24 hours late`);
+    if (f.issued) {
+      const { sendEnvelope } = await import('@/lib/forecast/envelope');
+      const sent = await sendEnvelope(f.week);
+      log(`forecasts: issued ${f.issued} for ${f.week}; envelope ${sent.delivered ? 'sent' : `not sent (${sent.reason})`}`);
+    }
+    if (f.settled) log(`forecasts: settled ${f.settled}`);
+    if (f.ledgerOk === false) log('forecasts: RECORD CHAIN BROKEN — see /admin');
+  } catch (e) {
+    log(`forecasts skipped: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   const byLanguage: Record<string, number> = {};
   for (const a of usable) byLanguage[a.language] = (byLanguage[a.language] ?? 0) + 1;
 

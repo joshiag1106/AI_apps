@@ -1,4 +1,5 @@
 import 'server-only';
+import { recordStatus } from '@/lib/forecast/store';
 import {
   corpus, corpusStats, countryRisks, hotspotActivity, topDyads, countryName, lastIngest, lensData,
 } from '@/lib/queries';
@@ -57,6 +58,7 @@ export function gatherDemoInput(claims: ClaimsState, now = Date.now()): DemoInpu
     board, risks, dyads: topDyads(events, 12), trail,
     beijingArticles: [...prc].reverse(),
     otherArticles: otherPartyLadderArticles(),
+    forecast: recordStatus(now),
     eventIdOf: Object.fromEntries(eventIdOf),
     eventCandidates,
     lens: lensData(),

@@ -1,5 +1,50 @@
 # Where this project stands
 
+## Predictive intelligence, release 1 (2026-09-30 evening) — DEPLOYED and VERIFIED LIVE
+
+**Demo tour chapter 11, "A forecast you can check" — DEPLOYED 22:09 IST** (BUILD_ID `IcU5Oc5lVA0ipbWrbAy-1`,
+with the admin "too few to score" fix). Josh approved the design: a real recorded question, the three steps
+(recorded, settled, scored), "shown to readers only once it beats both", and the record's live status —
+**never a probability**, since readers see forecasts only after go-live. 10 s, narration sized to 14 chars/s
+(the tour advances on a timer and cancels speech); the tour is now 13 chapters, 137 s, and its length test
+allows up to 140 s — the splash still says "2-minute demo" (flagged to Josh). Checked on the production
+build locally at 1280 px and 375 px (no horizontal overflow) and live in Josh's Chrome: status line
+"No forecasts recorded yet · the first recorded week begins Monday 5 October · record intact". 1,299 tests.
+
+Josh asked for forecasting, validated against real events, presentable at 08:30 on 1 October. Designed with
+him section by section: `docs/specs/2026-09-30-predictive-intelligence-design.md`; plan
+`docs/plans/2026-09-30-predictive-intelligence.md` (14 tasks, all done test-first; reader surfaces are a
+second release before the earliest go-live).
+
+- **What it forecasts, weekly:** a corroborated military incident between two states (pairs with ≥ 100
+  events), and a Beijing ladder statement aimed at a state (targets of the last 90 days, plus `any`).
+- **Record:** `forecasts` and `outcomes` tables, append-only by trigger and SHA-256 hash-chained; settled
+  72 h after each window with evidence kept; daily chain check; weekly sealed-envelope email to
+  `FORECAST_DIGEST_TO` — set 2026-09-30 in `/etc/kautilya.env` to the owner's usual address, as Josh asked
+  (file backed up first; the running service carries it).
+- **Forecasters:** `usual-rate@1`, `same-as-last-week@1`, `signal-model@1` (penalised logistic, refitted
+  Mondays). Readers see nothing until the live record beats both baselines (≥ 6 weeks, ≥ 150 forecasts,
+  calibrated); the admin page shows everything, plus an **unrecorded next-7-days preview** (Josh approved it
+  for the presentation; same code path as the weekly issue, writes nothing).
+- **First backtest (local corpus), honest:** coverage broadened only in September, so 67 incident
+  question-weeks exist. Fitted on 26 positives the model overfitted (Brier 0.322 vs 0.272 usual rate, 0.271
+  same-as-last-week). It now waits for 10 positives per signal (90); until then it is the usual rate:
+  incidents 0.2719 / 0.2719 / 0.2709, Beijing 0.2515 / 0.2515 / 0.2707 (model / usual / same). Skill is
+  unproven — the live record starts **Monday 5 October 2026**.
+
+**Deployed** three times on 2026-09-30 (18:3x–18:4x IST), each by the runbook: from-scratch build, the two
+known intruders excluded, dry run 0 suspicious, transfer as root + `chown`, 0 strays, probes all pass, static
+assets 200. Live DB backed up first (`/var/lib/kautilya/pre-forecasts-2026-09-30-1826.db`, integrity ok).
+Later builds added: history basis in explanations ("from 1 week of history, drawn toward the 39% average"),
+the preview computed by the hourly cycle (admin render was ~1.7 s locally, ~1 s of it the preview), and
+"too few to score" below 30 forecasts (the live backtest printed Brier 0.010 from one forecast).
+**First live cycle** (a manual run of the site's own cron endpoint at 18:54, so Josh could see it): tables and
+all four append-only triggers present; 9 past Mondays rebuilt in one pass (only 8 labelled question-weeks —
+production coverage broadened late too); 24 live snapshot rows; chain check `ok`; preview of 24 questions
+stored; week W40 recorded as skipped (deployed Wednesday). Josh saw the admin section in his own Chrome.
+The same run showed the long-standing Indian Express and Dawn 403s (they refuse the server's address; both
+answer 200 from the Mac) — known, left in place per Josh's earlier call.
+
 ## Six defects fixed (2026-09-30) — DEPLOYED and VERIFIED LIVE
 
 Josh delegated the order ("you take the call"), then approved the deploy ("go ahead, fix the limit

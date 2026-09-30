@@ -6,6 +6,8 @@ import { feedbackSummary, FEATURE_LABELS } from '@/lib/feedback/store';
 import { fmtDate, timeAgo } from '@/lib/format';
 import { corpus, corpusStats, languageMix, domainMix, lastIngest } from '@/lib/queries';
 import { LANGUAGE_LABEL } from '@/lib/lang/detect';
+import { ForecastPanel } from '@/components/ForecastPanel';
+import { forecastAdminView } from '@/lib/forecast/admin';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin' };
@@ -75,6 +77,8 @@ export default async function AdminPage() {
           </div>
         </div>
       </Panel>
+
+      <ForecastPanel view={forecastAdminView()} />
 
       <Panel className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3">
         <Stat label="Accounts (people)" value={visits.totalUsers} />

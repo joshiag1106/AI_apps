@@ -17,7 +17,7 @@ export function getDb(): DatabaseSync {
 }
 
 /** node:sqlite has no transaction() helper; wrap explicitly and roll back on error. */
-function tx<T>(db: DatabaseSync, fn: () => T): T {
+export function tx<T>(db: DatabaseSync, fn: () => T): T {
   db.exec('BEGIN');
   try {
     const out = fn();
@@ -95,6 +95,37 @@ function migrate(db: DatabaseSync) {
       skipped INTEGER DEFAULT 0, created_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
+  `);
+
+  // Predictive intelligence (docs/specs/2026-09-30-predictive-intelligence-design.md). forecast_signals is
+  // the model's memory and is never pruned; outcome holds the hindsight label of a reconstructed Monday row.
+  // forecasts and outcomes are the record: append-only by trigger, hash-chained in lib/forecast/ledger.ts.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS forecast_signals (
+      day TEXT NOT NULL, question_id TEXT NOT NULL, signals TEXT NOT NULL, source TEXT NOT NULL,
+      outcome INTEGER, created_at TEXT NOT NULL, PRIMARY KEY (day, question_id)
+    );
+    CREATE TABLE IF NOT EXISTS forecasts (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT, forecaster TEXT NOT NULL, question_id TEXT NOT NULL,
+      week TEXT NOT NULL, question TEXT NOT NULL, rule TEXT NOT NULL, window_start TEXT NOT NULL,
+      window_end TEXT NOT NULL, issued_at TEXT NOT NULL, probability REAL NOT NULL, explanation TEXT NOT NULL,
+      inputs_hash TEXT NOT NULL, prev_hash TEXT NOT NULL, hash TEXT NOT NULL,
+      UNIQUE (forecaster, question_id, week)
+    );
+    CREATE TABLE IF NOT EXISTS outcomes (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT, question_id TEXT NOT NULL, week TEXT NOT NULL,
+      outcome INTEGER NOT NULL, settled_at TEXT NOT NULL, evidence TEXT NOT NULL, engine_version TEXT NOT NULL,
+      corrects INTEGER, reason TEXT, prev_hash TEXT NOT NULL, hash TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_outcomes_qw ON outcomes(question_id, week);
+    CREATE TRIGGER IF NOT EXISTS forecasts_append_only_u BEFORE UPDATE ON forecasts
+      BEGIN SELECT RAISE(ABORT, 'append-only'); END;
+    CREATE TRIGGER IF NOT EXISTS forecasts_append_only_d BEFORE DELETE ON forecasts
+      BEGIN SELECT RAISE(ABORT, 'append-only'); END;
+    CREATE TRIGGER IF NOT EXISTS outcomes_append_only_u BEFORE UPDATE ON outcomes
+      BEGIN SELECT RAISE(ABORT, 'append-only'); END;
+    CREATE TRIGGER IF NOT EXISTS outcomes_append_only_d BEFORE DELETE ON outcomes
+      BEGIN SELECT RAISE(ABORT, 'append-only'); END;
   `);
 
   // Additive column migrations for databases created before a field existed.

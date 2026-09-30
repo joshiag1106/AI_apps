@@ -6,6 +6,7 @@ import { BoardScene } from './BoardScene';
 import { CloseScene } from './CloseScene';
 import { DyadScene } from './DyadScene';
 import { EventScene } from './EventScene';
+import { ForecastScene } from './ForecastScene';
 import { LadderScene } from './LadderScene';
 import { LanguageScene } from './LanguageScene';
 import { LensScene } from './LensScene';
@@ -27,6 +28,7 @@ export function renderScene(c: AnyChapter): ReactNode {
     case 'dyad': return <DyadScene data={c.data} />;
     case 'network': return <NetworkScene data={c.data} />;
     case 'ask': return <AskScene data={c.data} />;
+    case 'forecast': return <ForecastScene data={c.data} />;
     case 'yours': return <YoursScene data={c.data} />;
     case 'close': return <CloseScene data={c.data} />;
   }

@@ -6,7 +6,7 @@ import type { MapDatum, MapMarker } from '@/components/WorldMap';
 import type { EgoView } from '@/lib/graph/ego';
 
 export const CHAPTER_IDS = [
-  'board', 'language', 'lens', 'event', 'ladder', 'trail', 'risk', 'dyad', 'network', 'ask', 'yours', 'close',
+  'board', 'language', 'lens', 'event', 'ladder', 'trail', 'risk', 'dyad', 'network', 'ask', 'forecast', 'yours', 'close',
 ] as const;
 export type ChapterId = (typeof CHAPTER_IDS)[number];
 
@@ -78,13 +78,16 @@ export interface AskData {
   headline: string;
   figures: { label: string; value: string; sub?: string }[];
 }
+/** Chapter 11: a real question and the live state of the forecast record — never a probability. */
+export interface ForecastData { question: string; status: string }
 export interface AlertData { label: string; subject: string; text: string }
 export interface YoursData extends AlertData { exportChip: string | null }
 export interface CloseData { copy: string; buttons: { label: string; href: string; primary: boolean }[] }
 
 export interface ChapterData {
   board: BoardData; language: LanguageData; lens: LensData; event: EventData; ladder: LadderData; trail: TrailData;
-  risk: RiskData; dyad: DyadData; network: NetworkData; ask: AskData; yours: YoursData; close: CloseData;
+  risk: RiskData; dyad: DyadData; network: NetworkData; ask: AskData; forecast: ForecastData; yours: YoursData;
+  close: CloseData;
 }
 
 export interface Chapter<K extends ChapterId = ChapterId> {
@@ -123,6 +126,8 @@ export interface DemoInput {
   eventCandidates: { event: GeoEvent; articles: Article[] }[];
   /** The Language Lens topics, exactly as /lens computes them. */
   lens: BeatLens[];
+  /** The forecast record's state (lib/forecast/store recordStatus). */
+  forecast: { recorded: number; settled: number; intact: boolean | null; firstWeekStart: string };
 }
 
 /** Real examples captured together on one day; see scripts/demo-capture.ts. */

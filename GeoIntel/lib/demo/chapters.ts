@@ -3,7 +3,7 @@ import type { ChapterId } from './types';
 export interface ChapterMeta { id: ChapterId; title: string; caption: string; seconds: number }
 
 /**
- * The twelve chapters, in order. Captions describe what the ENGINE does and never what a reader
+ * The thirteen chapters, in order. Captions describe what the ENGINE does and never what a reader
  * pays — the only plan wording in the tour comes from lib/demo/claims, derived from the billing
  * state, so deciding free versus billing later needs no edit here. The closing chapter's caption
  * below is a default that the builder replaces with the state-specific copy.
@@ -29,6 +29,8 @@ export const CHAPTERS: readonly ChapterMeta[] = [
     caption: 'Walk from one state to the next, then on to the official most often named with it; each link you cross lights up.' },
   { id: 'ask', title: 'Ask in plain words', seconds: 11,
     caption: 'Questions are answered from the corpus, and the reading of your question is shown beside the answer.' },
+  { id: 'forecast', title: 'A forecast you can check', seconds: 10,
+    caption: 'Each forecast is recorded before its week, settled against corroborated reports, and scored against simple baselines.' },
   { id: 'yours', title: 'Make it yours', seconds: 13,
     caption: 'Watch a state, get an email when it moves up the ladder, export the data, choose a colour-blind-safe palette.' },
   { id: 'close', title: 'See for yourself', seconds: 8,

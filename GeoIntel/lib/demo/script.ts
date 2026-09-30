@@ -2,7 +2,7 @@ import { FALLBACKS } from '@/data/demo-fallbacks';
 import { CHAPTERS, WALK_ONLY, meta } from './chapters';
 import { chipFor, closingFor, exportChipFor } from './claims';
 import {
-  selectAlert, selectAsk, selectDyad, selectEvent, selectLadder, selectLanguage, selectLens,
+  selectAlert, selectAsk, selectDyad, selectEvent, selectForecast, selectLadder, selectLanguage, selectLens,
   selectNetwork, selectRisk, selectTrail,
 } from './select';
 import type {
@@ -64,6 +64,7 @@ export function buildDemoScript(input: DemoInput, fallbacks: Fallbacks = FALLBAC
         break;
       }
       case 'ask': add('ask', selectAsk(input), live); break;
+      case 'forecast': add('forecast', selectForecast(input), live); break;
       case 'yours': {
         const r = withFallback(selectAlert(input), fallbacks.alert);
         add('yours', { ...r.data, exportChip: exportChipFor(input.claims.enforced) }, r.source);
