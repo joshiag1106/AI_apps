@@ -1,6 +1,7 @@
 import { eventDetail, corpus, eventsFor } from '@/lib/queries';
 import { consume } from '@/lib/quota';
 import { articlesByIds } from '@/lib/db';
+import { currentUser } from '@/lib/auth';
 import type { GeoEvent } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -47,8 +48,17 @@ function eventRow(e: GeoEvent) {
  *   ?event=<id>   one event with its full source list and verification signals
  *   (filters)     the filtered event table — same filters the /events page accepts
  * Formats: csv (default) or json.
+ *
+ * Needs an account, like every page that links here. The page gate lives in app/layout.tsx,
+ * and a route handler renders no layout, so without this check the whole event table was a
+ * plain GET away for anyone. It runs before the lookup and the meter, so an anonymous caller
+ * learns nothing — not even which event ids exist — and leaves no usage row behind.
  */
 export async function GET(req: Request) {
+  if (!(await currentUser())) {
+    return Response.json({ error: 'signin', message: 'Sign in to export data.' }, { status: 401 });
+  }
+
   const url = new URL(req.url);
   const format = url.searchParams.get('format') === 'json' ? 'json' : 'csv';
   const eventId = url.searchParams.get('event');

@@ -227,9 +227,30 @@ export function updateLadders(patches: {
   return patches.length;
 }
 
+/** Overwrite the escalation of rows already stored, for the same reason as updateLadders. */
+export function updateEscalations(patches: { id: string; escalation: number }[]): number {
+  if (!patches.length) return 0;
+  const db = getDb();
+  const stmt = db.prepare('UPDATE articles SET escalation=@e WHERE id=@id');
+  tx(db, () => {
+    for (const p of patches) stmt.run({ id: p.id, e: p.escalation });
+  });
+  return patches.length;
+}
+
 export function allArticles(limit = 5000): Article[] {
   return getDb().prepare('SELECT * FROM articles ORDER BY published_at DESC LIMIT ?')
     .all(limit).map(rowToArticle);
+}
+
+/**
+ * Every stored article, newest first, with no cap. For the ingest's upkeep, which must see
+ * the whole corpus: a cap there fails silently — rows past it are never expired and never
+ * clustered (risk R1). The corpus is bounded by retention, not by this read.
+ */
+export function everyArticle(): Article[] {
+  return getDb().prepare('SELECT * FROM articles ORDER BY published_at DESC')
+    .all().map(rowToArticle);
 }
 
 export function articlesByIds(ids: string[]): Article[] {
@@ -335,6 +356,16 @@ function rowToEvent(r: any): GeoEvent {
 export function allEvents(limit = 3000): GeoEvent[] {
   return getDb().prepare('SELECT * FROM events ORDER BY last_seen DESC LIMIT ?')
     .all(limit).map(rowToEvent);
+}
+
+/**
+ * Every stored event, most recently seen first, with no cap — what the pages read. A cap here
+ * fails silently: the oldest events leave every index, trend and list. The table is bounded
+ * by article retention, since events are re-clustered from the retained articles each ingest.
+ */
+export function everyEvent(): GeoEvent[] {
+  return getDb().prepare('SELECT * FROM events ORDER BY last_seen DESC')
+    .all().map(rowToEvent);
 }
 
 export function eventById(id: string): GeoEvent | null {
